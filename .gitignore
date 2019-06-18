@@ -1,0 +1,5 @@
+# Ignore the vitual environment
+venv/
+
+# Ignore Pycharm files
+.idea/
