@@ -1,12 +1,19 @@
 import urllib.request
+import urllib.error
+import urllib.parse
 import json
 import datetime
+import re
 
 import configuration
 
 
-def get_channel_list():
-    """Make a request for the channel list and add them to the db."""
+def get_channel_list(ignore_hd=True):
+    """
+    Make a request for the channel list and add them to the db.
+
+    :param ignore_hd: true when we're supposed to ignore HD channels.
+    """
 
     print('Get channel list!')
 
@@ -19,9 +26,10 @@ def get_channel_list():
 
     # Add the list of channels to the database
     for c in channels:
-        channel = configuration.models.Channel(c['id'], c['name'])
+        if ignore_hd and 'HD' not in c['name']:
+            channel = configuration.models.Channel(c['id'], c['name'])
 
-        configuration.session.add(channel)
+            configuration.session.add(channel)
 
     configuration.session.commit()
 
@@ -35,6 +43,8 @@ def update_show_list():
     # If the list of channels in the db is empty
     if db_channels == []:
         get_channel_list()
+
+        db_channels = configuration.session.query(configuration.models.Channel).all()
 
     # Get the date of the last update
     db_last_update = configuration.session.query(configuration.models.LastUpdate).first()
@@ -80,6 +90,10 @@ def update_show_list():
                 program_title = s['programTitle']
                 pos = program_title.find(':T')
 
+                # If it's referent to a show from a different day
+                if s['date'] != db_last_update.date.strftime('%d-%m-%Y'):
+                    continue
+
                 # If it is an episode of a series
                 if pos != -1:
                     show_title = program_title[:pos]
@@ -100,8 +114,17 @@ def update_show_list():
 
                 show_datetime = db_last_update.date.strftime('%Y-%m-%d ') + s['startTime']
 
+                # Remove the last character in order to find the results for both SD and HD
+                if s['serid'] is not None:
+                    series_id = s['serid'][:-1]
+                else:
+                    series_id = None
+
+                # Remove the first character in order to find the results for both SD and HD
+                pid = s['pid'][1:]
+
                 # Add the show to the db
-                show = configuration.models.Show(s['pid'], s['serid'], show_title, show_season, show_episode,
+                show = configuration.models.Show(pid, series_id, show_title, show_season, show_episode,
                                                  s['programDetails'], show_datetime, s['duration'], channel_id)
 
                 configuration.session.add(show)
@@ -179,12 +202,12 @@ def search_show_information(search_text):
     return results
 
 
-def get_translations(is_show, trakt_slug):
+def get_translations(trakt_slug, is_show):
     """
     Get the various possible titles for the selected title, in both english and portuguese.
 
-    :param is_show: true if it is a show.
     :param trakt_slug: the selected title.
+    :param is_show: true if it is a show.
     :return: the various possible titles.
     """
 
@@ -197,7 +220,7 @@ def get_translations(is_show, trakt_slug):
 
     try:
         translations_json = urllib.request.urlopen(translations_request).read()
-    except urllib.error.HttpError:
+    except urllib.error.HTTPError:
         print('Slug was not found!')
         return []
 
@@ -210,29 +233,109 @@ def get_translations(is_show, trakt_slug):
         if t['language'] == 'en' or t['language'] == 'pt':
             results.add(t['title'])
 
+    if is_show:
+        aliases_request = urllib.request.Request('https://api.trakt.tv/shows/' + trakt_slug + '/aliases')
+    else:
+        aliases_request = urllib.request.Request('https://api.trakt.tv/movies/' + trakt_slug + '/aliases')
+
+    aliases_request.add_header('trakt-api-key', configuration.trakt_key)
+
+    try:
+        aliases_json = urllib.request.urlopen(aliases_request).read()
+    except urllib.error.HTTPError:
+        print('Slug was not found!')
+        return []
+
+    # Parse the list of translations from the request
+    aliases = json.loads(aliases_json)
+
+    for t in aliases:
+        if t['country'] == 'us' or t['country'] == 'pt':
+            results.add(t['title'])
+
     return results
+
+
+def search_db(search_list):
+    """
+    Get the results of the search in the DB, using all the texts from the search list.
+
+    :param search_list: the list of texts to search for in the DB.
+    :return: results of the search in the DB.
+    """
+
+    results = set()
+
+    for search_text in search_list:
+        print('Original search text: %s' % search_text)
+
+        # Split the search text into a list of words
+        search_words = re.compile('[^0-9A-Za-zÀ-ÿ]+').split(search_text)
+
+        print('List of words obtained from the search text: %s' % str(search_words))
+
+        # Create a search pattern to search the DB
+        search_pattern = ''
+
+        for w in search_words:
+            if w != '':
+                search_pattern += '%%%s' % w
+
+        search_pattern = '%s%%' % search_pattern
+
+        print('Search patter: %s' % search_pattern)
+
+        db_shows = configuration.session.query(configuration.models.Show).filter(
+            configuration.models.Show.show_title.ilike(search_pattern)).all()
+
+        for s in db_shows:
+            results.add(s)
+
+    return results
+
+
+def search_db_id(show_id, is_show):
+    """
+    Get the results of the search in the DB, using show id (either series_id or pid).
+
+    :param show_id: the id to search for.
+    :param is_show: true if it is a show.
+    :return: results of the search in the DB.
+    """
+
+    if is_show:
+        return configuration.session.query(configuration.models.Show).filter(
+            configuration.models.Show.series_id == show_id).all()
+    else:
+        return configuration.session.query(configuration.models.Show).filter(
+            configuration.models.Show.pid == show_id).all()
 
 
 def main():
     # update_show_list()
 
-    # search_text = 'blindspot'
-    #
+    search_text = 'blindspot'
+
+    db_shows = search_db([search_text])
+
+    print('Found %d results:' % len(db_shows))
+
+    for s in db_shows:
+        print(s)
+
     # shows = search_show_information(search_text)
     #
     # for s in shows:
     #     print(s)
+    #
+    # translations = ['Holmes']
 
-    translations = get_translations(True, 'blindspot')
-
-    for t in translations:
-        print(t)
-
-    db_shows = configuration.session.query(configuration.models.Show).filter(
-        configuration.models.Show.show_title.in_(translations)).all()
-
-    for s in db_shows:
-        print(s)
+    # translations = get_translations('sicario-day-of-the-soldado-2018', False)
+    #
+    # db_shows = search_db(translations)
+    #
+    # for s in db_shows:
+    #     print(s)
 
 
 if __name__ == "__main__":

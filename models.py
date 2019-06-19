@@ -58,9 +58,9 @@ class Show(base):
 
     def __str__(self):
         return 'id: %d; pid: %d; series_id: %s; show_title: %s; show_season: %d; show_episode: %d; show_details: %s; ' \
-               'date_time: %s; duration: %d' % (self.id, self.pid, self.series_id, self.show_title,
-                                                self.show_season, self.show_episode, self.show_details,
-                                                str(self.date_time), self.duration)
+               'date_time: %s; duration: %d; channel_id: %d' % \
+               (self.id, self.pid, self.series_id, self.show_title, self.show_season, self.show_episode,
+                self.show_details,str(self.date_time), self.duration, self.channel_id)
 
 
 class ShowMatch(base):
