@@ -1,342 +1,106 @@
-import urllib.request
-import urllib.error
-import urllib.parse
-import json
-import datetime
-import re
+import flask
+import webargs
+import threading
+import time
 
-import configuration
+import flask_restful as fr
+import flask_httpauth as fh
+import flask_limiter as fl
+import webargs.flaskparser as fp
 
+import processing
 
-def get_channel_list(ignore_hd=True):
-    """
-    Make a request for the channel list and add them to the db.
+basic_auth = fh.HTTPBasicAuth()
+app = flask.Flask(__name__)
+api = fr.Api(app)
 
-    :param ignore_hd: true when we're supposed to ignore HD channels.
-    """
+# Limit the number of requests that can be made in a certain time period
+limiter = fl.Limiter(
+    app,
+    key_func=fl.util.get_remote_address,
+    default_limits=['5 per second', '50 per minute', '1000 per day']
+)
 
-    print('Get channel list!')
 
-    # Request the list of channels
-    channels_json = urllib.request.urlopen(
-        'https://tvnetvoz.vodafone.pt/sempre-consigo/datajson/epg/channels.jsp').read()
+def list_to_json(list_of_objects):
+    result = []
 
-    # Parse the list of channels from the request
-    channels = json.loads(channels_json)['result']['channels']
+    for o in list_of_objects:
+        result.append(o.to_dict())
 
-    # Add the list of channels to the database
-    for c in channels:
-        if ignore_hd and 'HD' not in c['name']:
-            channel = configuration.models.Channel(c['id'], c['name'])
+    return result
 
-            configuration.session.add(channel)
 
-    configuration.session.commit()
+def update_list():
+    """Update the list of movies every day."""
 
+    while True:
+        processing.update_show_list()
 
-def update_show_list():
-    """Make a request for the show list and update the db."""
+        time.sleep(86400)
 
-    # Get list of all channels from the db
-    db_channels = configuration.session.query(configuration.models.Channel).all()
 
-    # If the list of channels in the db is empty
-    if db_channels == []:
-        get_channel_list()
+@app.before_first_request
+def start_update_thread():
+    thread = threading.Thread(target=update_list)
+    thread.start()
 
-        db_channels = configuration.session.query(configuration.models.Channel).all()
 
-    # Get the date of the last update
-    db_last_update = configuration.session.query(configuration.models.LastUpdate).first()
+class SearchTextEP(fr.Resource):
+    def __init__(self):
+        super(SearchTextEP, self).__init__()
 
-    # If this is the first update set yesterday's date
-    if db_last_update is None:
-        db_last_update = configuration.models.LastUpdate(datetime.date.today() - datetime.timedelta(1))
+    search_args = \
+        {
+            'search_text': webargs.fields.Str(required=True)
+        }
 
-        configuration.session.add(db_last_update)
+    @fp.use_args(search_args)
+    def get(self, args):
+        """Get search results for the search_text."""
 
-    # For each day until six days from today
-    while db_last_update.date < datetime.date.today() + datetime.timedelta(6):
-        db_last_update.date += datetime.timedelta(1)
+        search_text = args['search_text']
 
-        # Create the shows' info request
-        shows_url = 'https://tvnetvoz.vodafone.pt/sempre-consigo/epg.do?action=getPrograms&chanids='
+        if len(search_text) < 3:
+            return flask.jsonify({'search': 'Search text needs at least three characters!'})
 
-        first = True
+        db_shows = processing.search_db([search_text])
 
-        for c in db_channels:
-            if first:
-                first = False
-                shows_url += str(c.pid)
-            else:
-                shows_url += ',' + str(c.pid)
+        if len(db_shows) != 0:
+            return flask.jsonify({'search': 'shows', 'shows': list_to_json(db_shows)})
 
-        shows_url += '&day=' + db_last_update.date.strftime('%Y-%m-%d')
+        shows = processing.search_show_information(search_text)
 
-        print(shows_url)
+        return flask.jsonify({'search': 'trakt', 'shows': shows})
 
-        # Get the shows info for our list of channels
-        shows_json = urllib.request.urlopen(shows_url).read()
 
-        # Parse the list of channels from the request
-        channels = json.loads(shows_json)['result']['channels']
+class SearchIdEP(fr.Resource):
+    def __init__(self):
+        super(SearchIdEP, self).__init__()
 
-        for c in channels:
-            channel_shows = c['programList']
-            channel_id = configuration.session.query(configuration.models.Channel).filter(
-                configuration.models.Channel.pid == c['id']).first().id
+    search_args = \
+        {
+            'search_id': webargs.fields.Str(required=True),
+            'is_show': webargs.fields.Bool(required=True)
+        }
 
-            for s in channel_shows:
-                program_title = s['programTitle']
-                pos = program_title.find(':T')
+    @fp.use_args(search_args)
+    def get(self, args):
+        """Get search results for the search id."""
 
-                # If it's referent to a show from a different day
-                if s['date'] != db_last_update.date.strftime('%d-%m-%Y'):
-                    continue
+        search_id = args['search_id']
+        is_show = args['is_show']
 
-                # If it is an episode of a series
-                if pos != -1:
-                    show_title = program_title[:pos]
-                    show_rem = program_title[pos + 2:].split()
+        translations = processing.get_translations(search_id, is_show)
 
-                    show_season = int(show_rem[0])
+        db_shows = processing.search_db(translations)
 
-                    # Some shows seem to be missing the episode info
-                    try:
-                        show_episode = int(show_rem[1][3:])
-                    except:
-                        print(program_title)
-                        show_episode = 0
-                else:
-                    show_title = program_title
-                    show_season = 0
-                    show_episode = 0
+        return flask.jsonify({'search': 'shows', 'shows': list_to_json(db_shows)})
 
-                show_datetime = db_last_update.date.strftime('%Y-%m-%d ') + s['startTime']
 
-                # Remove the last character in order to find the results for both SD and HD
-                if s['serid'] is not None:
-                    series_id = s['serid'][:-1]
-                else:
-                    series_id = None
+api.add_resource(SearchTextEP, '/0.1/search_text', endpoint='search_text')
+api.add_resource(SearchIdEP, '/0.1/search_id', endpoint='search_id')
 
-                # Remove the first character in order to find the results for both SD and HD
-                pid = s['pid'][1:]
 
-                # Add the show to the db
-                show = configuration.models.Show(pid, series_id, show_title, show_season, show_episode,
-                                                 s['programDetails'], show_datetime, s['duration'], channel_id)
-
-                configuration.session.add(show)
-
-        configuration.session.commit()
-
-
-def search_show_information(search_text):
-    """
-    Request a search to trakt and return the results.
-
-    :param search_text: the search text introduced by the user.
-    :return: the list of results.
-    """
-
-    shows_request = urllib.request.Request('https://api.trakt.tv/search/show?query=' + urllib.parse.quote(search_text))
-    shows_request.add_header('trakt-api-key', configuration.trakt_key)
-
-    shows_json = urllib.request.urlopen(shows_request).read()
-
-    # Parse the list of shows from the request
-    shows = json.loads(shows_json)
-
-    movies_request = urllib.request.Request(
-        'https://api.trakt.tv/search/movie?query=' + urllib.parse.quote(search_text))
-    movies_request.add_header('trakt-api-key', configuration.trakt_key)
-
-    movies_json = urllib.request.urlopen(movies_request).read()
-
-    # Parse the list of movies from the request
-    movies = json.loads(movies_json)
-
-    results = []
-
-    for s in shows:
-        imdb_id = s['show']['ids']['imdb']
-
-        if imdb_id is None or configuration.omdb_key is None:
-            results.append((True, s['show']['title'], s['show']['year'], 'N/A', s['show']['ids']['slug']))
-            continue
-
-        show_json = urllib.request.urlopen(
-            'http://www.omdbapi.com/?apikey=' + configuration.omdb_key + '&i=' + s['show']['ids']['imdb']).read()
-
-        # Parse the show from the request
-        show = json.loads(show_json)
-
-        # When the omdb can't find the information
-        if show['Response']:
-            results.append((True, s['show']['title'], s['show']['year'], 'N/A', s['show']['ids']['slug']))
-            continue
-
-        results.append((True, show['Title'], s['show']['year'], show['Poster'], s['show']['ids']['slug']))
-
-    for m in movies:
-        imdb_id = m['movie']['ids']['imdb']
-
-        if imdb_id is None or configuration.omdb_key is None:
-            results.append((False, m['movie']['title'], m['movie']['year'], 'N/A', m['movie']['ids']['slug']))
-            continue
-
-        movie_json = urllib.request.urlopen(
-            'http://www.omdbapi.com/?apikey=' + configuration.omdb_key + '&i=' + m['movie']['ids']['imdb']).read()
-
-        # Parse the movie from the request
-        movie = json.loads(movie_json)
-
-        # When the omdb can't find the information
-        if movie['Response']:
-            results.append((False, m['movie']['title'], m['movie']['year'], 'N/A', m['movie']['ids']['slug']))
-            continue
-
-        results.append((False, movie['Title'], m['movie']['year'], movie['Poster'], m['movie']['ids']['slug']))
-
-    return results
-
-
-def get_translations(trakt_slug, is_show):
-    """
-    Get the various possible titles for the selected title, in both english and portuguese.
-
-    :param trakt_slug: the selected title.
-    :param is_show: true if it is a show.
-    :return: the various possible titles.
-    """
-
-    if is_show:
-        translations_request = urllib.request.Request('https://api.trakt.tv/shows/' + trakt_slug + '/translations')
-    else:
-        translations_request = urllib.request.Request('https://api.trakt.tv/movies/' + trakt_slug + '/translations')
-
-    translations_request.add_header('trakt-api-key', configuration.trakt_key)
-
-    try:
-        translations_json = urllib.request.urlopen(translations_request).read()
-    except urllib.error.HTTPError:
-        print('Slug was not found!')
-        return []
-
-    # Parse the list of translations from the request
-    translations = json.loads(translations_json)
-
-    results = set()
-
-    for t in translations:
-        if t['language'] == 'en' or t['language'] == 'pt':
-            results.add(t['title'])
-
-    if is_show:
-        aliases_request = urllib.request.Request('https://api.trakt.tv/shows/' + trakt_slug + '/aliases')
-    else:
-        aliases_request = urllib.request.Request('https://api.trakt.tv/movies/' + trakt_slug + '/aliases')
-
-    aliases_request.add_header('trakt-api-key', configuration.trakt_key)
-
-    try:
-        aliases_json = urllib.request.urlopen(aliases_request).read()
-    except urllib.error.HTTPError:
-        print('Slug was not found!')
-        return []
-
-    # Parse the list of translations from the request
-    aliases = json.loads(aliases_json)
-
-    for t in aliases:
-        if t['country'] == 'us' or t['country'] == 'pt':
-            results.add(t['title'])
-
-    return results
-
-
-def search_db(search_list):
-    """
-    Get the results of the search in the DB, using all the texts from the search list.
-
-    :param search_list: the list of texts to search for in the DB.
-    :return: results of the search in the DB.
-    """
-
-    results = set()
-
-    for search_text in search_list:
-        print('Original search text: %s' % search_text)
-
-        # Split the search text into a list of words
-        search_words = re.compile('[^0-9A-Za-zÀ-ÿ]+').split(search_text)
-
-        print('List of words obtained from the search text: %s' % str(search_words))
-
-        # Create a search pattern to search the DB
-        search_pattern = ''
-
-        for w in search_words:
-            if w != '':
-                search_pattern += '%%%s' % w
-
-        search_pattern = '%s%%' % search_pattern
-
-        print('Search patter: %s' % search_pattern)
-
-        db_shows = configuration.session.query(configuration.models.Show).filter(
-            configuration.models.Show.show_title.ilike(search_pattern)).all()
-
-        for s in db_shows:
-            results.add(s)
-
-    return results
-
-
-def search_db_id(show_id, is_show):
-    """
-    Get the results of the search in the DB, using show id (either series_id or pid).
-
-    :param show_id: the id to search for.
-    :param is_show: true if it is a show.
-    :return: results of the search in the DB.
-    """
-
-    if is_show:
-        return configuration.session.query(configuration.models.Show).filter(
-            configuration.models.Show.series_id == show_id).all()
-    else:
-        return configuration.session.query(configuration.models.Show).filter(
-            configuration.models.Show.pid == show_id).all()
-
-
-def main():
-    # update_show_list()
-
-    search_text = 'blindspot'
-
-    db_shows = search_db([search_text])
-
-    print('Found %d results:' % len(db_shows))
-
-    for s in db_shows:
-        print(s)
-
-    # shows = search_show_information(search_text)
-    #
-    # for s in shows:
-    #     print(s)
-    #
-    # translations = ['Holmes']
-
-    # translations = get_translations('sicario-day-of-the-soldado-2018', False)
-    #
-    # db_shows = search_db(translations)
-    #
-    # for s in db_shows:
-    #     print(s)
-
-
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    app.run(debug=True, threaded=True)

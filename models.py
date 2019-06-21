@@ -1,3 +1,5 @@
+import json
+
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, Date, DateTime
 
@@ -60,7 +62,17 @@ class Show(base):
         return 'id: %d; pid: %d; series_id: %s; show_title: %s; show_season: %d; show_episode: %d; show_details: %s; ' \
                'date_time: %s; duration: %d; channel_id: %d' % \
                (self.id, self.pid, self.series_id, self.show_title, self.show_season, self.show_episode,
-                self.show_details,str(self.date_time), self.duration, self.channel_id)
+                self.show_details, str(self.date_time), self.duration, self.channel_id)
+
+    # def to_dict(self):
+    #     return {'id': self.id, 'pid': self.pid, 'series_id': self.series_id, 'show_title': self.show_title,
+    #             'show_season': self.show_season, 'show_episode': self.show_episode, 'show_details': self.show_details,
+    #             'date_time': self.date_time, 'duration': self.duration, 'channel_id': self.channel_id}
+
+    def to_dict(self):
+        return {'id': self.id, 'show_title': self.show_title,
+                'show_season': self.show_season, 'show_episode': self.show_episode, 'show_details': self.show_details,
+                'date_time': self.date_time}
 
 
 class ShowMatch(base):
