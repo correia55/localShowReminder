@@ -133,6 +133,8 @@ def update_show_list():
 
         configuration.session.commit()
 
+    print('Update to show lists is complete!')
+
 
 def search_show_information(search_text):
     """
@@ -193,7 +195,8 @@ def search_show_information(search_text):
 
         if imdb_id is None or configuration.omdb_key is None:
             results.append(
-                {'is_show': False, 'show_title': m['movie']['title'], 'show_year': m['movie']['year'], 'show_image': 'N/A',
+                {'is_show': False, 'show_title': m['movie']['title'], 'show_year': m['movie']['year'],
+                 'show_image': 'N/A',
                  'show_slug': m['movie']['ids']['slug']})
             continue
 
@@ -206,18 +209,20 @@ def search_show_information(search_text):
         # When the omdb can't find the information
         if movie['Response']:
             results.append(
-                {'is_show': False, 'show_title': m['movie']['title'], 'show_year': m['movie']['year'], 'show_image': 'N/A',
+                {'is_show': False, 'show_title': m['movie']['title'], 'show_year': m['movie']['year'],
+                 'show_image': 'N/A',
                  'show_slug': m['movie']['ids']['slug']})
             continue
 
         results.append(
-            {'is_show': False, 'show_title': m['movie']['title'], 'show_year': m['movie']['year'], 'show_image': movie['Poster'],
+            {'is_show': False, 'show_title': m['movie']['title'], 'show_year': m['movie']['year'],
+             'show_image': movie['Poster'],
              'show_slug': m['movie']['ids']['slug']})
 
     return results
 
 
-def get_translations(trakt_slug, is_show):
+def get_titles(trakt_slug, is_show):
     """
     Get the various possible titles for the selected title, in both english and portuguese.
 
@@ -271,11 +276,12 @@ def get_translations(trakt_slug, is_show):
     return results
 
 
-def search_db(search_list):
+def search_db(search_list, only_between=True):
     """
     Get the results of the search in the DB, using all the texts from the search list.
 
     :param search_list: the list of texts to search for in the DB.
+    :param only_between: true when other characters can only be between words.
     :return: results of the search in the DB.
     """
 
@@ -285,7 +291,7 @@ def search_db(search_list):
         print('Original search text: %s' % search_text)
 
         # Split the search text into a list of words
-        search_words = re.compile('[^0-9A-Za-zÀ-ÿ]+').split(search_text)
+        search_words = re.compile('[^0-9A-Za-zÀ-ÿ.]+').split(search_text)
 
         print('List of words obtained from the search text: %s' % str(search_words))
 
@@ -294,9 +300,15 @@ def search_db(search_list):
 
         for w in search_words:
             if w != '':
-                search_pattern += '%%%s' % w
+                if search_pattern == '' and only_between:
+                    search_pattern += '%s' % w
+                else:
+                    search_pattern += '%%%s' % w
 
-        search_pattern = '%s%%' % search_pattern
+        if only_between:
+            search_pattern = '%s' % search_pattern
+        else:
+            search_pattern = '%s%%' % search_pattern
 
         print('Search pattern: %s' % search_pattern)
 
@@ -324,6 +336,52 @@ def search_db_id(show_id, is_show):
     else:
         return configuration.session.query(configuration.models.Show).filter(
             configuration.models.Show.pid == show_id).all()
+
+
+def register_reminder(show_id, is_show, reminder_type, show_season, show_episode):
+    """
+    Create a reminder for the given data.
+
+    :param show_id: the id to search for.
+    :param is_show: true if it is a show.
+    :param reminder_type: 0 if it's a DB and 1 otherwise.
+    :param show_season: show season for the reminder.
+    :param show_episode: show episode for the reminder.
+    """
+
+    configuration.session.add(
+        configuration.models.ShowReminder(show_id, is_show, reminder_type, show_season, show_episode))
+
+    configuration.session.commit()
+
+
+def remove_reminder(reminder_id):
+    """
+    Delete an id, if the request was sent by the owner.
+
+    :param reminder_id: the id of the reminder.
+    """
+
+    reminder = configuration.session.query(configuration.models.ShowReminder).filter(configuration.models.ShowReminder.id == reminder_id).first()
+    configuration.session.delete(reminder)
+
+    configuration.session.commit()
+
+
+def process_reminders():
+    """Process the reminders that exist in the DB."""
+
+    reminders = configuration.session.query(configuration.models.ShowReminder).all()
+
+    for r in reminders:
+        if r.reminder_type == 0:
+            db_shows = search_db_id(r.show_id, r.is_show)
+        else:
+            titles = get_titles(r.show_id, r.is_show)
+
+            db_shows = search_db(titles)
+
+        # TODO: Send notification with shows found
 
 
 def main():

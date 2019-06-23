@@ -1,5 +1,3 @@
-import json
-
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, Date, DateTime
 
@@ -87,3 +85,25 @@ class ShowMatch(base):
         self.imdb_id = imdb_id
         self.show_id = show_id
         self.verified = verified
+
+
+class ShowReminder(base):
+    __tablename__ = 'ShowReminder'
+
+    id = Column(Integer, primary_key=True)
+
+    # Corresponds to the show's series_id or pid, if the series_id is null
+    show_id = Column(String, nullable=False)
+
+    is_show = Column(Boolean, nullable=False)
+    reminder_type = Column(Integer, nullable=False)
+
+    show_season = Column(Integer)
+    show_episode = Column(Integer)
+
+    def __init__(self, show_id, is_show, reminder_type, show_season, show_episode):
+        self.show_id = show_id
+        self.is_show = is_show
+        self.show_season = show_season
+        self.show_episode = show_episode
+        self.reminder_type = reminder_type

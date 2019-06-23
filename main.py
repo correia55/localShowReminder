@@ -37,6 +37,8 @@ def update_list():
     while True:
         processing.update_show_list()
 
+        processing.process_reminders()
+
         time.sleep(86400)
 
 
@@ -46,13 +48,14 @@ def start_update_thread():
     thread.start()
 
 
-class SearchTextEP(fr.Resource):
+class SearchEP(fr.Resource):
     def __init__(self):
-        super(SearchTextEP, self).__init__()
+        super(SearchEP, self).__init__()
 
     search_args = \
         {
-            'search_text': webargs.fields.Str(required=True)
+            'search_text': webargs.fields.Str(required=True),
+            'type': webargs.fields.Str(required=True)
         }
 
     @fp.use_args(search_args)
@@ -60,46 +63,87 @@ class SearchTextEP(fr.Resource):
         """Get search results for the search_text."""
 
         search_text = args['search_text']
+        type = args['type']
 
         if len(search_text) < 3:
             return flask.jsonify({'search': 'Search text needs at least three characters!'})
 
-        db_shows = processing.search_db([search_text])
+        if type == 'DB':
+            db_shows = processing.search_db([search_text], only_between=False)
 
-        if len(db_shows) != 0:
-            return flask.jsonify({'search': 'shows', 'shows': list_to_json(db_shows)})
+            if len(db_shows) != 0:
+                return flask.jsonify({'search': 'shows', 'shows': list_to_json(db_shows)})
+        elif type != 'TRAKT':
+            return flask.jsonify({'search': 'Unknown type!'})
 
         shows = processing.search_show_information(search_text)
 
         return flask.jsonify({'search': 'trakt', 'shows': shows})
 
 
-class SearchIdEP(fr.Resource):
+class ReminderEP(fr.Resource):
     def __init__(self):
-        super(SearchIdEP, self).__init__()
+        super(ReminderEP, self).__init__()
 
     search_args = \
         {
-            'search_id': webargs.fields.Str(required=True),
-            'is_show': webargs.fields.Bool(required=True)
+            'show_id': webargs.fields.Str(required=True),
+            'is_show': webargs.fields.Bool(required=True),
+            'type': webargs.fields.Str(required=True),
+            'show_season': webargs.fields.Int(),
+            'show_episode': webargs.fields.Int()
         }
 
     @fp.use_args(search_args)
     def get(self, args):
         """Get search results for the search id."""
 
-        search_id = args['search_id']
+        # Search_id will be either a seriesid or a pid depending on whether its a show or not
+        show_id = args['show_id']
         is_show = args['is_show']
+        reminder_type = args['type']
 
-        translations = processing.get_translations(search_id, is_show)
+        show_season = None
+        show_episode = None
 
-        db_shows = processing.search_db(translations)
+        for k, v in args.items():
+            if v is None:
+                continue
 
-        return flask.jsonify({'search': 'shows', 'shows': list_to_json(db_shows)})
+            if k == 'show_season':
+                show_season = v
+            elif k == 'show_episode':
+                show_episode = v
+
+        if reminder_type == 'DB':
+            reminder_type = 0
+        elif reminder_type == 'TRAKT':
+            reminder_type = 1
+        else:
+            return flask.jsonify({'reminder': 'Unknown type!'})
+
+        processing.register_reminder(show_id, is_show, reminder_type, show_season, show_episode)
+
+        return flask.jsonify({'reminder': 'Reminder successfully registered!'})
+
+    delete_args = \
+        {
+            'reminder_id': webargs.fields.Int(required=True)
+        }
+
+    @fp.use_args(delete_args)
+    def delete(self, args):
+        """Get search results for the search id."""
+
+        reminder_id = args['reminder_id']
+
+        processing.remove_reminder(reminder_id)
+
+        return flask.jsonify({'reminder': 'Reminder successfully removed!'})
 
 
-api.add_resource(SearchTextEP, '/0.1/search_text', endpoint='search_text')
-api.add_resource(SearchIdEP, '/0.1/search_id', endpoint='search_id')
+api.add_resource(SearchEP, '/0.1/search', endpoint='search')
+api.add_resource(ReminderEP, '/0.1/reminder', endpoint='reminder')
 
 
 if __name__ == '__main__':
