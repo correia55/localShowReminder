@@ -1,7 +1,7 @@
 import flask
 import webargs
 import threading
-import time
+import datetime
 
 import flask_restful as fr
 import flask_httpauth as fh
@@ -10,8 +10,30 @@ import webargs.flaskparser as fp
 
 import processing
 
+
+def daily_tasks():
+    """Run the daily tasks."""
+
+    processing.clear_show_list()
+
+    processing.update_show_list()
+
+    processing.process_reminders()
+
+    # Schedule the new update
+    next_update = datetime.datetime.now() + datetime.timedelta(days=1)
+    next_update = next_update.replace(hour=10, minute=0)
+    threading.Timer((next_update - datetime.datetime.now()).seconds, daily_tasks).start()
+
+
+class FlaskApp(flask.Flask):
+    def __init__(self, *args, **kwargs):
+        threading.Timer(10, daily_tasks).start()
+        super(FlaskApp, self).__init__(*args, **kwargs)
+
+
 basic_auth = fh.HTTPBasicAuth()
-app = flask.Flask(__name__)
+app = FlaskApp(__name__)
 api = fr.Api(app)
 
 # Limit the number of requests that can be made in a certain time period
@@ -20,32 +42,6 @@ limiter = fl.Limiter(
     key_func=fl.util.get_remote_address,
     default_limits=['5 per second', '50 per minute', '1000 per day']
 )
-
-
-def list_to_json(list_of_objects):
-    result = []
-
-    for o in list_of_objects:
-        result.append(o.to_dict())
-
-    return result
-
-
-def update_list():
-    """Update the list of movies every day."""
-
-    while True:
-        processing.update_show_list()
-
-        processing.process_reminders()
-
-        time.sleep(86400)
-
-
-@app.before_first_request
-def start_update_thread():
-    thread = threading.Thread(target=update_list)
-    thread.start()
 
 
 class SearchEP(fr.Resource):
@@ -72,7 +68,7 @@ class SearchEP(fr.Resource):
             db_shows = processing.search_db([search_text], only_between=False)
 
             if len(db_shows) != 0:
-                return flask.jsonify({'search': 'shows', 'shows': list_to_json(db_shows)})
+                return flask.jsonify({'search': 'shows', 'shows': processing.list_to_json(db_shows)})
         elif type != 'TRAKT':
             return flask.jsonify({'search': 'Unknown type!'})
 
@@ -147,4 +143,4 @@ api.add_resource(ReminderEP, '/0.1/reminder', endpoint='reminder')
 
 
 if __name__ == '__main__':
-    app.run(debug=True, threaded=True)
+    app.run(debug=True, threaded=True, use_reloader=False)

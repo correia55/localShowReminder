@@ -8,6 +8,17 @@ import re
 import configuration
 
 
+def list_to_json(list_of_objects):
+    """Create a list with the result of to_dict for each element."""
+
+    result = []
+
+    for o in list_of_objects:
+        result.append(o.to_dict())
+
+    return result
+
+
 def get_channel_list(ignore_hd=True):
     """
     Make a request for the channel list and add them to the db.
@@ -26,16 +37,28 @@ def get_channel_list(ignore_hd=True):
 
     # Add the list of channels to the database
     for c in channels:
-        if ignore_hd and 'HD' not in c['name']:
-            channel = configuration.models.Channel(c['id'], c['name'])
+        if not ignore_hd or 'HD' not in c['name']:
+            channel = configuration.models.Channel(c['id'], c['name'].strip())
 
             configuration.session.add(channel)
 
     configuration.session.commit()
 
 
+def clear_show_list():
+    """Delete entries with more than 7 days old, from the DB."""
+
+    print('Clear show list!')
+
+    today_start = datetime.date.today()
+    today_start.replace(hour=0, minute=0, second=0)
+
+    configuration.session.query(configuration.models.Show).filter(configuration.models.Show.date_time < today_start - datetime.timedelta(7)).delete()
+    configuration.session.commit()
+
+
 def update_show_list():
-    """Make a request for the show list and update the db."""
+    """Make a request for the show list and update the DB."""
 
     print('Updating show list...')
 
@@ -43,7 +66,7 @@ def update_show_list():
     db_channels = configuration.session.query(configuration.models.Channel).all()
 
     # If the list of channels in the db is empty
-    if db_channels == []:
+    if not db_channels:
         get_channel_list()
 
         db_channels = configuration.session.query(configuration.models.Channel).all()
@@ -51,7 +74,7 @@ def update_show_list():
     # Get the date of the last update
     db_last_update = configuration.session.query(configuration.models.LastUpdate).first()
 
-    # If this is the first update set yesterday's date
+    # If this is the first update set yesterday's date as the last update
     if db_last_update is None:
         db_last_update = configuration.models.LastUpdate(datetime.date.today() - datetime.timedelta(1))
 
@@ -61,7 +84,7 @@ def update_show_list():
     while db_last_update.date < datetime.date.today() + datetime.timedelta(6):
         db_last_update.date += datetime.timedelta(1)
 
-        # Create the shows' info request
+        # Create the shows' info request url
         shows_url = 'https://tvnetvoz.vodafone.pt/sempre-consigo/epg.do?action=getPrograms&chanids='
 
         first = True
@@ -133,18 +156,23 @@ def update_show_list():
 
         configuration.session.commit()
 
-    print('Update to show lists is complete!')
+    print('Update show lists is complete!')
 
 
-def search_show_information(search_text):
+def search_show_information_by_type(search_text, show_type):
     """
-    Request a search to trakt and return the results.
+    Uses trakt and omdb to search for shows, of a given type, using a given search text.
 
     :param search_text: the search text introduced by the user.
+    :param show_type: 'show' for tv shows and 'movie' for movies.
     :return: the list of results.
     """
 
-    shows_request = urllib.request.Request('https://api.trakt.tv/search/show?query=' + urllib.parse.quote(search_text))
+    results = []
+
+    # Make the request
+    shows_request = urllib.request.Request(
+        'https://api.trakt.tv/search/%s?query=%s' % (show_type, urllib.parse.quote(search_text)))
     shows_request.add_header('trakt-api-key', configuration.trakt_key)
 
     shows_json = urllib.request.urlopen(shows_request).read()
@@ -152,90 +180,60 @@ def search_show_information(search_text):
     # Parse the list of shows from the request
     shows = json.loads(shows_json)
 
-    movies_request = urllib.request.Request(
-        'https://api.trakt.tv/search/movie?query=' + urllib.parse.quote(search_text))
-    movies_request.add_header('trakt-api-key', configuration.trakt_key)
-
-    movies_json = urllib.request.urlopen(movies_request).read()
-
-    # Parse the list of movies from the request
-    movies = json.loads(movies_json)
-
-    results = []
+    is_show = show_type == 'show'
 
     for s in shows:
-        imdb_id = s['show']['ids']['imdb']
+        imdb_id = s[show_type]['ids']['imdb']
+
+        show_dict = {'is_show': is_show, 'show_title': s[show_type]['title'], 'show_year': s[show_type]['year'],
+                     'show_image': 'N/A', 'show_slug': s[show_type]['ids']['slug']}
 
         if imdb_id is None or configuration.omdb_key is None:
-            results.append(
-                {'is_show': True, 'show_title': s['show']['title'], 'show_year': s['show']['year'], 'show_image': 'N/A',
-                 'show_slug': s['show']['ids']['slug']})
+            results.append(show_dict)
             continue
 
         show_json = urllib.request.urlopen(
-            'http://www.omdbapi.com/?apikey=' + configuration.omdb_key + '&i=' + s['show']['ids']['imdb']).read()
+            'http://www.omdbapi.com/?apikey=%s&i=%s' % (configuration.omdb_key, s[show_type]['ids']['imdb'])).read()
 
         # Parse the show from the request
         show = json.loads(show_json)
 
         # When the omdb can't find the information
         if show['Response']:
-            results.append(
-                {'is_show': True, 'show_title': s['show']['title'], 'show_year': s['show']['year'], 'show_image': 'N/A',
-                 'show_slug': s['show']['ids']['slug']})
+            results.append(show_dict)
             continue
 
-        results.append(
-            {'is_show': True, 'show_title': s['show']['title'], 'show_year': s['show']['year'],
-             'show_image': show['Poster'],
-             'show_slug': s['show']['ids']['slug']})
+        show_dict['show_image'] = show['Poster']
 
-    for m in movies:
-        imdb_id = m['movie']['ids']['imdb']
-
-        if imdb_id is None or configuration.omdb_key is None:
-            results.append(
-                {'is_show': False, 'show_title': m['movie']['title'], 'show_year': m['movie']['year'],
-                 'show_image': 'N/A',
-                 'show_slug': m['movie']['ids']['slug']})
-            continue
-
-        movie_json = urllib.request.urlopen(
-            'http://www.omdbapi.com/?apikey=' + configuration.omdb_key + '&i=' + m['movie']['ids']['imdb']).read()
-
-        # Parse the movie from the request
-        movie = json.loads(movie_json)
-
-        # When the omdb can't find the information
-        if movie['Response']:
-            results.append(
-                {'is_show': False, 'show_title': m['movie']['title'], 'show_year': m['movie']['year'],
-                 'show_image': 'N/A',
-                 'show_slug': m['movie']['ids']['slug']})
-            continue
-
-        results.append(
-            {'is_show': False, 'show_title': m['movie']['title'], 'show_year': m['movie']['year'],
-             'show_image': movie['Poster'],
-             'show_slug': m['movie']['ids']['slug']})
+        results.append(show_dict)
 
     return results
 
 
-def get_titles(trakt_slug, is_show):
+def search_show_information(search_text):
+    """
+    Uses trakt and omdb to search for shows using a given search text.
+
+    :param search_text: the search text introduced by the user.
+    :return: the list of results.
+    """
+
+    results = search_show_information_by_type(search_text, 'show')
+    results += search_show_information_by_type(search_text, 'movie')
+
+    return results
+
+
+def get_titles(trakt_slug, show_type):
     """
     Get the various possible titles for the selected title, in both english and portuguese.
 
     :param trakt_slug: the selected title.
-    :param is_show: true if it is a show.
+    :param show_type: 'show' for tv shows and 'movie' for movies.
     :return: the various possible titles.
     """
 
-    if is_show:
-        translations_request = urllib.request.Request('https://api.trakt.tv/shows/' + trakt_slug + '/translations')
-    else:
-        translations_request = urllib.request.Request('https://api.trakt.tv/movies/' + trakt_slug + '/translations')
-
+    translations_request = urllib.request.Request('https://api.trakt.tv/%ss/%s/translations' % (show_type, trakt_slug))
     translations_request.add_header('trakt-api-key', configuration.trakt_key)
 
     try:
@@ -253,11 +251,7 @@ def get_titles(trakt_slug, is_show):
         if t['language'] == 'en' or t['language'] == 'pt':
             results.add(t['title'])
 
-    if is_show:
-        aliases_request = urllib.request.Request('https://api.trakt.tv/shows/' + trakt_slug + '/aliases')
-    else:
-        aliases_request = urllib.request.Request('https://api.trakt.tv/movies/' + trakt_slug + '/aliases')
-
+    aliases_request = urllib.request.Request('https://api.trakt.tv/%ss/%s/aliases' % (show_type, trakt_slug))
     aliases_request.add_header('trakt-api-key', configuration.trakt_key)
 
     try:
@@ -266,7 +260,7 @@ def get_titles(trakt_slug, is_show):
         print('Slug was not found!')
         return []
 
-    # Parse the list of translations from the request
+    # Parse the list of aliases from the request
     aliases = json.loads(aliases_json)
 
     for t in aliases:
@@ -362,7 +356,8 @@ def remove_reminder(reminder_id):
     :param reminder_id: the id of the reminder.
     """
 
-    reminder = configuration.session.query(configuration.models.ShowReminder).filter(configuration.models.ShowReminder.id == reminder_id).first()
+    reminder = configuration.session.query(configuration.models.ShowReminder).filter(
+        configuration.models.ShowReminder.id == reminder_id).first()
     configuration.session.delete(reminder)
 
     configuration.session.commit()
@@ -377,39 +372,13 @@ def process_reminders():
         if r.reminder_type == 0:
             db_shows = search_db_id(r.show_id, r.is_show)
         else:
-            titles = get_titles(r.show_id, r.is_show)
+            if r.is_show:
+                show_type = 'show'
+            else:
+                show_type = 'movie'
+
+            titles = get_titles(r.show_id, show_type)
 
             db_shows = search_db(titles)
 
         # TODO: Send notification with shows found
-
-
-def main():
-    # update_show_list()
-
-    search_text = 'blindspot'
-
-    db_shows = search_db([search_text])
-
-    print('Found %d results:' % len(db_shows))
-
-    for s in db_shows:
-        print(s)
-
-    # shows = search_show_information(search_text)
-    #
-    # for s in shows:
-    #     print(s)
-    #
-    # translations = ['Holmes']
-
-    # translations = get_translations('sicario-day-of-the-soldado-2018', False)
-    #
-    # db_shows = search_db(translations)
-    #
-    # for s in db_shows:
-    #     print(s)
-
-
-if __name__ == "__main__":
-    main()
