@@ -77,8 +77,8 @@ class ShowMatch(base):
     __tablename__ = 'ShowMatch'
 
     id = Column(Integer, primary_key=True)
-    imdb_id = Column(Integer, unique=True)
-    show_id = Column(Integer, unique=True)  # Corresponds to the show's series_id or pid, if the series_id is null
+    imdb_id = Column(String)
+    show_id = Column(String)  # Corresponds to the show's series_id or pid, if the series_id is null
     verified = Column(Boolean)
 
     def __init__(self, imdb_id, show_id, verified=False):
@@ -100,10 +100,32 @@ class ShowReminder(base):
 
     show_season = Column(Integer)
     show_episode = Column(Integer)
+    comparison_type = Column(Integer)
 
-    def __init__(self, show_id, is_show, reminder_type, show_season, show_episode):
+    def __init__(self, show_id, is_show, reminder_type, show_season, show_episode, comparison_type):
         self.show_id = show_id
         self.is_show = is_show
+        self.reminder_type = reminder_type
         self.show_season = show_season
         self.show_episode = show_episode
-        self.reminder_type = reminder_type
+        self.comparison_type = comparison_type
+
+    def __str__(self):
+        if self.show_season is None:
+            show_season = -1
+        else:
+            show_season = self.show_season
+
+        if self.show_episode is None:
+            show_episode = -1
+        else:
+            show_episode = self.show_season
+
+        if self.comparison_type is None:
+            comparison_type = -1
+        else:
+            comparison_type = self.comparison_type
+
+        return 'id: %d; show_id: %s; is_show: %r; reminder_type: %d; show_season: %d; show_episode: %d; ' \
+               'comparison_type: %d' % \
+               (self.id, self.show_id, self.is_show, self.reminder_type, show_season, show_episode, comparison_type)

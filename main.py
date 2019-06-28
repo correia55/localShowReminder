@@ -3,10 +3,13 @@ import webargs
 import threading
 import datetime
 
+from flask_cors import CORS, cross_origin
+
 import flask_restful as fr
 import flask_httpauth as fh
 import flask_limiter as fl
 import webargs.flaskparser as fp
+
 
 import processing
 
@@ -14,11 +17,14 @@ import processing
 def daily_tasks():
     """Run the daily tasks."""
 
+    # Get the date of the last update
+    last_update_date = processing.get_last_update()
+
     processing.clear_show_list()
 
     processing.update_show_list()
 
-    processing.process_reminders()
+    processing.process_reminders(last_update_date)
 
     # Schedule the new update
     next_update = datetime.datetime.now() + datetime.timedelta(days=1)
@@ -34,6 +40,7 @@ class FlaskApp(flask.Flask):
 
 basic_auth = fh.HTTPBasicAuth()
 app = FlaskApp(__name__)
+CORS(app, support_credentials=True)
 api = fr.Api(app)
 
 # Limit the number of requests that can be made in a certain time period
@@ -55,21 +62,22 @@ class SearchEP(fr.Resource):
         }
 
     @fp.use_args(search_args)
+    @cross_origin(supports_credentials=True)
     def get(self, args):
         """Get search results for the search_text."""
 
         search_text = args['search_text']
-        type = args['type']
+        source_type = args['type']
 
         if len(search_text) < 3:
             return flask.jsonify({'search': 'Search text needs at least three characters!'})
 
-        if type == 'DB':
+        if source_type == 'DB':
             db_shows = processing.search_db([search_text], only_between=False)
 
             if len(db_shows) != 0:
                 return flask.jsonify({'search': 'shows', 'shows': processing.list_to_json(db_shows)})
-        elif type != 'TRAKT':
+        elif source_type != 'TRAKT':
             return flask.jsonify({'search': 'Unknown type!'})
 
         shows = processing.search_show_information(search_text)
@@ -87,11 +95,13 @@ class ReminderEP(fr.Resource):
             'is_show': webargs.fields.Bool(required=True),
             'type': webargs.fields.Str(required=True),
             'show_season': webargs.fields.Int(),
-            'show_episode': webargs.fields.Int()
+            'show_episode': webargs.fields.Int(),
+            'comparison_type': webargs.fields.Int()
         }
 
     @fp.use_args(search_args)
-    def get(self, args):
+    @cross_origin(supports_credentials=True)
+    def post(self, args):
         """Get search results for the search id."""
 
         # Search_id will be either a seriesid or a pid depending on whether its a show or not
@@ -101,6 +111,7 @@ class ReminderEP(fr.Resource):
 
         show_season = None
         show_episode = None
+        comparison_type = None
 
         for k, v in args.items():
             if v is None:
@@ -110,6 +121,8 @@ class ReminderEP(fr.Resource):
                 show_season = v
             elif k == 'show_episode':
                 show_episode = v
+            elif k == 'comparison_type':
+                comparison_type = v
 
         if reminder_type == 'DB':
             reminder_type = 0
@@ -118,7 +131,7 @@ class ReminderEP(fr.Resource):
         else:
             return flask.jsonify({'reminder': 'Unknown type!'})
 
-        processing.register_reminder(show_id, is_show, reminder_type, show_season, show_episode)
+        processing.register_reminder(show_id, is_show, reminder_type, show_season, show_episode, comparison_type)
 
         return flask.jsonify({'reminder': 'Reminder successfully registered!'})
 
@@ -128,6 +141,7 @@ class ReminderEP(fr.Resource):
         }
 
     @fp.use_args(delete_args)
+    @cross_origin(supports_credentials=True)
     def delete(self, args):
         """Get search results for the search id."""
 
@@ -140,7 +154,6 @@ class ReminderEP(fr.Resource):
 
 api.add_resource(SearchEP, '/0.1/search', endpoint='search')
 api.add_resource(ReminderEP, '/0.1/reminder', endpoint='reminder')
-
 
 if __name__ == '__main__':
     app.run(debug=True, threaded=True, use_reloader=False)
