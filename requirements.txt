@@ -2,6 +2,7 @@ alembic==1.0.10
 aniso8601==7.0.0
 Click==7.0
 Flask==1.0.3
+Flask-Cors==3.0.8
 Flask-HTTPAuth==3.3.0
 Flask-Limiter==1.0.1
 Flask-RESTful==0.3.7
