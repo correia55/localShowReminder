@@ -7,6 +7,9 @@ import json
 import datetime
 import re
 
+import flask_bcrypt as fb
+from sqlalchemy.exc import IntegrityError
+
 import configuration
 
 
@@ -481,6 +484,49 @@ def get_last_update():
     """Get the date of the last update."""
 
     return configuration.session.query(configuration.models.LastUpdate).first().date
+
+
+def register_user(email, password):
+    """
+    Register a new user.
+
+    :param email: the user's email.
+    :param password: the user's password.
+    """
+
+    password = fb.generate_password_hash(password, configuration.bcrypt_rounds).decode()
+
+    try:
+        configuration.session.add(configuration.models.User(email, password))
+        configuration.session.commit()
+        # TODO: Send registration email
+    except IntegrityError:
+        pass
+        # TODO: Send warning email
+
+
+def check_login(email, password):
+    """
+    Login with the user's credentials.
+
+    :param email: the user's email.
+    :param password: the user's password.
+    """
+
+    user = configuration.session.query(configuration.models.User).filter(
+        configuration.models.User.email == email).first()
+
+    if user is None:
+        user_password = None
+    else:
+        user_password = user.password
+
+    try:
+        valid = fb.check_password_hash(user_password, password)
+    except TypeError:
+        valid = False
+
+    return valid
 
 
 def main():

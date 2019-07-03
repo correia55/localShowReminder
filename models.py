@@ -129,3 +129,15 @@ class ShowReminder(base):
         return 'id: %d; show_id: %s; is_show: %r; reminder_type: %d; show_season: %d; show_episode: %d; ' \
                'comparison_type: %d' % \
                (self.id, self.show_id, self.is_show, self.reminder_type, show_season, show_episode, comparison_type)
+
+
+class User(base):
+    __tablename__ = 'User'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    email = Column(String(255), unique=True, nullable=False)
+    password = Column(String(255), nullable=False)
+
+    def __init__(self, email, password):
+        self.email = email
+        self.password = password

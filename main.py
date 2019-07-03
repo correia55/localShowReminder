@@ -34,7 +34,8 @@ def daily_tasks():
 
 class FlaskApp(flask.Flask):
     def __init__(self, *args, **kwargs):
-        threading.Timer(10, daily_tasks).start()
+        # TODO: UNCOMMENT THIS WHEN UPDATE IS NEEDED
+        #threading.Timer(10, daily_tasks).start()
         super(FlaskApp, self).__init__(*args, **kwargs)
 
 
@@ -49,6 +50,57 @@ limiter = fl.Limiter(
     key_func=fl.util.get_remote_address,
     default_limits=['5 per second', '50 per minute', '1000 per day']
 )
+
+
+class RegistrationEP(fr.Resource):
+    def __init__(self):
+        super(RegistrationEP, self).__init__()
+
+    registration_args = \
+        {
+            'email': webargs.fields.Str(required=True),
+            'password': webargs.fields.Str(required=True)
+        }
+
+    @fp.use_args(registration_args)
+    @cross_origin(supports_credentials=True)
+    def post(self, args):
+        """Register a new user."""
+
+        # Search_id will be either a seriesid or a pid depending on whether its a show or not
+        email = args['email']
+        password = args['password']
+
+        processing.register_user(email, password)
+
+        return flask.jsonify({'registration': 'The registration was a success, check your email!'})
+
+
+class LoginEP(fr.Resource):
+    def __init__(self):
+        super(LoginEP, self).__init__()
+
+    registration_args = \
+        {
+            'email': webargs.fields.Str(required=True),
+            'password': webargs.fields.Str(required=True)
+        }
+
+    @fp.use_args(registration_args)
+    @cross_origin(supports_credentials=True)
+    def post(self, args):
+        """Register a new user."""
+
+        # Search_id will be either a seriesid or a pid depending on whether its a show or not
+        email = args['email']
+        password = args['password']
+
+        valid = processing.check_login(email, password)
+
+        if valid:
+            return flask.jsonify({'login': 'The login was a success!'})
+        else:
+            return flask.jsonify({'login': 'The login failed!'})
 
 
 class SearchEP(fr.Resource):
@@ -152,6 +204,8 @@ class ReminderEP(fr.Resource):
         return flask.jsonify({'reminder': 'Reminder successfully removed!'})
 
 
+api.add_resource(RegistrationEP, '/0.1/registration', endpoint='registration')
+api.add_resource(LoginEP, '/0.1/login', endpoint='login')
 api.add_resource(SearchEP, '/0.1/search', endpoint='search')
 api.add_resource(ReminderEP, '/0.1/reminder', endpoint='reminder')
 

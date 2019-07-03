@@ -72,3 +72,10 @@ omdb_key = os.environ.get('OMDB_KEY', None)
 if omdb_key is None:
     print('Unable to find omdb key!')
 # endregion
+
+
+# Get the configuration for the number of rounds used in the bcrypt
+bcrypt_rounds = os.environ.get('BCRYPT_ROUNDS', None)
+
+if bcrypt_rounds is None:
+    bcrypt_rounds = 10
