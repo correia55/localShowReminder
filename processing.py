@@ -8,6 +8,7 @@ import datetime
 import re
 
 import flask_bcrypt as fb
+import jwt
 from sqlalchemy.exc import IntegrityError
 
 import configuration
@@ -516,17 +517,59 @@ def check_login(email, password):
     user = configuration.session.query(configuration.models.User).filter(
         configuration.models.User.email == email).first()
 
+    id = None
+
     if user is None:
         user_password = None
     else:
         user_password = user.password
+        id = user.id
 
     try:
         valid = fb.check_password_hash(user_password, password)
     except TypeError:
         valid = False
 
-    return valid
+    return valid, id
+
+
+def encode_auth_token(user_id):
+    """
+    Source: https://realpython.com/token-based-authentication-with-flask/
+    Generate the authentication token.
+
+    :return: the generated token.
+    """
+
+    try:
+        payload = {
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1, seconds=5),
+            'iat': datetime.datetime.utcnow(),
+            'user': user_id
+        }
+
+        return jwt.encode(payload, configuration.secret_key, algorithm='HS256')
+    except Exception as e:
+        return e
+
+
+def decode_auth_token(auth_token):
+    """
+    Source: https://realpython.com/token-based-authentication-with-flask/
+
+    Decode and validate the authentication token.
+
+    :param auth_token: the authentication token.
+    :return: whether or not the token is valid and a message or the user_id.
+    """
+
+    try:
+        payload = jwt.decode(auth_token, configuration.secret_key)
+        return True, payload['user']
+    except jwt.ExpiredSignatureError:
+        return False, 'Signature expired. Please log in again.'
+    except jwt.InvalidTokenError:
+        return False, 'Invalid token. Please log in again.'
 
 
 def main():

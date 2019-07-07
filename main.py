@@ -52,6 +52,21 @@ limiter = fl.Limiter(
 )
 
 
+@basic_auth.verify_password
+def verify_auth_token(token, unused):
+    """
+    Verify if the token is valid.
+
+    :param token: the token used in the authentication.
+    :param unused: placeholder necessary for the @auth.verify_password.
+    :return: whether or not the token is valid.
+    """
+
+    valid, user_id = processing.decode_auth_token(token.encode())
+
+    return valid
+
+
 class RegistrationEP(fr.Resource):
     def __init__(self):
         super(RegistrationEP, self).__init__()
@@ -95,10 +110,11 @@ class LoginEP(fr.Resource):
         email = args['email']
         password = args['password']
 
-        valid = processing.check_login(email, password)
+        valid, user_id = processing.check_login(email, password)
 
         if valid:
-            return flask.jsonify({'login': 'The login was a success!'})
+            auth_token = processing.encode_auth_token(user_id).decode()
+            return flask.jsonify({'login': 'The login was a success!', 'token': str(auth_token)})
         else:
             return flask.jsonify({'login': 'The login failed!'})
 
@@ -138,6 +154,8 @@ class SearchEP(fr.Resource):
 
 
 class ReminderEP(fr.Resource):
+    decorators = [basic_auth.login_required]
+
     def __init__(self):
         super(ReminderEP, self).__init__()
 
