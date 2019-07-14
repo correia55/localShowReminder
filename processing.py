@@ -61,7 +61,7 @@ def search_show_information_by_type(search_text, show_type):
 
     # Make the request
     shows_request = urllib.request.Request(
-        'https://api.trakt.tv/search/%s?query=%s' % (show_type, urllib.parse.quote(search_text)))
+        'https://api.trakt.tv/search/%s?extended=full&query=%s' % (show_type, urllib.parse.quote(search_text)))
     shows_request.add_header('trakt-api-key', configuration.trakt_key)
 
     shows_json = urllib.request.urlopen(shows_request).read()
@@ -75,7 +75,7 @@ def search_show_information_by_type(search_text, show_type):
         imdb_id = s[show_type]['ids']['imdb']
 
         show_dict = {'is_show': is_show, 'show_title': s[show_type]['title'], 'show_year': s[show_type]['year'],
-                     'show_image': 'N/A', 'show_slug': s[show_type]['ids']['slug']}
+                     'show_image': 'N/A', 'show_slug': s[show_type]['ids']['slug'], 'show_overview': s[show_type]['overview']}
 
         if imdb_id is None or configuration.omdb_key is None:
             results.append(show_dict)
