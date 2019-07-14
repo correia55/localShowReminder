@@ -10,7 +10,7 @@ import flask_httpauth as fh
 import flask_limiter as fl
 import webargs.flaskparser as fp
 
-
+import authentication
 import processing
 
 
@@ -35,7 +35,7 @@ def daily_tasks():
 class FlaskApp(flask.Flask):
     def __init__(self, *args, **kwargs):
         # TODO: UNCOMMENT THIS WHEN UPDATE IS NEEDED
-        #threading.Timer(10, daily_tasks).start()
+        # threading.Timer(10, daily_tasks).start()
         super(FlaskApp, self).__init__(*args, **kwargs)
 
 
@@ -52,17 +52,24 @@ limiter = fl.Limiter(
 )
 
 
+@basic_auth.error_handler
+def unauthorized():
+    """The response of the server when getting unauthorized."""
+
+    return flask.make_response('Unauthorized Access', 403)
+
+
 @basic_auth.verify_password
 def verify_auth_token(token, unused):
     """
-    Verify if the token is valid.
+    Verify if the access token is valid.
 
     :param token: the token used in the authentication.
     :param unused: placeholder necessary for the @auth.verify_password.
     :return: whether or not the token is valid.
     """
 
-    valid, user_id = processing.decode_auth_token(token.encode())
+    valid, user_id = authentication.validate_token(token.encode(), authentication.TokenType.ACCESS)
 
     return valid
 
@@ -82,7 +89,6 @@ class RegistrationEP(fr.Resource):
     def post(self, args):
         """Register a new user."""
 
-        # Search_id will be either a seriesid or a pid depending on whether its a show or not
         email = args['email']
         password = args['password']
 
@@ -95,28 +101,72 @@ class LoginEP(fr.Resource):
     def __init__(self):
         super(LoginEP, self).__init__()
 
-    registration_args = \
+    login_args = \
         {
             'email': webargs.fields.Str(required=True),
             'password': webargs.fields.Str(required=True)
         }
 
-    @fp.use_args(registration_args)
+    @fp.use_args(login_args)
     @cross_origin(supports_credentials=True)
     def post(self, args):
-        """Register a new user."""
+        """Login made by the user, generating an authentication token."""
 
-        # Search_id will be either a seriesid or a pid depending on whether its a show or not
         email = args['email']
         password = args['password']
 
         valid, user_id = processing.check_login(email, password)
 
         if valid:
-            auth_token = processing.encode_auth_token(user_id).decode()
+            auth_token = authentication.generate_token(user_id, authentication.TokenType.AUTHENTICATION).decode()
             return flask.jsonify({'login': 'The login was a success!', 'token': str(auth_token)})
         else:
             return flask.jsonify({'login': 'The login failed!'})
+
+
+class LogoutEP(fr.Resource):
+    def __init__(self):
+        super(LogoutEP, self).__init__()
+
+    logout_args = \
+        {
+            'auth_token': webargs.fields.Str(required=True)
+        }
+
+    @fp.use_args(logout_args)
+    @cross_origin(supports_credentials=True)
+    def post(self, args):
+        """Logout of a user's account."""
+
+        auth_token = args['auth_token']
+
+        processing.logout(auth_token)
+
+        return flask.jsonify({'logout': 'The logout was successful!'})
+
+
+class AccessEP(fr.Resource):
+    def __init__(self):
+        super(AccessEP, self).__init__()
+
+    access_args = \
+        {
+            'auth_token': webargs.fields.Str(required=True)
+        }
+
+    @fp.use_args(access_args)
+    @cross_origin(supports_credentials=True)
+    def post(self, args):
+        """Getting a new access token."""
+
+        auth_token = args['auth_token']
+
+        valid, access_token = authentication.generate_access_token(auth_token.encode())
+
+        if valid:
+            return flask.jsonify({'access': 'valid token', 'token': str(access_token.decode())})
+        else:
+            return flask.jsonify({'access': 'invalid token', 'token': access_token})
 
 
 class SearchEP(fr.Resource):
@@ -224,6 +274,8 @@ class ReminderEP(fr.Resource):
 
 api.add_resource(RegistrationEP, '/0.1/registration', endpoint='registration')
 api.add_resource(LoginEP, '/0.1/login', endpoint='login')
+api.add_resource(LogoutEP, '/0.1/logout', endpoint='logout')
+api.add_resource(AccessEP, '/0.1/access', endpoint='access')
 api.add_resource(SearchEP, '/0.1/search', endpoint='search')
 api.add_resource(ReminderEP, '/0.1/reminder', endpoint='reminder')
 

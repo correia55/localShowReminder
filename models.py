@@ -141,3 +141,13 @@ class User(base):
     def __init__(self, email, password):
         self.email = email
         self.password = password
+
+
+class Token(base):
+    __tablename__ = 'Token'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    token = Column(String(400), unique=True, nullable=False)
+
+    def __init__(self, token):
+        self.token = token

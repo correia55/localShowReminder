@@ -1,5 +1,12 @@
 # Ignore the vitual environment
 venv/
 
+# Ignore the migrations folder
+migrations/
+
 # Ignore Pycharm files
 .idea/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]

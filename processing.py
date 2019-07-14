@@ -1,4 +1,5 @@
 from enum import Enum
+from sqlalchemy.exc import IntegrityError
 
 import urllib.request
 import urllib.error
@@ -6,11 +7,9 @@ import urllib.parse
 import json
 import datetime
 import re
-
 import flask_bcrypt as fb
-import jwt
-from sqlalchemy.exc import IntegrityError
 
+import models
 import configuration
 
 
@@ -55,7 +54,7 @@ def get_channel_list(ignore_hd=True):
     # Add the list of channels to the database
     for c in channels:
         if not ignore_hd or 'HD' not in c['name']:
-            channel = configuration.models.Channel(c['id'], c['name'].strip())
+            channel = models.Channel(c['id'], c['name'].strip())
 
             configuration.session.add(channel)
 
@@ -70,8 +69,8 @@ def clear_show_list():
     today_start = datetime.datetime.now()
     today_start.replace(hour=0, minute=0, second=0)
 
-    configuration.session.query(configuration.models.Show).filter(
-        configuration.models.Show.date_time < today_start - datetime.timedelta(7)).delete()
+    configuration.session.query(models.Show).filter(
+        models.Show.date_time < today_start - datetime.timedelta(7)).delete()
     configuration.session.commit()
 
 
@@ -81,20 +80,20 @@ def update_show_list():
     print('Updating show list...')
 
     # Get list of all channels from the db
-    db_channels = configuration.session.query(configuration.models.Channel).all()
+    db_channels = configuration.session.query(models.Channel).all()
 
     # If the list of channels in the db is empty
     if not db_channels:
         get_channel_list()
 
-        db_channels = configuration.session.query(configuration.models.Channel).all()
+        db_channels = configuration.session.query(models.Channel).all()
 
     # Get the date of the last update
-    db_last_update = configuration.session.query(configuration.models.LastUpdate).first()
+    db_last_update = configuration.session.query(models.LastUpdate).first()
 
     # If this is the first update set yesterday's date as the last update
     if db_last_update is None:
-        db_last_update = configuration.models.LastUpdate(datetime.date.today() - datetime.timedelta(1))
+        db_last_update = models.LastUpdate(datetime.date.today() - datetime.timedelta(1))
 
         configuration.session.add(db_last_update)
 
@@ -126,8 +125,8 @@ def update_show_list():
 
         for c in channels:
             channel_shows = c['programList']
-            channel_id = configuration.session.query(configuration.models.Channel).filter(
-                configuration.models.Channel.pid == c['id']).first().id
+            channel_id = configuration.session.query(models.Channel).filter(
+                models.Channel.pid == c['id']).first().id
 
             for s in channel_shows:
                 program_title = s['programTitle']
@@ -167,7 +166,7 @@ def update_show_list():
                 pid = s['pid'][1:]
 
                 # Add the show to the db
-                show = configuration.models.Show(pid, series_id, show_title, show_season, show_episode,
+                show = models.Show(pid, series_id, show_title, show_season, show_episode,
                                                  s['programDetails'], show_datetime, s['duration'], channel_id)
 
                 configuration.session.add(show)
@@ -329,27 +328,27 @@ def search_db(search_list, only_between=True, below_date=None, show_season=None,
 
         print('Search pattern: %s' % search_pattern)
 
-        query = configuration.session.query(configuration.models.Show).filter(
-            configuration.models.Show.show_title.ilike(search_pattern))
+        query = configuration.session.query(models.Show).filter(
+            models.Show.show_title.ilike(search_pattern))
 
         if show_season is not None:
             if comparison_type is None or comparison_type == ComparisonType.EQUALS.value:
-                query = query.filter(configuration.models.Show.show_season == show_season)
+                query = query.filter(models.Show.show_season == show_season)
             elif comparison_type == ComparisonType.BIGGER.value:
-                query = query.filter(configuration.models.Show.show_season > show_season)
+                query = query.filter(models.Show.show_season > show_season)
             elif comparison_type == ComparisonType.SMALLER.value:
-                query = query.filter(configuration.models.Show.show_season < show_season)
+                query = query.filter(models.Show.show_season < show_season)
 
         if show_episode is not None:
             if comparison_type is None or comparison_type == ComparisonType.EQUALS.value:
-                query = query.filter(configuration.models.Show.show_episode == show_episode)
+                query = query.filter(models.Show.show_episode == show_episode)
             elif comparison_type == ComparisonType.BIGGER.value:
-                query = query.filter(configuration.models.Show.show_episode > show_episode)
+                query = query.filter(models.Show.show_episode > show_episode)
             elif comparison_type == ComparisonType.SMALLER.value:
-                query = query.filter(configuration.models.Show.show_episode < show_episode)
+                query = query.filter(models.Show.show_episode < show_episode)
 
         if below_date is not None:
-            query = query.filter(configuration.models.Show.date_time > below_date)
+            query = query.filter(models.Show.date_time > below_date)
 
         db_shows = query.all()
 
@@ -367,8 +366,8 @@ def get_corresponding_id(imdb_id):
     :return: the corresponding DB id.
     """
 
-    show_match = configuration.session.query(configuration.models.ShowMatch).filter(
-        configuration.models.ShowMatch.imdb_id == imdb_id).first()
+    show_match = configuration.session.query(models.ShowMatch).filter(
+        models.ShowMatch.imdb_id == imdb_id).first()
 
     return show_match.show_id
 
@@ -387,30 +386,30 @@ def search_db_id(show_id, is_show, below_date=None, show_season=None, show_episo
     """
 
     if is_show:
-        query = configuration.session.query(configuration.models.Show).filter(
-            configuration.models.Show.series_id == show_id)
+        query = configuration.session.query(models.Show).filter(
+            models.Show.series_id == show_id)
 
         if show_season is not None:
             if comparison_type is None or comparison_type == ComparisonType.EQUALS.value:
-                query = query.filter(configuration.models.Show.show_season == show_season)
+                query = query.filter(models.Show.show_season == show_season)
             elif comparison_type == ComparisonType.BIGGER.value:
-                query = query.filter(configuration.models.Show.show_season > show_season)
+                query = query.filter(models.Show.show_season > show_season)
             elif comparison_type == ComparisonType.SMALLER.value:
-                query = query.filter(configuration.models.Show.show_season < show_season)
+                query = query.filter(models.Show.show_season < show_season)
 
         if show_episode is not None:
             if comparison_type is None or comparison_type == ComparisonType.EQUALS.value:
-                query = query.filter(configuration.models.Show.show_episode == show_episode)
+                query = query.filter(models.Show.show_episode == show_episode)
             elif comparison_type == ComparisonType.BIGGER.value:
-                query = query.filter(configuration.models.Show.show_episode > show_episode)
+                query = query.filter(models.Show.show_episode > show_episode)
             elif comparison_type == ComparisonType.SMALLER.value:
-                query = query.filter(configuration.models.Show.show_episode < show_episode)
+                query = query.filter(models.Show.show_episode < show_episode)
     else:
-        query = configuration.session.query(configuration.models.Show).filter(
-            configuration.models.Show.pid == show_id)
+        query = configuration.session.query(models.Show).filter(
+            models.Show.pid == show_id)
 
     if below_date is not None:
-        query = query.filter(configuration.models.Show.date_time > below_date)
+        query = query.filter(models.Show.date_time > below_date)
 
     return query.all()
 
@@ -428,7 +427,7 @@ def register_reminder(show_id, is_show, reminder_type, show_season, show_episode
     """
 
     configuration.session.add(
-        configuration.models.ShowReminder(show_id, is_show, reminder_type, show_season, show_episode, comparison_type))
+        models.ShowReminder(show_id, is_show, reminder_type, show_season, show_episode, comparison_type))
 
     configuration.session.commit()
 
@@ -440,8 +439,8 @@ def remove_reminder(reminder_id):
     :param reminder_id: the id of the reminder.
     """
 
-    reminder = configuration.session.query(configuration.models.ShowReminder).filter(
-        configuration.models.ShowReminder.id == reminder_id).first()
+    reminder = configuration.session.query(models.ShowReminder).filter(
+        models.ShowReminder.id == reminder_id).first()
     configuration.session.delete(reminder)
 
     configuration.session.commit()
@@ -454,7 +453,7 @@ def process_reminders(last_date):
     :param last_date: the date of the last update.
     """
 
-    reminders = configuration.session.query(configuration.models.ShowReminder).all()
+    reminders = configuration.session.query(models.ShowReminder).all()
 
     for r in reminders:
         if r.reminder_type == ReminderType.DB:
@@ -484,10 +483,10 @@ def process_reminders(last_date):
 def get_last_update():
     """Get the date of the last update."""
 
-    return configuration.session.query(configuration.models.LastUpdate).first().date
+    return configuration.session.query(models.LastUpdate).first().date
 
 
-def register_user(email, password):
+def register_user(email: str, password: str):
     """
     Register a new user.
 
@@ -498,7 +497,7 @@ def register_user(email, password):
     password = fb.generate_password_hash(password, configuration.bcrypt_rounds).decode()
 
     try:
-        configuration.session.add(configuration.models.User(email, password))
+        configuration.session.add(models.User(email, password))
         configuration.session.commit()
         # TODO: Send registration email
     except IntegrityError:
@@ -506,7 +505,7 @@ def register_user(email, password):
         # TODO: Send warning email
 
 
-def check_login(email, password):
+def check_login(email: str, password: str):
     """
     Login with the user's credentials.
 
@@ -514,62 +513,37 @@ def check_login(email, password):
     :param password: the user's password.
     """
 
-    user = configuration.session.query(configuration.models.User).filter(
-        configuration.models.User.email == email).first()
+    user = configuration.session.query(models.User).filter(
+        models.User.email == email).first()
 
-    id = None
+    user_id = None
 
     if user is None:
         user_password = None
     else:
         user_password = user.password
-        id = user.id
+        user_id = user.id
 
     try:
         valid = fb.check_password_hash(user_password, password)
     except TypeError:
         valid = False
 
-    return valid, id
+    return valid, user_id
 
 
-def encode_auth_token(user_id):
+def logout(auth_token: str):
     """
-    Source: https://realpython.com/token-based-authentication-with-flask/
-    Generate the authentication token.
-
-    :return: the generated token.
-    """
-
-    try:
-        payload = {
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1, seconds=5),
-            'iat': datetime.datetime.utcnow(),
-            'user': user_id
-        }
-
-        return jwt.encode(payload, configuration.secret_key, algorithm='HS256')
-    except Exception as e:
-        return e
-
-
-def decode_auth_token(auth_token):
-    """
-    Source: https://realpython.com/token-based-authentication-with-flask/
-
-    Decode and validate the authentication token.
+    Logout, by eliminating a token from the DB.
 
     :param auth_token: the authentication token.
-    :return: whether or not the token is valid and a message or the user_id.
     """
 
-    try:
-        payload = jwt.decode(auth_token, configuration.secret_key)
-        return True, payload['user']
-    except jwt.ExpiredSignatureError:
-        return False, 'Signature expired. Please log in again.'
-    except jwt.InvalidTokenError:
-        return False, 'Invalid token. Please log in again.'
+    token = configuration.session.query(models.Token).filter(models.Token.token == auth_token).first()
+
+    if token is not None:
+        configuration.session.delete(token)
+        configuration.session.commit()
 
 
 def main():
