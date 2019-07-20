@@ -28,6 +28,9 @@ class Channel(base):
         self.pid = pid
         self.name = name
 
+    def __str__(self):
+        return 'id: %d; pid: %d; name: %s' % (self.id, self.pid, self.name)
+
 
 class Show(base):
     __tablename__ = 'Show'

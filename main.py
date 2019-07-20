@@ -169,38 +169,59 @@ class AccessEP(fr.Resource):
             return flask.jsonify({'access': 'invalid token', 'token': access_token})
 
 
-class SearchEP(fr.Resource):
+class SearchTraktEP(fr.Resource):
     def __init__(self):
-        super(SearchEP, self).__init__()
+        super(SearchTraktEP, self).__init__()
 
     search_args = \
         {
-            'search_text': webargs.fields.Str(required=True),
-            'type': webargs.fields.Str(required=True)
+            'search_text': webargs.fields.Str(required=True)
         }
 
     @fp.use_args(search_args)
     @cross_origin(supports_credentials=True)
     def get(self, args):
-        """Get search results for the search_text."""
+        """Get search results for the search_text, using the Trakt API."""
 
         search_text = args['search_text']
-        source_type = args['type']
 
         if len(search_text) < 3:
-            return flask.jsonify({'search': 'Search text needs at least three characters!'})
-
-        if source_type == 'DB':
-            db_shows = processing.search_db([search_text], only_between=False)
-
-            if len(db_shows) != 0:
-                return flask.jsonify({'search': 'shows', 'shows': processing.list_to_json(db_shows)})
-        elif source_type != 'TRAKT':
-            return flask.jsonify({'search': 'Unknown type!'})
+            return flask.jsonify({'search_trakt': 'Search text needs at least three characters!'})
 
         shows = processing.search_show_information(search_text)
 
-        return flask.jsonify({'search': 'trakt', 'shows': shows})
+        return flask.jsonify({'search_trakt': shows})
+
+
+class SearchDBEP(fr.Resource):
+    def __init__(self):
+        super(SearchDBEP, self).__init__()
+
+    search_args = \
+        {
+            'trakt_id': webargs.fields.Str(required=True),
+            'show_type': webargs.fields.Str(required=True),
+        }
+
+    @fp.use_args(search_args)
+    @cross_origin(supports_credentials=True)
+    def get(self, args):
+        """Get search results for the search_text in the DB."""
+
+        trakt_id = args['trakt_id']
+        show_type = args['show_type']
+
+        if show_type != 'show' and show_type != 'movie':
+            return flask.jsonify({'search_db': 'The type of show needs to be show or movie!'})
+
+        titles = processing.get_titles(trakt_id, show_type)
+
+        db_shows = processing.search_db(titles, only_between=True)
+
+        if len(db_shows) != 0:
+            return flask.jsonify({'search': db_shows})
+
+        return flask.jsonify({'search': 'No results found!'})
 
 
 class ReminderEP(fr.Resource):
@@ -276,7 +297,8 @@ api.add_resource(RegistrationEP, '/0.1/registration', endpoint='registration')
 api.add_resource(LoginEP, '/0.1/login', endpoint='login')
 api.add_resource(LogoutEP, '/0.1/logout', endpoint='logout')
 api.add_resource(AccessEP, '/0.1/access', endpoint='access')
-api.add_resource(SearchEP, '/0.1/search', endpoint='search')
+api.add_resource(SearchTraktEP, '/0.1/search_trakt', endpoint='search_trakt')
+api.add_resource(SearchDBEP, '/0.1/search_db', endpoint='search_db')
 api.add_resource(ReminderEP, '/0.1/reminder', endpoint='reminder')
 
 if __name__ == '__main__':

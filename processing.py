@@ -301,7 +301,7 @@ def search_db(search_list, only_between=True, below_date=None, show_season=None,
     :return: results of the search in the DB.
     """
 
-    results = set()
+    results = dict()
 
     for search_text in search_list:
         print('Original search text: %s' % search_text)
@@ -328,7 +328,7 @@ def search_db(search_list, only_between=True, below_date=None, show_season=None,
 
         print('Search pattern: %s' % search_pattern)
 
-        query = configuration.session.query(models.Show).filter(
+        query = configuration.session.query(models.Show, models.Channel.name).filter(
             models.Show.show_title.ilike(search_pattern))
 
         if show_season is not None:
@@ -350,10 +350,16 @@ def search_db(search_list, only_between=True, below_date=None, show_season=None,
         if below_date is not None:
             query = query.filter(models.Show.date_time > below_date)
 
+        # Filter the channels
+        query = query.join(models.Channel)
+
         db_shows = query.all()
 
         for s in db_shows:
-            results.add(s)
+            show = s[0].to_dict()
+            show['channel'] = s[1]
+
+            results[show['id']] = show
 
     return results
 
