@@ -219,9 +219,9 @@ class SearchDBEP(fr.Resource):
         db_shows = processing.search_db(titles, only_between=True)
 
         if len(db_shows) != 0:
-            return flask.jsonify({'search': db_shows})
+            return flask.jsonify({'search_db': db_shows})
 
-        return flask.jsonify({'search': 'No results found!'})
+        return flask.jsonify({'search_db': 'No results found!'})
 
 
 class ReminderEP(fr.Resource):

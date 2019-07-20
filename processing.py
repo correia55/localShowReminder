@@ -361,7 +361,13 @@ def search_db(search_list, only_between=True, below_date=None, show_season=None,
 
             results[show['id']] = show
 
-    return results
+    # Create a list from the dictionary of results
+    final_results = []
+
+    for r in results.values():
+        final_results.append(r)
+
+    return final_results
 
 
 def get_corresponding_id(imdb_id):
