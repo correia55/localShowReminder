@@ -65,13 +65,14 @@ class Show(base):
                (self.id, self.pid, self.series_id, self.show_title, self.show_season, self.show_episode,
                 self.show_details, str(self.date_time), self.duration, self.channel_id)
 
-    # def to_dict(self):
-    #     return {'id': self.id, 'pid': self.pid, 'series_id': self.series_id, 'show_title': self.show_title,
-    #             'show_season': self.show_season, 'show_episode': self.show_episode, 'show_details': self.show_details,
-    #             'date_time': self.date_time, 'duration': self.duration, 'channel_id': self.channel_id}
-
     def to_dict(self):
-        return {'id': self.id, 'show_title': self.show_title,
+        """
+        Create a dictionary with all the information being sent in the responses to the API.
+
+        :return: the corresponding dictionary.
+        """
+
+        return {'id': self.id, 'pid': self.pid, 'series_id': self.series_id, 'show_title': self.show_title,
                 'show_season': self.show_season, 'show_episode': self.show_episode, 'show_details': self.show_details,
                 'date_time': self.date_time}
 
