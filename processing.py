@@ -426,7 +426,7 @@ def search_db_id(show_id, is_show, below_date=None, show_season=None, show_episo
     return query.all()
 
 
-def register_reminder(show_id, is_show, reminder_type, show_season, show_episode, comparison_type):
+def register_reminder(show_id, is_show, reminder_type, show_season, show_episode, comparison_type, user_id):
     """
     Create a reminder for the given data.
 
@@ -436,17 +436,32 @@ def register_reminder(show_id, is_show, reminder_type, show_season, show_episode
     :param show_season: show season for the reminder.
     :param show_episode: show episode for the reminder.
     :param comparison_type: type of comparison for the reminder.
+    :param user_id: the owner of the reminder.
     """
 
     configuration.session.add(
-        models.ShowReminder(show_id, is_show, reminder_type, show_season, show_episode, comparison_type))
+        models.ShowReminder(show_id, is_show, reminder_type, show_season, show_episode, comparison_type, user_id))
 
     configuration.session.commit()
 
 
+def get_reminders(user_id):
+    """
+    Get a list of reminders for the user who's id is user_id.
+
+    :param user_id: the id of the user.
+    :return: a list of reminders for the user who's id is user_id.
+    """
+
+    reminders = configuration.session.query(models.ShowReminder).filter(
+        models.ShowReminder.user_id == user_id).all()
+
+    return reminders
+
+
 def remove_reminder(reminder_id):
     """
-    Delete an id, if the request was sent by the owner.
+    Delete the reminder with the corresponding id.
 
     :param reminder_id: the id of the reminder.
     """
@@ -519,7 +534,7 @@ def register_user(email: str, password: str):
 
 def check_login(email: str, password: str):
     """
-    Login with the user's credentials.
+    Verify with the user's credentials.
 
     :param email: the user's email.
     :param password: the user's password.
@@ -528,20 +543,30 @@ def check_login(email: str, password: str):
     user = configuration.session.query(models.User).filter(
         models.User.email == email).first()
 
-    user_id = None
-
     if user is None:
         user_password = None
     else:
         user_password = user.password
-        user_id = user.id
 
     try:
         valid = fb.check_password_hash(user_password, password)
     except TypeError:
         valid = False
 
-    return valid, user_id
+    return valid
+
+
+def get_user_by_email(email: str):
+    """
+    Get the user corresponding to an email.
+
+    :param email: the user's email.
+    """
+
+    user = configuration.session.query(models.User).filter(
+        models.User.email == email).first()
+
+    return user
 
 
 def logout(auth_token: str):

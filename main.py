@@ -40,6 +40,7 @@ class FlaskApp(flask.Flask):
 
 
 basic_auth = fh.HTTPBasicAuth()
+token_auth = fh.HTTPTokenAuth()
 app = FlaskApp(__name__)
 CORS(app, support_credentials=True)
 api = fr.Api(app)
@@ -60,18 +61,47 @@ def unauthorized():
 
 
 @basic_auth.verify_password
-def verify_auth_token(token, unused):
+def verify_login_credentials(username, password):
+    """
+    Verify if the credentials are valid.
+
+    :param username: the username.
+    :param password: the password.
+    :return: whether or not the credentials are valid.
+    """
+
+    return processing.check_login(username, password)
+
+
+@token_auth.error_handler
+def unauthorized():
+    """The response of the server when getting unauthorized."""
+
+    return flask.make_response('Unauthorized Access', 403)
+
+
+@token_auth.verify_token
+def verify_auth_token(token):
     """
     Verify if the access token is valid.
 
     :param token: the token used in the authentication.
-    :param unused: placeholder necessary for the @auth.verify_password.
     :return: whether or not the token is valid.
     """
 
     valid, user_id = authentication.validate_token(token.encode(), authentication.TokenType.ACCESS)
 
     return valid
+
+# TODO: REMOVE THIS SECTION, ONLY BEING USED FOR DEBUGGING PURPOSES
+# region Argument debugging
+from webargs import flaskparser
+parser = flaskparser.FlaskParser()
+
+@parser.error_handler
+def handle_error(error, req, schema, status_code, headers):
+    return flask.make_response('Unprocessable entity: ' + error, 422)
+# endregion
 
 
 class RegistrationEP(fr.Resource):
@@ -98,27 +128,20 @@ class RegistrationEP(fr.Resource):
 
 
 class LoginEP(fr.Resource):
+    decorators = [basic_auth.login_required]
+
     def __init__(self):
         super(LoginEP, self).__init__()
 
-    login_args = \
-        {
-            'email': webargs.fields.Str(required=True),
-            'password': webargs.fields.Str(required=True)
-        }
-
-    @fp.use_args(login_args)
     @cross_origin(supports_credentials=True)
-    def post(self, args):
+    def post(self):
         """Login made by the user, generating an authentication token."""
 
-        email = args['email']
-        password = args['password']
+        auth = flask.request.authorization
+        user = processing.get_user_by_email(auth['username'])
 
-        valid, user_id = processing.check_login(email, password)
-
-        if valid:
-            auth_token = authentication.generate_token(user_id, authentication.TokenType.AUTHENTICATION).decode()
+        if user is not None:
+            auth_token = authentication.generate_token(user.id, authentication.TokenType.REFRESH).decode()
             return flask.jsonify({'login': 'The login was a success!', 'token': str(auth_token)})
         else:
             return flask.jsonify({'login': 'The login failed!'})
@@ -151,7 +174,7 @@ class AccessEP(fr.Resource):
 
     access_args = \
         {
-            'auth_token': webargs.fields.Str(required=True)
+            'refresh_token': webargs.fields.Str(required=True)
         }
 
     @fp.use_args(access_args)
@@ -159,7 +182,7 @@ class AccessEP(fr.Resource):
     def post(self, args):
         """Getting a new access token."""
 
-        auth_token = args['auth_token']
+        auth_token = args['refresh_token']
 
         valid, access_token = authentication.generate_access_token(auth_token.encode())
 
@@ -225,12 +248,24 @@ class SearchDBEP(fr.Resource):
 
 
 class ReminderEP(fr.Resource):
-    decorators = [basic_auth.login_required]
+    decorators = [token_auth.login_required]
 
     def __init__(self):
         super(ReminderEP, self).__init__()
 
-    search_args = \
+    @cross_origin(supports_credentials=True)
+    def get(self):
+        """Get the list of reminders of the user."""
+
+        # Get the user id from the token
+        token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+        user_id = authentication.access_token_field(token.encode(), 'user')
+
+        reminders = processing.get_reminders(user_id)
+
+        return flask.jsonify({'reminder': processing.list_to_json(reminders)})
+
+    register_args = \
         {
             'show_id': webargs.fields.Str(required=True),
             'is_show': webargs.fields.Bool(required=True),
@@ -240,12 +275,11 @@ class ReminderEP(fr.Resource):
             'comparison_type': webargs.fields.Int()
         }
 
-    @fp.use_args(search_args)
+    @fp.use_args(register_args)
     @cross_origin(supports_credentials=True)
     def post(self, args):
-        """Get search results for the search id."""
+        """Register a reminder."""
 
-        # Search_id will be either a seriesid or a pid depending on whether its a show or not
         show_id = args['show_id']
         is_show = args['is_show']
         reminder_type = args['type']
@@ -272,7 +306,11 @@ class ReminderEP(fr.Resource):
         else:
             return flask.jsonify({'reminder': 'Unknown type!'})
 
-        processing.register_reminder(show_id, is_show, reminder_type, show_season, show_episode, comparison_type)
+        # Get the user id from the token
+        token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+        user_id = authentication.access_token_field(token.encode(), 'user')
+
+        processing.register_reminder(show_id, is_show, reminder_type, show_season, show_episode, comparison_type, user_id)
 
         return flask.jsonify({'reminder': 'Reminder successfully registered!'})
 
@@ -284,7 +322,7 @@ class ReminderEP(fr.Resource):
     @fp.use_args(delete_args)
     @cross_origin(supports_credentials=True)
     def delete(self, args):
-        """Get search results for the search id."""
+        """Delete a reminder."""
 
         reminder_id = args['reminder_id']
 

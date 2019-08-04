@@ -8,7 +8,7 @@ import configuration
 
 
 class TokenType(Enum):
-    AUTHENTICATION = 0
+    REFRESH = 0
     ACCESS = 1
 
 
@@ -21,7 +21,7 @@ def generate_access_token(auth_token: bytearray):
     message otherwise).
     """
 
-    valid, msg = validate_token(auth_token, TokenType.AUTHENTICATION)
+    valid, msg = validate_token(auth_token, TokenType.REFRESH)
 
     if valid:
         return True, generate_token(msg, TokenType.ACCESS)
@@ -39,9 +39,15 @@ def generate_token(user_id: int, token_type: TokenType) -> any:
     :return: the generated token.
     """
 
+    # Set the expiration date based on the type of token
+    if token_type == TokenType.REFRESH:
+        exp = datetime.datetime.utcnow() + datetime.timedelta(days=configuration.REFRESH_TOKEN_VALIDITY_DAYS)
+    else:
+        exp = datetime.datetime.utcnow() + datetime.timedelta(hours=configuration.ACCESS_TOKEN_VALIDITY_HOURS)
+
     try:
         payload = {
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1, seconds=5),
+            'exp': exp,
             'iat': datetime.datetime.utcnow(),
             'user': user_id,
             'type': token_type.name
@@ -50,7 +56,7 @@ def generate_token(user_id: int, token_type: TokenType) -> any:
         token = jwt.encode(payload, configuration.secret_key, algorithm='HS256')
 
         # If it's an authentication token, save it on the db
-        if token_type == TokenType.AUTHENTICATION:
+        if token_type == TokenType.REFRESH:
             configuration.session.add(models.Token(token.decode()))
             configuration.session.commit()
 
@@ -80,7 +86,7 @@ def validate_token(auth_token: bytearray, token_type: TokenType):
             return False, 'Invalid token. Please log in again.'
         else:
             # When it's an authentication token, it needs to be validated in the db
-            if token_type == TokenType.AUTHENTICATION:
+            if token_type == TokenType.REFRESH:
                 token = configuration.session.query(models.Token).filter(
                     models.Token.token == auth_token.decode()).first()
 
@@ -92,3 +98,22 @@ def validate_token(auth_token: bytearray, token_type: TokenType):
         return False, 'Signature expired. Please log in again.'
     except jwt.InvalidTokenError:
         return False, 'Invalid token. Please log in again.'
+
+
+def access_token_field(auth_token: bytearray, field: str):
+    """
+    Get the value of a field inside a token.
+
+    :param auth_token: the token.
+    :param field: the name of the field.
+    :return: the value of that field or None.
+    """
+
+    try:
+        payload = jwt.decode(auth_token, configuration.secret_key)
+
+        return payload[field]
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None

@@ -90,4 +90,8 @@ if secret_key is None:
     print('Unable to find secret key!')
     exit(1)
 
+# Validity of the different types of token
+REFRESH_TOKEN_VALIDITY_DAYS = 365
+ACCESS_TOKEN_VALIDITY_HOURS = 1
+
 # endregion

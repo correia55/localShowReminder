@@ -106,13 +106,16 @@ class ShowReminder(base):
     show_episode = Column(Integer)
     comparison_type = Column(Integer)
 
-    def __init__(self, show_id, is_show, reminder_type, show_season, show_episode, comparison_type):
+    user_id = Column(Integer, ForeignKey('User.id'))
+
+    def __init__(self, show_id, is_show, reminder_type, show_season, show_episode, comparison_type, user_id):
         self.show_id = show_id
         self.is_show = is_show
         self.reminder_type = reminder_type
         self.show_season = show_season
         self.show_episode = show_episode
         self.comparison_type = comparison_type
+        self.user_id = user_id
 
     def __str__(self):
         if self.show_season is None:
@@ -131,8 +134,20 @@ class ShowReminder(base):
             comparison_type = self.comparison_type
 
         return 'id: %d; show_id: %s; is_show: %r; reminder_type: %d; show_season: %d; show_episode: %d; ' \
-               'comparison_type: %d' % \
-               (self.id, self.show_id, self.is_show, self.reminder_type, show_season, show_episode, comparison_type)
+               'comparison_type: %d; user_id: %d' % \
+               (self.id, self.show_id, self.is_show, self.reminder_type, show_season, show_episode, comparison_type,
+                self.user_id)
+
+    def to_dict(self):
+        """
+        Create a dictionary with all the information being sent in the responses to the API.
+
+        :return: the corresponding dictionary.
+        """
+
+        return {'id': self.id, 'show_id': self.show_id, 'is_show': self.is_show, 'reminder_type': self.reminder_type,
+                'show_season': self.show_season, 'show_episode': self.show_episode, 'comparison_type': self.comparison_type,
+                'user_id': self.user_id}
 
 
 class User(base):
