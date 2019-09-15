@@ -21,7 +21,7 @@ class Channel(base):
     __tablename__ = 'Channel'
 
     id = Column(Integer, primary_key=True)
-    pid = Column(Integer, unique=True)
+    pid = Column(String, unique=True)
     name = Column(String, unique=True)
 
     def __init__(self, pid, name):
@@ -29,7 +29,7 @@ class Channel(base):
         self.name = name
 
     def __str__(self):
-        return 'id: %d; pid: %d; name: %s' % (self.id, self.pid, self.name)
+        return 'id: %d; pid: %s; name: %s' % (self.id, self.pid, self.name)
 
 
 class Show(base):

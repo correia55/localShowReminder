@@ -12,6 +12,7 @@ import webargs.flaskparser as fp
 
 import authentication
 import processing
+import get_data
 
 
 def daily_tasks():
@@ -22,7 +23,8 @@ def daily_tasks():
 
     processing.clear_show_list()
 
-    processing.update_show_list()
+    if get_data.configuration.selected_epg == 'MEPG':
+        get_data.MEPG.update_show_list()
 
     processing.process_reminders(last_update_date)
 

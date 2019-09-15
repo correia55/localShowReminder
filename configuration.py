@@ -57,6 +57,17 @@ session = Session()
 
 # endregion
 
+# region Data Gathering
+
+# Get the selected EPG
+selected_epg = os.environ.get('EPG', None)
+
+# Get urls for the selected EPG
+channels_url = os.environ.get('CHANNELS_URL', None)
+shows_url = os.environ.get('SHOWS_URL', None)
+
+# endregion
+
 # region Shows Information Services
 
 # Get the api key for trakt
