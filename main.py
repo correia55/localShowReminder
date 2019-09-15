@@ -95,14 +95,19 @@ def verify_auth_token(token):
 
     return valid
 
+
 # TODO: REMOVE THIS SECTION, ONLY BEING USED FOR DEBUGGING PURPOSES
 # region Argument debugging
 from webargs import flaskparser
+
 parser = flaskparser.FlaskParser()
+
 
 @parser.error_handler
 def handle_error(error, req, schema, status_code, headers):
     return flask.make_response('Unprocessable entity: ' + error, 422)
+
+
 # endregion
 
 
@@ -312,7 +317,8 @@ class ReminderEP(fr.Resource):
         token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
         user_id = authentication.access_token_field(token.encode(), 'user')
 
-        processing.register_reminder(show_id, is_show, reminder_type, show_season, show_episode, comparison_type, user_id)
+        processing.register_reminder(show_id, is_show, reminder_type, show_season, show_episode, comparison_type,
+                                     user_id)
 
         return flask.jsonify({'reminder': 'Reminder successfully registered!'})
 

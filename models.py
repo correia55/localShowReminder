@@ -146,7 +146,8 @@ class ShowReminder(base):
         """
 
         return {'id': self.id, 'show_id': self.show_id, 'is_show': self.is_show, 'reminder_type': self.reminder_type,
-                'show_season': self.show_season, 'show_episode': self.show_episode, 'comparison_type': self.comparison_type,
+                'show_season': self.show_season, 'show_episode': self.show_episode,
+                'comparison_type': self.comparison_type,
                 'user_id': self.user_id}
 
 

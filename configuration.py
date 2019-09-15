@@ -93,7 +93,6 @@ bcrypt_rounds = os.environ.get('BCRYPT_ROUNDS', None)
 if bcrypt_rounds is None:
     bcrypt_rounds = 10
 
-
 # Get the secret key used to generate tokens
 secret_key = os.environ.get('SECRET_KEY', None)
 
