@@ -311,8 +311,44 @@ def register_reminder(show_id, is_show, reminder_type, show_season, show_episode
     :param user_id: the owner of the reminder.
     """
 
+    show = configuration.session.query(models.ShowReminder)\
+        .filter(models.ShowReminder.user_id == user_id)\
+        .filter(models.ShowReminder.show_id == show_id).first()
+
+    if show is not None:
+        update_reminder(show, show_id, is_show, reminder_type, show_season, show_episode, comparison_type, user_id)
+        return
+
     configuration.session.add(
         models.ShowReminder(show_id, is_show, reminder_type, show_season, show_episode, comparison_type, user_id))
+
+    configuration.session.commit()
+
+
+def update_reminder(show: models.ShowReminder, show_id, is_show, reminder_type, show_season, show_episode, comparison_type, user_id):
+    """
+    Update a reminder with the given data.
+
+    :param show: the show to update, or None.
+    :param show_id: the id to search for.
+    :param is_show: true if it is a show.
+    :param reminder_type: 0 if it's a DB and 1 otherwise.
+    :param show_season: show season for the reminder.
+    :param show_episode: show episode for the reminder.
+    :param comparison_type: type of comparison for the reminder.
+    :param user_id: the owner of the reminder.
+    """
+
+    if show is None:
+        show = configuration.session.query(models.ShowReminder)\
+            .filter(models.ShowReminder.user_id == user_id)\
+            .filter(models.ShowReminder.show_id == show_id).first()
+
+    show.is_show = is_show
+    show.reminder_type = reminder_type
+    show.show_season = show_season
+    show.show_episode = show_episode
+    show.comparison_type = comparison_type
 
     configuration.session.commit()
 

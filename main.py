@@ -277,6 +277,7 @@ class ReminderEP(fr.Resource):
             'show_id': webargs.fields.Str(required=True),
             'is_show': webargs.fields.Bool(required=True),
             'type': webargs.fields.Str(required=True),
+            'registration': webargs.fields.Bool(required=True),
             'show_season': webargs.fields.Int(),
             'show_episode': webargs.fields.Int(),
             'comparison_type': webargs.fields.Int()
@@ -290,6 +291,7 @@ class ReminderEP(fr.Resource):
         show_id = args['show_id']
         is_show = args['is_show']
         reminder_type = args['type']
+        registration = args['registration']
 
         show_season = None
         show_episode = None
@@ -317,8 +319,12 @@ class ReminderEP(fr.Resource):
         token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
         user_id = authentication.access_token_field(token.encode(), 'user')
 
-        processing.register_reminder(show_id, is_show, reminder_type, show_season, show_episode, comparison_type,
-                                     user_id)
+        if registration:
+            processing.register_reminder(show_id, is_show, reminder_type, show_season, show_episode, comparison_type,
+                                         user_id)
+        else:
+            processing.update_reminder(None, show_id, is_show, reminder_type, show_season, show_episode,
+                                       comparison_type, user_id)
 
         return flask.jsonify({'reminder': 'Reminder successfully registered!'})
 
