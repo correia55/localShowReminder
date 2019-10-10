@@ -75,6 +75,8 @@ class MEPG:
         # Parse the list of channels from the request
         root = ET.fromstring(shows_xml)[0]
 
+        shows_added = False
+
         for c in root:
             channel_shows = c[4]
             channel_id = configuration.session.query(models.Channel).filter(
@@ -86,6 +88,8 @@ class MEPG:
                 # Skip if it's referent to a show from a different day
                 if show_datetime.split()[0] != db_last_update.date.strftime('%Y-%m-%d'):
                     continue
+
+                shows_added = True
 
                 program_title = s[1].text
                 series = re.search('(.+) T([0-9]+) - Ep\. ([0-9]+)', program_title)
@@ -111,6 +115,11 @@ class MEPG:
                 configuration.session.add(show)
 
         configuration.session.commit()
+
+        if shows_added:
+            print('Shows added!')
+        else:
+            print('No shows were added!')
 
     @staticmethod
     def update_show_list():
