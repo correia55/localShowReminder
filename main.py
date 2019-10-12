@@ -223,14 +223,14 @@ class SearchTraktEP(fr.Resource):
         return flask.jsonify({'search_trakt': shows})
 
 
-class SearchDBEP(fr.Resource):
+class SearchDBTraktIdEP(fr.Resource):
     def __init__(self):
         super(SearchDBEP, self).__init__()
 
     search_args = \
         {
             'trakt_id': webargs.fields.Str(required=True),
-            'show_type': webargs.fields.Str(required=True),
+            'show_type': webargs.fields.Str(required=True)
         }
 
     @fp.use_args(search_args)
@@ -247,6 +247,30 @@ class SearchDBEP(fr.Resource):
         titles = processing.get_titles(trakt_id, show_type)
 
         db_shows = processing.search_db(titles, only_between=True)
+
+        if len(db_shows) != 0:
+            return flask.jsonify({'search_db': db_shows})
+
+        return flask.jsonify({'search_db': 'No results found!'})
+
+
+class SearchDBEP(fr.Resource):
+    def __init__(self):
+        super(SearchDBEP, self).__init__()
+
+    search_args = \
+        {
+            'search_text': webargs.fields.Str(required=True)
+        }
+
+    @fp.use_args(search_args)
+    @cross_origin(supports_credentials=True)
+    def get(self, args):
+        """Get search results for the search_text in the DB."""
+
+        search_text = args['search_text']
+
+        db_shows = processing.search_db([search_text], only_between=False)
 
         if len(db_shows) != 0:
             return flask.jsonify({'search_db': db_shows})
