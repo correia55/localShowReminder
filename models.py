@@ -23,13 +23,14 @@ class Channel(base):
     id = Column(Integer, primary_key=True)
     pid = Column(String, unique=True)
     name = Column(String, unique=True)
+    adult = Column(Boolean)
 
     def __init__(self, pid, name):
         self.pid = pid
         self.name = name
 
     def __str__(self):
-        return 'id: %d; pid: %s; name: %s' % (self.id, self.pid, self.name)
+        return 'id: %d; pid: %s; name: %s; adult: %r' % (self.id, self.pid, self.name, self.adult)
 
 
 class Show(base):
@@ -157,10 +158,12 @@ class User(base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     email = Column(String(255), unique=True, nullable=False)
     password = Column(String(255), nullable=False)
+    show_adult = Column(Boolean)
 
     def __init__(self, email, password):
         self.email = email
         self.password = password
+        self.show_adult = False
 
 
 class Token(base):

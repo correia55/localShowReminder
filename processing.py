@@ -75,7 +75,8 @@ def search_show_information_by_type(search_text, show_type):
         imdb_id = s[show_type]['ids']['imdb']
 
         show_dict = {'is_show': is_show, 'show_title': s[show_type]['title'], 'show_year': s[show_type]['year'],
-                     'show_image': 'N/A', 'show_slug': s[show_type]['ids']['slug'], 'show_overview': s[show_type]['overview']}
+                     'show_image': 'N/A', 'show_slug': s[show_type]['ids']['slug'],
+                     'show_overview': s[show_type]['overview']}
 
         if imdb_id is None or configuration.omdb_key is None:
             results.append(show_dict)
@@ -160,7 +161,7 @@ def get_titles(trakt_slug, show_type):
 
 
 def search_db(search_list, only_between=True, below_date=None, show_season=None, show_episode=None,
-              comparison_type=None):
+              comparison_type=None, search_adult=False):
     """
     Get the results of the search in the DB, using all the texts from the search list.
 
@@ -170,6 +171,7 @@ def search_db(search_list, only_between=True, below_date=None, show_season=None,
     :param show_season: to specify a season.
     :param show_episode: to specify an episode.
     :param comparison_type: to specify a means of comparison.
+    :param search_adult: if it should also search in adult channels.
     :return: results of the search in the DB.
     """
 
@@ -202,6 +204,9 @@ def search_db(search_list, only_between=True, below_date=None, show_season=None,
 
         query = configuration.session.query(models.Show, models.Channel.name).filter(
             models.Show.show_title.ilike(search_pattern))
+
+        if not search_adult:
+            query = query.filter(models.Channel.adult != True)
 
         if show_season is not None:
             if comparison_type is None or comparison_type == ComparisonType.EQUALS.value:
@@ -370,7 +375,11 @@ def process_reminders(last_date):
 
                 titles = get_titles(r.show_id, show_type)
 
-                db_shows = search_db(titles, True, last_date, r.show_season, r.show_episode, r.comparison_type)
+                search_adult: bool = configuration.session.query(models.User).filter(
+                    models.User.id == r.user_id).first().show_adult
+
+                db_shows = search_db(titles, True, last_date, r.show_season, r.show_episode, r.comparison_type,
+                                     search_adult)
 
         # TODO: Send notification with shows found
         print('Number of shows: %d' % len(db_shows))
