@@ -258,6 +258,9 @@ def get_corresponding_id(imdb_id):
     show_match = configuration.session.query(models.ShowMatch).filter(
         models.ShowMatch.imdb_id == imdb_id).first()
 
+    if show_match is None:
+        return None
+
     return show_match.show_id
 
 
@@ -316,8 +319,8 @@ def register_reminder(show_id, is_show, reminder_type, show_season, show_episode
     :param user_id: the owner of the reminder.
     """
 
-    show = configuration.session.query(models.ShowReminder)\
-        .filter(models.ShowReminder.user_id == user_id)\
+    show = configuration.session.query(models.ShowReminder) \
+        .filter(models.ShowReminder.user_id == user_id) \
         .filter(models.ShowReminder.show_id == show_id).first()
 
     if show is not None:
@@ -330,7 +333,8 @@ def register_reminder(show_id, is_show, reminder_type, show_season, show_episode
     configuration.session.commit()
 
 
-def update_reminder(show: models.ShowReminder, show_id, is_show, reminder_type, show_season, show_episode, comparison_type, user_id):
+def update_reminder(show: models.ShowReminder, show_id, is_show, reminder_type, show_season, show_episode,
+                    comparison_type, user_id):
     """
     Update a reminder with the given data.
 
@@ -345,8 +349,8 @@ def update_reminder(show: models.ShowReminder, show_id, is_show, reminder_type, 
     """
 
     if show is None:
-        show = configuration.session.query(models.ShowReminder)\
-            .filter(models.ShowReminder.user_id == user_id)\
+        show = configuration.session.query(models.ShowReminder) \
+            .filter(models.ShowReminder.user_id == user_id) \
             .filter(models.ShowReminder.show_id == show_id).first()
 
     show.is_show = is_show
@@ -411,8 +415,9 @@ def process_reminders(last_date):
 
                 titles = get_titles(r.show_id, show_type)
 
-                search_adult: bool = configuration.session.query(models.User).filter(
-                    models.User.id == r.user_id).first().show_adult
+                user = configuration.session.query(models.User).filter(models.User.id == r.user_id).first()
+
+                search_adult = user.show_adult if user is not None else False
 
                 db_shows = search_db(titles, True, last_date, r.show_season, r.show_episode, r.comparison_type,
                                      search_adult)
@@ -427,7 +432,12 @@ def process_reminders(last_date):
 def get_last_update():
     """Get the date of the last update."""
 
-    return configuration.session.query(models.LastUpdate).first().date
+    last_update = configuration.session.query(models.LastUpdate).first()
+
+    if last_update is None:
+        return datetime.datetime.now() - datetime.timedelta(days=10)
+
+    return last_update.date
 
 
 def register_user(email: str, password: str):
