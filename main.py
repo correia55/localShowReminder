@@ -246,7 +246,7 @@ class SearchDBTraktIdEP(fr.Resource):
 
         titles = processing.get_titles(trakt_id, show_type)
 
-        db_shows = processing.search_db(titles, only_between=True, search_adult=True)
+        db_shows = processing.search_db(titles, complete_title=True, search_adult=True)
 
         if len(db_shows) != 0:
             return flask.jsonify({'search_db': db_shows})
@@ -279,7 +279,7 @@ class SearchDBEP(fr.Resource):
             if k == 'search_adult':
                 search_adult = v
 
-        db_shows = processing.search_db([search_text], only_between=False, search_adult=search_adult)
+        db_shows = processing.search_db([search_text], complete_title=False, search_adult=search_adult)
 
         if len(db_shows) != 0:
             return flask.jsonify({'search_db': db_shows})

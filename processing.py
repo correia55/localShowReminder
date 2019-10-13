@@ -11,6 +11,7 @@ import flask_bcrypt as fb
 
 import models
 import configuration
+import auxiliary
 
 
 class ReminderType(Enum):
@@ -160,13 +161,13 @@ def get_titles(trakt_slug, show_type):
     return results
 
 
-def search_db(search_list, only_between=True, below_date=None, show_season=None, show_episode=None,
+def search_db(search_list, complete_title=False, below_date=None, show_season=None, show_episode=None,
               comparison_type=None, search_adult=False):
     """
     Get the results of the search in the DB, using all the texts from the search list.
 
     :param search_list: the list of texts to search for in the DB.
-    :param only_between: true when other characters can only be between words.
+    :param complete_title: true when we don't want to accept any other words.
     :param below_date: a date below to limit the search.
     :param show_season: to specify a season.
     :param show_episode: to specify an episode.
@@ -180,30 +181,29 @@ def search_db(search_list, only_between=True, below_date=None, show_season=None,
     for search_text in search_list:
         print('Original search text: %s' % search_text)
 
+        unaccented_text = auxiliary.strip_accents(search_text)
+
         # Split the search text into a list of words
-        search_words = re.compile('[^0-9A-Za-zÀ-ÿ.]+').split(search_text)
+        search_words = re.compile('[^0-9A-Za-z]+').split(unaccented_text)
 
         print('List of words obtained from the search text: %s' % str(search_words))
 
         # Create a search pattern to search the DB
-        search_pattern = ''
+        search_pattern = '' if complete_title else '.*'
 
         for w in search_words:
             if w != '':
-                if search_pattern == '' and only_between:
-                    search_pattern += '%s' % w
-                else:
-                    search_pattern += '%%%s' % w
+                search_pattern += '_%ss?' % w
 
-        if only_between:
-            search_pattern = '%s' % search_pattern
+        if complete_title:
+            search_pattern += '_'
         else:
-            search_pattern = '%s%%' % search_pattern
+            search_pattern += '_.*'
 
         print('Search pattern: %s' % search_pattern)
 
         query = configuration.session.query(models.Show, models.Channel.name).filter(
-            models.Show.show_title.ilike(search_pattern))
+            models.Show.search_title.op('~*')(search_pattern))
 
         if not search_adult:
             query = query.filter(models.Channel.adult != True)
@@ -508,6 +508,21 @@ def logout(auth_token: str):
     if token is not None:
         configuration.session.delete(token)
         configuration.session.commit()
+
+
+def make_searchable_title(title):
+    """
+    Remove accents from the title and join words with _ (underscore).
+
+    :param title: the original title.
+    :return: the resulting title.
+    """
+
+    unaccented_title = auxiliary.strip_accents(title)
+
+    words = re.compile('[^0-9A-Za-z]+').split(unaccented_title)
+
+    return '_' + '_'.join(words) + '_'
 
 
 def main():

@@ -45,11 +45,12 @@ class Show(base):
     show_details = Column(String)
     date_time = Column(DateTime)
     duration = Column(Integer)
+    search_title = Column(String)
 
     channel_id = Column(Integer, ForeignKey('Channel.id'))
 
     def __init__(self, pid, series_id, show_title, show_season, show_episode, show_details, date_time, duration,
-                 channel_id):
+                 channel_id, search_title):
         self.pid = pid
         self.series_id = series_id
         self.show_title = show_title
@@ -59,12 +60,13 @@ class Show(base):
         self.date_time = date_time
         self.duration = duration
         self.channel_id = channel_id
+        self.search_title = search_title
 
     def __str__(self):
         return 'id: %d; pid: %d; series_id: %s; show_title: %s; show_season: %d; show_episode: %d; show_details: %s; ' \
-               'date_time: %s; duration: %d; channel_id: %d' % \
+               'date_time: %s; duration: %d; channel_id: %d; search_title: %s' % \
                (self.id, self.pid, self.series_id, self.show_title, self.show_season, self.show_episode,
-                self.show_details, str(self.date_time), self.duration, self.channel_id)
+                self.show_details, str(self.date_time), self.duration, self.channel_id, self.search_title)
 
     def to_dict(self):
         """
