@@ -94,16 +94,26 @@ class MEPG:
                 program_title = s[1].text
                 series = re.search('(.+) T([0-9]+) - Ep\. ([0-9]+)', program_title)
 
-                # If it is an episode of a series
+                # If it is an episode of a series with season and episode
                 if series:
                     show_title = series.group(1)
 
                     show_season = int(series.group(2))
                     show_episode = int(series.group(3))
                 else:
-                    show_title = program_title
-                    show_season = 0
-                    show_episode = 0
+                    series = re.search('(.+) - Ep\. ([0-9]+)', program_title)
+
+                    # If it is an episode of a series but only has episode
+                    if series:
+                        show_title = series.group(1)
+
+                        show_season = 1
+                        show_episode = int(series.group(2))
+                    else:
+                        show_title = program_title
+
+                        show_season = 0
+                        show_episode = 0
 
                 series_id = None
                 pid = s[0].text
