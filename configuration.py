@@ -105,3 +105,12 @@ REFRESH_TOKEN_VALIDITY_DAYS = 365
 ACCESS_TOKEN_VALIDITY_HOURS = 1
 
 # endregion
+
+# region Email
+
+email_domain = os.environ.get('EMAIL_DOMAIN', None)
+email_account = os.environ.get('EMAIL_ACCOUNT', None)
+email_user = os.environ.get('EMAIL_USER', None)
+email_password = os.environ.get('EMAIL_PASSWORD', None)
+
+# endregion
