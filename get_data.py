@@ -6,7 +6,7 @@ import re
 
 import configuration
 import models
-import auxiliary
+import processing
 
 
 class MEPG:
@@ -122,7 +122,7 @@ class MEPG:
                 # Add the show to the db
                 show = models.Show(pid, series_id, show_title.strip(), show_season, show_episode,
                                    s[2].text, show_datetime, int(s[12].text) / 60, channel_id,
-                                   auxiliary.make_searchable_title(show_title.strip()))
+                                   processing.make_searchable_title(show_title.strip()))
 
                 configuration.session.add(show)
 

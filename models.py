@@ -28,6 +28,7 @@ class Channel(base):
     def __init__(self, pid, name):
         self.pid = pid
         self.name = name
+        self.adult = False
 
     def __str__(self):
         return 'id: %d; pid: %s; name: %s; adult: %r' % (self.id, self.pid, self.name, self.adult)
