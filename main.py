@@ -215,8 +215,8 @@ class SearchTraktEP(fr.Resource):
 
         search_text = args['search_text']
 
-        if len(search_text) < 3:
-            return flask.jsonify({'search_trakt': 'Search text needs at least three characters!'})
+        if len(search_text) < 2:
+            return flask.jsonify({'search_trakt': 'Search text needs at least two characters!'})
 
         shows = processing.search_show_information(search_text)
 
@@ -269,7 +269,7 @@ class SearchDBEP(fr.Resource):
     def get(self, args):
         """Get search results for the search_text in the DB."""
 
-        search_text: str = args['search_text']
+        search_text: str = args['search_text'].strip()
         search_adult: bool = False
 
         for k, v in args.items():
@@ -278,6 +278,9 @@ class SearchDBEP(fr.Resource):
 
             if k == 'search_adult':
                 search_adult = v
+
+        if len(search_text) < 2:
+            return flask.jsonify({'search_db': 'Search text needs at least two characters!'})
 
         db_shows = processing.search_db([search_text], complete_title=False, search_adult=search_adult)
 
