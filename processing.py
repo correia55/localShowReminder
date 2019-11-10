@@ -1,5 +1,5 @@
 from enum import Enum
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 import urllib.request
 import urllib.error
@@ -454,8 +454,8 @@ def register_user(email: str, password: str):
         configuration.session.add(models.User(email, password))
         configuration.session.commit()
         # TODO: Send registration email
-    except IntegrityError:
-        pass
+    except (IntegrityError, InvalidRequestError):
+        configuration.session.rollback()
         # TODO: Send warning email
 
 
@@ -467,8 +467,7 @@ def check_login(email: str, password: str):
     :param password: the user's password.
     """
 
-    user = configuration.session.query(models.User).filter(
-        models.User.email == email).first()
+    user = configuration.session.query(models.User).filter(models.User.email == email).first()
 
     if user is None:
         user_password = None
