@@ -13,6 +13,7 @@ import webargs.flaskparser as fp
 import authentication
 import processing
 import get_data
+from models import ReminderType
 
 
 def daily_tasks():
@@ -313,10 +314,9 @@ class ReminderEP(fr.Resource):
             'show_id': webargs.fields.Str(required=True),
             'is_show': webargs.fields.Bool(required=True),
             'type': webargs.fields.Str(required=True),
-            'registration': webargs.fields.Bool(required=True),
-            'show_season': webargs.fields.Int(),
-            'show_episode': webargs.fields.Int(),
-            'comparison_type': webargs.fields.Int()
+            'show_season': webargs.fields.Int(required=True),
+            'show_episode': webargs.fields.Int(required=True),
+            'registration': webargs.fields.Bool(required=True)
         }
 
     @fp.use_args(register_args)
@@ -327,28 +327,13 @@ class ReminderEP(fr.Resource):
         show_id = args['show_id']
         is_show = args['is_show']
         reminder_type = args['type']
+        show_season = args['show_season']
+        show_episode = args['show_episode']
         registration = args['registration']
 
-        show_season = None
-        show_episode = None
-        comparison_type = None
-
-        for k, v in args.items():
-            if v is None:
-                continue
-
-            if k == 'show_season':
-                show_season = v
-            elif k == 'show_episode':
-                show_episode = v
-            elif k == 'comparison_type':
-                comparison_type = v
-
-        if reminder_type == 'DB':
-            reminder_type = 0
-        elif reminder_type == 'TRAKT':
-            reminder_type = 1
-        else:
+        try:
+            reminder_type = ReminderType[reminder_type]
+        except KeyError:
             return flask.jsonify({'reminder': 'Unknown type!'})
 
         # Get the user id from the token
@@ -356,11 +341,9 @@ class ReminderEP(fr.Resource):
         user_id = authentication.access_token_field(token.encode(), 'user')
 
         if registration:
-            processing.register_reminder(show_id, is_show, reminder_type, show_season, show_episode, comparison_type,
-                                         user_id)
+            processing.register_reminder(show_id, is_show, reminder_type, show_season, show_episode, user_id)
         else:
-            processing.update_reminder(None, show_id, is_show, reminder_type, show_season, show_episode,
-                                       comparison_type, user_id)
+            processing.update_reminder(None, show_id, is_show, reminder_type, show_season, show_episode, user_id)
 
         return flask.jsonify({'reminder': 'Reminder successfully registered!'})
 

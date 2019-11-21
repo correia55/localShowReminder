@@ -162,7 +162,7 @@ def get_titles(trakt_slug, show_type):
 
 
 def search_db(search_list, complete_title=False, below_date=None, show_season=None, show_episode=None,
-              comparison_type=None, search_adult=False):
+              search_adult=False):
     """
     Get the results of the search in the DB, using all the texts from the search list.
 
@@ -171,7 +171,6 @@ def search_db(search_list, complete_title=False, below_date=None, show_season=No
     :param below_date: a date below to limit the search.
     :param show_season: to specify a season.
     :param show_episode: to specify an episode.
-    :param comparison_type: to specify a means of comparison.
     :param search_adult: if it should also search in adult channels.
     :return: results of the search in the DB.
     """
@@ -202,27 +201,17 @@ def search_db(search_list, complete_title=False, below_date=None, show_season=No
 
         print('Search pattern: %s' % search_pattern)
 
-        query = configuration.session.query(models.Show, models.Channel.name).filter(
-            models.Show.search_title.op('~*')(search_pattern))
-
-        if not search_adult:
-            query = query.filter(models.Channel.adult != True)
+        query = configuration.session.query(models.Show, models.Channel.name) \
+            .filter(models.Show.search_title.op('~*')(search_pattern))
 
         if show_season is not None:
-            if comparison_type is None or comparison_type == ComparisonType.EQUALS.value:
-                query = query.filter(models.Show.show_season == show_season)
-            elif comparison_type == ComparisonType.BIGGER.value:
-                query = query.filter(models.Show.show_season > show_season)
-            elif comparison_type == ComparisonType.SMALLER.value:
-                query = query.filter(models.Show.show_season < show_season)
+            query = query.filter(models.Show.show_season == show_season)
 
         if show_episode is not None:
-            if comparison_type is None or comparison_type == ComparisonType.EQUALS.value:
-                query = query.filter(models.Show.show_episode == show_episode)
-            elif comparison_type == ComparisonType.BIGGER.value:
-                query = query.filter(models.Show.show_episode > show_episode)
-            elif comparison_type == ComparisonType.SMALLER.value:
-                query = query.filter(models.Show.show_episode < show_episode)
+            query = query.filter(models.Show.show_episode == show_episode)
+
+        if not search_adult:
+            query = query.filter(models.Channel.adult is not True)
 
         if below_date is not None:
             query = query.filter(models.Show.date_time > below_date)
@@ -264,7 +253,7 @@ def get_corresponding_id(imdb_id):
     return show_match.show_id
 
 
-def search_db_id(show_id, is_show, below_date=None, show_season=None, show_episode=None, comparison_type=None):
+def search_db_id(show_id, is_show, below_date=None, show_season=None, show_episode=None):
     """
     Get the results of the search in the DB, using show id (either series_id or pid).
 
@@ -273,7 +262,6 @@ def search_db_id(show_id, is_show, below_date=None, show_season=None, show_episo
     :param below_date: a date below to limit the search.
     :param show_season: to specify a season.
     :param show_episode: to specify an episode.
-    :param comparison_type: to specify a means of comparison.
     :return: results of the search in the DB.
     """
 
@@ -282,20 +270,10 @@ def search_db_id(show_id, is_show, below_date=None, show_season=None, show_episo
             models.Show.series_id == show_id)
 
         if show_season is not None:
-            if comparison_type is None or comparison_type == ComparisonType.EQUALS.value:
-                query = query.filter(models.Show.show_season == show_season)
-            elif comparison_type == ComparisonType.BIGGER.value:
-                query = query.filter(models.Show.show_season > show_season)
-            elif comparison_type == ComparisonType.SMALLER.value:
-                query = query.filter(models.Show.show_season < show_season)
+            query = query.filter(models.Show.show_season == show_season)
 
         if show_episode is not None:
-            if comparison_type is None or comparison_type == ComparisonType.EQUALS.value:
-                query = query.filter(models.Show.show_episode == show_episode)
-            elif comparison_type == ComparisonType.BIGGER.value:
-                query = query.filter(models.Show.show_episode > show_episode)
-            elif comparison_type == ComparisonType.SMALLER.value:
-                query = query.filter(models.Show.show_episode < show_episode)
+            query = query.filter(models.Show.show_episode == show_episode)
     else:
         query = configuration.session.query(models.Show).filter(
             models.Show.pid == show_id)
@@ -306,16 +284,15 @@ def search_db_id(show_id, is_show, below_date=None, show_season=None, show_episo
     return query.all()
 
 
-def register_reminder(show_id, is_show, reminder_type, show_season, show_episode, comparison_type, user_id):
+def register_reminder(show_id, is_show, reminder_type: models.ReminderType, show_season, show_episode, user_id):
     """
     Create a reminder for the given data.
 
     :param show_id: the id to search for.
     :param is_show: true if it is a show.
-    :param reminder_type: 0 if it's a DB and 1 otherwise.
+    :param reminder_type: reminder type.
     :param show_season: show season for the reminder.
     :param show_episode: show episode for the reminder.
-    :param comparison_type: type of comparison for the reminder.
     :param user_id: the owner of the reminder.
     """
 
@@ -324,27 +301,26 @@ def register_reminder(show_id, is_show, reminder_type, show_season, show_episode
         .filter(models.ShowReminder.show_id == show_id).first()
 
     if show is not None:
-        update_reminder(show, show_id, is_show, reminder_type, show_season, show_episode, comparison_type, user_id)
+        update_reminder(show, show_id, is_show, reminder_type, show_season, show_episode, user_id)
         return
 
     configuration.session.add(
-        models.ShowReminder(show_id, is_show, reminder_type, show_season, show_episode, comparison_type, user_id))
+        models.ShowReminder(show_id, is_show, reminder_type.value, show_season, show_episode, user_id))
 
     configuration.session.commit()
 
 
-def update_reminder(show: models.ShowReminder, show_id, is_show, reminder_type, show_season, show_episode,
-                    comparison_type, user_id):
+def update_reminder(show: models.ShowReminder, show_id, is_show, reminder_type: models.ReminderType, show_season,
+                    show_episode, user_id):
     """
     Update a reminder with the given data.
 
     :param show: the show to update, or None.
     :param show_id: the id to search for.
     :param is_show: true if it is a show.
-    :param reminder_type: 0 if it's a DB and 1 otherwise.
+    :param reminder_type: reminder type.
     :param show_season: show season for the reminder.
     :param show_episode: show episode for the reminder.
-    :param comparison_type: type of comparison for the reminder.
     :param user_id: the owner of the reminder.
     """
 
@@ -354,10 +330,9 @@ def update_reminder(show: models.ShowReminder, show_id, is_show, reminder_type, 
             .filter(models.ShowReminder.show_id == show_id).first()
 
     show.is_show = is_show
-    show.reminder_type = reminder_type
+    show.reminder_type = reminder_type.value
     show.show_season = show_season
     show.show_episode = show_episode
-    show.comparison_type = comparison_type
 
     configuration.session.commit()
 
@@ -370,8 +345,8 @@ def get_reminders(user_id):
     :return: a list of reminders for the user who's id is user_id.
     """
 
-    reminders = configuration.session.query(models.ShowReminder).filter(
-        models.ShowReminder.user_id == user_id).all()
+    reminders = configuration.session.query(models.ShowReminder) \
+        .filter(models.ShowReminder.user_id == user_id).all()
 
     return reminders
 
@@ -401,12 +376,12 @@ def process_reminders(last_date):
 
     for r in reminders:
         if r.reminder_type == ReminderType.DB:
-            db_shows = search_db_id(r.show_id, r.is_show, last_date, r.show_season, r.show_episode, r.comparison_type)
+            db_shows = search_db_id(r.show_id, r.is_show, last_date, r.show_season, r.show_episode)
         else:
             db_id = get_corresponding_id(r.show_id)
 
             if db_id is not None:
-                db_shows = search_db_id(db_id, r.is_show, last_date, r.show_season, r.show_episode, r.comparison_type)
+                db_shows = search_db_id(db_id, r.is_show, last_date, r.show_season, r.show_episode)
             else:
                 if r.is_show:
                     show_type = 'show'
@@ -419,8 +394,7 @@ def process_reminders(last_date):
 
                 search_adult = user.show_adult if user is not None else False
 
-                db_shows = search_db(titles, True, last_date, r.show_season, r.show_episode, r.comparison_type,
-                                     search_adult)
+                db_shows = search_db(titles, True, last_date, r.show_season, r.show_episode, search_adult)
 
         # TODO: Send notification with shows found
         print('Number of shows: %d' % len(db_shows))
