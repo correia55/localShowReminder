@@ -226,7 +226,7 @@ class SearchTraktEP(fr.Resource):
 
 class SearchDBTraktIdEP(fr.Resource):
     def __init__(self):
-        super(SearchDBEP, self).__init__()
+        super(SearchDBTraktIdEP, self).__init__()
 
     search_args = \
         {
