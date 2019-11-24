@@ -142,25 +142,17 @@ class ShowReminder(base):
                (self.id, self.show_id, self.is_show, self.reminder_type, show_season, show_episode,
                 self.user_id)
 
-    def to_dict(self):
-        """
-        Create a dictionary with all the information being sent in the responses to the API.
 
-        :return: the corresponding dictionary.
-        """
+class TraktTitle(base):
+    __tablename__ = 'TraktTitle'
 
-        if self.show_season is None:
-            show_season = -1
-        else:
-            show_season = self.show_season
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    trakt_id = Column(String, nullable=False)
+    trakt_title = Column(String, nullable=False)
 
-        if self.show_episode is None:
-            show_episode = -1
-        else:
-            show_episode = self.show_season
-
-        return {'id': self.id, 'show_id': self.show_id, 'is_show': self.is_show, 'reminder_type': self.reminder_type,
-                'show_season': show_season, 'show_episode': show_episode, 'user_id': self.user_id}
+    def __init__(self, trakt_id, trakt_title):
+        self.trakt_id = trakt_id
+        self.trakt_title = trakt_title
 
 
 class User(base):

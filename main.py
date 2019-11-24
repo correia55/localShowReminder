@@ -1,18 +1,17 @@
-import flask
-import webargs
-import threading
 import datetime
+import threading
 
-from flask_cors import CORS, cross_origin
-
-import flask_restful as fr
+import flask
 import flask_httpauth as fh
 import flask_limiter as fl
+import flask_restful as fr
+import webargs
 import webargs.flaskparser as fp
+from flask_cors import CORS, cross_origin
 
 import authentication
-import processing
 import get_data
+import processing
 from models import ReminderType
 
 
@@ -284,8 +283,7 @@ class ReminderEP(fr.Resource):
             'is_show': webargs.fields.Bool(required=True),
             'type': webargs.fields.Str(required=True),
             'show_season': webargs.fields.Int(required=True),
-            'show_episode': webargs.fields.Int(required=True),
-            'registration': webargs.fields.Bool(required=True)
+            'show_episode': webargs.fields.Int(required=True)
         }
 
     @fp.use_args(register_args)
@@ -298,7 +296,6 @@ class ReminderEP(fr.Resource):
         reminder_type = args['type']
         show_season = args['show_season']
         show_episode = args['show_episode']
-        registration = args['registration']
 
         try:
             reminder_type = ReminderType[reminder_type]
@@ -309,10 +306,7 @@ class ReminderEP(fr.Resource):
         token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
         user_id = authentication.access_token_field(token.encode(), 'user')
 
-        if registration:
-            processing.register_reminder(show_id, is_show, reminder_type, show_season, show_episode, user_id)
-        else:
-            processing.update_reminder(None, show_id, is_show, reminder_type, show_season, show_episode, user_id)
+        processing.register_reminder(show_id, is_show, reminder_type, show_season, show_episode, user_id)
 
         return flask.jsonify({'reminder': 'success', 'msg': 'Reminder successfully registered.'})
 

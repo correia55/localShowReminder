@@ -12,11 +12,7 @@ import flask_bcrypt as fb
 import models
 import configuration
 import auxiliary
-
-
-class ReminderType(Enum):
-    DB = 0
-    IMDB = 1
+from response_models import ShowReminder
 
 
 class ComparisonType(Enum):
@@ -115,9 +111,9 @@ def search_show_information(search_text):
     return results
 
 
-def get_titles(trakt_slug, show_type):
+def get_titles_trakt(trakt_slug, show_type):
     """
-    Get the various possible titles for the selected title, in both english and portuguese.
+    Get the various possible titles for the selected title, in both english and portuguese, using the trakt API.
 
     :param trakt_slug: the selected title.
     :param show_type: 'show' for tv shows and 'movie' for movies.
@@ -159,6 +155,17 @@ def get_titles(trakt_slug, show_type):
             results.add(t['title'])
 
     return results
+
+
+def get_titles_db(trakt_slug):
+    """
+    Get the various possible titles for the selected title, in both english and portuguese, using the DB.
+
+    :param trakt_slug: the selected title.
+    :return: the various possible titles.
+    """
+
+    return configuration.session.query(models.TraktTitle).filter(models.TraktTitle.trakt_id == trakt_slug).all()
 
 
 def search_db(search_list, complete_title=False, below_date=None, show_season=None, show_episode=None,
@@ -311,6 +318,18 @@ def register_reminder(show_id, is_show, reminder_type: models.ReminderType, show
     configuration.session.add(
         models.ShowReminder(show_id, is_show, reminder_type.value, show_season, show_episode, user_id))
 
+    # Add all possible titles for that trakt id to the DB
+    if models.ReminderType.TRAKT == reminder_type:
+        if is_show:
+            show_type = 'show'
+        else:
+            show_type = 'movie'
+
+        titles = get_titles_trakt(show_id, show_type)
+
+        for t in titles:
+            configuration.session.add(models.TraktTitle(show_id, t))
+
     configuration.session.commit()
 
 
@@ -354,7 +373,26 @@ def get_reminders(user_id):
     reminders = configuration.session.query(models.ShowReminder) \
         .filter(models.ShowReminder.user_id == user_id).all()
 
-    return reminders
+    # Add the possible titles to the reminders sent
+    final_reminders = []
+
+    for r in reminders:
+        reminder_type = models.ReminderType(r.reminder_type)
+
+        if models.ReminderType.TRAKT == reminder_type:
+            db_titles = get_titles_db(r.show_id)
+
+            titles = []
+
+            for t in db_titles:
+                titles.append(t.trakt_title)
+        else:
+            titles = [r.show_id]
+
+        final_reminders.append(ShowReminder(r.show_id, r.is_show, models.ReminderType(r.reminder_type), r.show_season,
+                                            r.show_episode, titles))
+
+    return final_reminders
 
 
 def remove_reminder(reminder_id):
@@ -381,7 +419,7 @@ def process_reminders(last_date):
     reminders = configuration.session.query(models.ShowReminder).all()
 
     for r in reminders:
-        if r.reminder_type == ReminderType.DB:
+        if r.reminder_type == models.ReminderType.DB:
             db_shows = search_db_id(r.show_id, r.is_show, last_date, r.show_season, r.show_episode)
         else:
             db_id = get_corresponding_id(r.show_id)
@@ -389,12 +427,7 @@ def process_reminders(last_date):
             if db_id is not None:
                 db_shows = search_db_id(db_id, r.is_show, last_date, r.show_season, r.show_episode)
             else:
-                if r.is_show:
-                    show_type = 'show'
-                else:
-                    show_type = 'movie'
-
-                titles = get_titles(r.show_id, show_type)
+                titles = get_titles_db(r.show_id)
 
                 user = configuration.session.query(models.User).filter(models.User.id == r.user_id).first()
 
