@@ -132,7 +132,7 @@ class RegistrationEP(fr.Resource):
 
         processing.register_user(email, password)
 
-        return flask.jsonify({'registration': 'The registration was a success, check your email!'})
+        return flask.jsonify({'registration': 'success', 'msg:': 'An email was sent to your inbox.'})
 
 
 class LoginEP(fr.Resource):
@@ -150,9 +150,9 @@ class LoginEP(fr.Resource):
 
         if user is not None:
             auth_token = authentication.generate_token(user.id, authentication.TokenType.REFRESH).decode()
-            return flask.jsonify({'login': 'The login was a success!', 'token': str(auth_token)})
+            return flask.jsonify({'login': 'success', 'token': str(auth_token)})
         else:
-            return flask.jsonify({'login': 'The login failed!'})
+            return flask.jsonify({'login': 'failure'})
 
 
 class LogoutEP(fr.Resource):
@@ -173,7 +173,7 @@ class LogoutEP(fr.Resource):
 
         processing.logout(auth_token)
 
-        return flask.jsonify({'logout': 'The logout was successful!'})
+        return flask.jsonify({'logout': 'success'})
 
 
 class AccessEP(fr.Resource):
@@ -195,9 +195,9 @@ class AccessEP(fr.Resource):
         valid, access_token = authentication.generate_access_token(auth_token.encode())
 
         if valid:
-            return flask.jsonify({'access': 'valid token', 'token': str(access_token.decode())})
+            return flask.jsonify({'access': 'success', 'token': str(access_token.decode())})
         else:
-            return flask.jsonify({'access': 'invalid token', 'token': access_token})
+            return flask.jsonify({'access': 'failure', 'token': 'Invalid refresh token, login again.'})
 
 
 class SearchTraktEP(fr.Resource):
@@ -217,42 +217,11 @@ class SearchTraktEP(fr.Resource):
         search_text = args['search_text']
 
         if len(search_text) < 2:
-            return flask.jsonify({'search_trakt': 'Search text needs at least two characters!'})
+            return flask.jsonify({'search_trakt': 'failure', 'msg': 'Search text needs at least two characters.'})
 
         shows = processing.search_show_information(search_text)
 
-        return flask.jsonify({'search_trakt': shows})
-
-
-class SearchDBTraktIdEP(fr.Resource):
-    def __init__(self):
-        super(SearchDBTraktIdEP, self).__init__()
-
-    search_args = \
-        {
-            'trakt_id': webargs.fields.Str(required=True),
-            'show_type': webargs.fields.Str(required=True)
-        }
-
-    @fp.use_args(search_args)
-    @cross_origin(supports_credentials=True)
-    def get(self, args):
-        """Get search results for the search_text in the DB."""
-
-        trakt_id = args['trakt_id']
-        show_type = args['show_type']
-
-        if show_type != 'show' and show_type != 'movie':
-            return flask.jsonify({'search_db': 'The type of show needs to be show or movie!'})
-
-        titles = processing.get_titles(trakt_id, show_type)
-
-        db_shows = processing.search_db(titles, complete_title=True, search_adult=True)
-
-        if len(db_shows) != 0:
-            return flask.jsonify({'search_db': db_shows})
-
-        return flask.jsonify({'search_db': 'No results found!'})
+        return flask.jsonify({'search_trakt': 'success', 'show_list': shows})
 
 
 class SearchDBEP(fr.Resource):
@@ -281,14 +250,14 @@ class SearchDBEP(fr.Resource):
                 search_adult = v
 
         if len(search_text) < 2:
-            return flask.jsonify({'search_db': 'Search text needs at least two characters!'})
+            return flask.jsonify({'search_db': 'failure', 'msg': 'Search text needs at least two characters.'})
 
         db_shows = processing.search_db([search_text], complete_title=False, search_adult=search_adult)
 
         if len(db_shows) != 0:
-            return flask.jsonify({'search_db': db_shows})
+            return flask.jsonify({'search_db': 'success', 'show_list': db_shows})
 
-        return flask.jsonify({'search_db': 'No results found!'})
+        return flask.jsonify({'search_db': 'failure', 'msg': 'No results found.'})
 
 
 class ReminderEP(fr.Resource):
@@ -307,7 +276,7 @@ class ReminderEP(fr.Resource):
 
         reminders = processing.get_reminders(user_id)
 
-        return flask.jsonify({'reminder': processing.list_to_json(reminders)})
+        return flask.jsonify({'reminder': 'success', 'reminder_list': processing.list_to_json(reminders)})
 
     register_args = \
         {
@@ -334,7 +303,7 @@ class ReminderEP(fr.Resource):
         try:
             reminder_type = ReminderType[reminder_type]
         except KeyError:
-            return flask.jsonify({'reminder': 'Unknown type!'})
+            return flask.jsonify({'reminder': 'failure', 'msg': 'Unknown reminder type.'})
 
         # Get the user id from the token
         token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
@@ -345,7 +314,7 @@ class ReminderEP(fr.Resource):
         else:
             processing.update_reminder(None, show_id, is_show, reminder_type, show_season, show_episode, user_id)
 
-        return flask.jsonify({'reminder': 'Reminder successfully registered!'})
+        return flask.jsonify({'reminder': 'success', 'msg': 'Reminder successfully registered.'})
 
     delete_args = \
         {
@@ -361,7 +330,7 @@ class ReminderEP(fr.Resource):
 
         processing.remove_reminder(reminder_id)
 
-        return flask.jsonify({'reminder': 'Reminder successfully removed!'})
+        return flask.jsonify({'reminder': 'success', 'msg': 'Reminder successfully removed.'})
 
 
 api.add_resource(RegistrationEP, '/0.1/registration', endpoint='registration')

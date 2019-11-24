@@ -300,6 +300,10 @@ def register_reminder(show_id, is_show, reminder_type: models.ReminderType, show
         .filter(models.ShowReminder.user_id == user_id) \
         .filter(models.ShowReminder.show_id == show_id).first()
 
+    if not is_show:
+        show_season = None
+        show_episode = None
+
     if show is not None:
         update_reminder(show, show_id, is_show, reminder_type, show_season, show_episode, user_id)
         return
@@ -331,8 +335,10 @@ def update_reminder(show: models.ShowReminder, show_id, is_show, reminder_type: 
 
     show.is_show = is_show
     show.reminder_type = reminder_type.value
-    show.show_season = show_season
-    show.show_episode = show_episode
+
+    if show.is_show:
+        show.show_season = show_season
+        show.show_episode = show_episode
 
     configuration.session.commit()
 

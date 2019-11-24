@@ -26,7 +26,7 @@ def generate_access_token(auth_token: bytearray):
     if valid:
         return True, generate_token(msg, TokenType.ACCESS)
     else:
-        return False, 'Invalid token. Please log in again.'
+        return False, None
 
 
 def generate_token(user_id: int, token_type: TokenType) -> any:
