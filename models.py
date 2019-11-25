@@ -127,19 +127,9 @@ class ShowReminder(base):
         self.user_id = user_id
 
     def __str__(self):
-        if self.show_season is None:
-            show_season = -1
-        else:
-            show_season = self.show_season
-
-        if self.show_episode is None:
-            show_episode = -1
-        else:
-            show_episode = self.show_season
-
         return 'id: %d; show_id: %s; is_show: %r; reminder_type: %d; show_season: %d; show_episode: %d; ' \
                'user_id: %d' % \
-               (self.id, self.show_id, self.is_show, self.reminder_type, show_season, show_episode,
+               (self.id, self.show_id, self.is_show, self.reminder_type, self.show_season, self.show_episode,
                 self.user_id)
 
 

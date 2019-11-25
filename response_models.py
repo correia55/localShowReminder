@@ -19,16 +19,6 @@ class ShowReminder:
         :return: the corresponding dictionary.
         """
 
-        if self.show_season is None:
-            show_season = -1
-        else:
-            show_season = self.show_season
-
-        if self.show_episode is None:
-            show_episode = -1
-        else:
-            show_episode = self.show_season
-
         return {'show_id': self.show_id, 'is_show': self.is_show, 'reminder_type': self.reminder_type.name,
-                'show_season': show_season, 'show_episode': show_episode,
+                'show_season': self.show_season, 'show_episode': self.show_episode,
                 'show_titles': json.dumps(self.show_titles, ensure_ascii=False)}

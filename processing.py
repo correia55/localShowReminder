@@ -305,6 +305,7 @@ def register_reminder(show_id, is_show, reminder_type: models.ReminderType, show
 
     show = configuration.session.query(models.ShowReminder) \
         .filter(models.ShowReminder.user_id == user_id) \
+        .filter(models.ShowReminder.is_show == is_show) \
         .filter(models.ShowReminder.show_id == show_id).first()
 
     if not is_show:
@@ -312,8 +313,7 @@ def register_reminder(show_id, is_show, reminder_type: models.ReminderType, show
         show_episode = None
 
     if show is not None:
-        update_reminder(show, show_id, is_show, reminder_type, show_season, show_episode, user_id)
-        return
+        return update_reminder(show, show_id, is_show, reminder_type, show_season, show_episode, user_id)
 
     configuration.session.add(
         models.ShowReminder(show_id, is_show, reminder_type.value, show_season, show_episode, user_id))
@@ -331,6 +331,8 @@ def register_reminder(show_id, is_show, reminder_type: models.ReminderType, show
             configuration.session.add(models.TraktTitle(show_id, t))
 
     configuration.session.commit()
+
+    return get_reminders(user_id)
 
 
 def update_reminder(show: models.ShowReminder, show_id, is_show, reminder_type: models.ReminderType, show_season,
@@ -360,6 +362,8 @@ def update_reminder(show: models.ShowReminder, show_id, is_show, reminder_type: 
         show.show_episode = show_episode
 
     configuration.session.commit()
+
+    return get_reminders(user_id)
 
 
 def get_reminders(user_id):

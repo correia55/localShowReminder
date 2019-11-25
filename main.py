@@ -282,8 +282,8 @@ class ReminderEP(fr.Resource):
             'show_id': webargs.fields.Str(required=True),
             'is_show': webargs.fields.Bool(required=True),
             'type': webargs.fields.Str(required=True),
-            'show_season': webargs.fields.Int(required=True),
-            'show_episode': webargs.fields.Int(required=True)
+            'show_season': webargs.fields.Int(),
+            'show_episode': webargs.fields.Int()
         }
 
     @fp.use_args(register_args)
@@ -294,21 +294,35 @@ class ReminderEP(fr.Resource):
         show_id = args['show_id']
         is_show = args['is_show']
         reminder_type = args['type']
-        show_season = args['show_season']
-        show_episode = args['show_episode']
+        show_season = None
+        show_episode = None
+
+        for k, v in args.items():
+            if v is None:
+                continue
+
+            if k == 'show_season':
+                show_season = v
+            elif k == 'show_episode':
+                show_episode = v
 
         try:
             reminder_type = ReminderType[reminder_type]
         except KeyError:
             return flask.jsonify({'reminder': 'failure', 'msg': 'Unknown reminder type.'})
 
+        if is_show and (show_season is None or show_episode is None):
+            return flask.jsonify({'reminder': 'failure',
+                                  'msg': 'Reminders for tv shows require a season and an episode.'})
+
         # Get the user id from the token
         token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
         user_id = authentication.access_token_field(token.encode(), 'user')
 
-        processing.register_reminder(show_id, is_show, reminder_type, show_season, show_episode, user_id)
+        reminders = processing.register_reminder(show_id, is_show, reminder_type, show_season, show_episode, user_id)
 
-        return flask.jsonify({'reminder': 'success', 'msg': 'Reminder successfully registered.'})
+        return flask.jsonify({'reminder': 'success', 'msg': 'Reminder successfully registered.',
+                              'reminder_list': processing.list_to_json(reminders)})
 
     delete_args = \
         {
