@@ -313,7 +313,8 @@ def register_reminder(show_id, is_show, reminder_type: models.ReminderType, show
         show_episode = None
 
     if show is not None:
-        return update_reminder(show, show_id, is_show, reminder_type, show_season, show_episode, user_id)
+        update_reminder(show, show_id, is_show, reminder_type, show_season, show_episode, user_id)
+        return
 
     configuration.session.add(
         models.ShowReminder(show_id, is_show, reminder_type.value, show_season, show_episode, user_id))
@@ -331,8 +332,6 @@ def register_reminder(show_id, is_show, reminder_type: models.ReminderType, show
             configuration.session.add(models.TraktTitle(show_id, t))
 
     configuration.session.commit()
-
-    return get_reminders(user_id)
 
 
 def update_reminder(show: models.ShowReminder, show_id, is_show, reminder_type: models.ReminderType, show_season,
@@ -363,8 +362,6 @@ def update_reminder(show: models.ShowReminder, show_id, is_show, reminder_type: 
 
     configuration.session.commit()
 
-    return get_reminders(user_id)
-
 
 def get_reminders(user_id):
     """
@@ -393,23 +390,26 @@ def get_reminders(user_id):
         else:
             titles = [r.show_id]
 
-        final_reminders.append(ShowReminder(r.show_id, r.is_show, models.ReminderType(r.reminder_type), r.show_season,
-                                            r.show_episode, titles))
+        final_reminders.append(
+            ShowReminder(r.id, r.show_id, r.is_show, models.ReminderType(r.reminder_type), r.show_season,
+                         r.show_episode, titles))
 
     return final_reminders
 
 
-def remove_reminder(reminder_id):
+def remove_reminder(reminder_id, user_id):
     """
     Delete the reminder with the corresponding id.
 
     :param reminder_id: the id of the reminder.
     """
 
-    reminder = configuration.session.query(models.ShowReminder).filter(
-        models.ShowReminder.id == reminder_id).first()
-    configuration.session.delete(reminder)
+    reminder = configuration.session.query(models.ShowReminder) \
+        .filter(models.ShowReminder.id == reminder_id) \
+        .filter(models.ShowReminder.user_id == user_id) \
+        .first()
 
+    configuration.session.delete(reminder)
     configuration.session.commit()
 
 

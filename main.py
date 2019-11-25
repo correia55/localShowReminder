@@ -319,10 +319,10 @@ class ReminderEP(fr.Resource):
         token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
         user_id = authentication.access_token_field(token.encode(), 'user')
 
-        reminders = processing.register_reminder(show_id, is_show, reminder_type, show_season, show_episode, user_id)
+        processing.register_reminder(show_id, is_show, reminder_type, show_season, show_episode, user_id)
 
         return flask.jsonify({'reminder': 'success', 'msg': 'Reminder successfully registered.',
-                              'reminder_list': processing.list_to_json(reminders)})
+                              'reminder_list': processing.list_to_json(processing.get_reminders(user_id))})
 
     delete_args = \
         {
@@ -336,9 +336,14 @@ class ReminderEP(fr.Resource):
 
         reminder_id = args['reminder_id']
 
-        processing.remove_reminder(reminder_id)
+        # Get the user id from the token
+        token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+        user_id = authentication.access_token_field(token.encode(), 'user')
 
-        return flask.jsonify({'reminder': 'success', 'msg': 'Reminder successfully removed.'})
+        processing.remove_reminder(reminder_id, user_id)
+
+        return flask.jsonify({'reminder': 'success', 'msg': 'Reminder successfully removed.',
+                              'reminder_list': processing.list_to_json(processing.get_reminders(user_id))})
 
 
 api.add_resource(RegistrationEP, '/0.1/registration', endpoint='registration')
