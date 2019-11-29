@@ -105,8 +105,11 @@ def search_show_information(search_text):
     :return: the list of results.
     """
 
-    results = search_show_information_by_type(search_text, 'show')
-    results += search_show_information_by_type(search_text, 'movie')
+    # TODO: UNCOMENT THIS AND REPLACE THE READING OF THE FILE
+    # results = search_show_information_by_type(search_text, 'show')
+    # results += search_show_information_by_type(search_text, 'movie')
+
+    results = json.loads(open('dummy_data/trakt_data.json').read())
 
     return results
 
