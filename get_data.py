@@ -113,6 +113,9 @@ class MEPG:
                     else:
                         show_title = program_title
 
+                        show_season = None
+                        show_episode = None
+
                 series_id = None
                 pid = s[0].text
 

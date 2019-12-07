@@ -8,8 +8,8 @@ base = declarative_base()
 
 
 class ReminderType(Enum):
-    DB = 0
-    TRAKT = 1
+    LISTINGS = 0
+    DB = 1
 
 
 class LastUpdate(base):

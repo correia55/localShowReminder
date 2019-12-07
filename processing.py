@@ -323,7 +323,7 @@ def register_reminder(show_id, is_show, reminder_type: models.ReminderType, show
         models.ShowReminder(show_id, is_show, reminder_type.value, show_season, show_episode, user_id))
 
     # Add all possible titles for that trakt id to the DB
-    if models.ReminderType.TRAKT == reminder_type:
+    if models.ReminderType.DB == reminder_type:
         if is_show:
             show_type = 'show'
         else:
@@ -383,7 +383,7 @@ def get_reminders(user_id):
     for r in reminders:
         reminder_type = models.ReminderType(r.reminder_type)
 
-        if models.ReminderType.TRAKT == reminder_type:
+        if models.ReminderType.DB == reminder_type:
             db_titles = get_titles_db(r.show_id)
 
             titles = []
@@ -426,7 +426,7 @@ def process_reminders(last_date):
     reminders = configuration.session.query(models.ShowReminder).all()
 
     for r in reminders:
-        if r.reminder_type == models.ReminderType.DB:
+        if r.reminder_type == models.ReminderType.LISTINGS:
             db_shows = search_db_id(r.show_id, r.is_show, last_date, r.show_season, r.show_episode)
         else:
             db_id = get_corresponding_id(r.show_id)
