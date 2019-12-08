@@ -199,9 +199,9 @@ class AccessEP(fr.Resource):
             return flask.jsonify({'access': 'failure', 'token': 'Invalid refresh token, login again.'})
 
 
-class SearchTraktEP(fr.Resource):
+class SearchShowDBEP(fr.Resource):
     def __init__(self):
-        super(SearchTraktEP, self).__init__()
+        super(SearchShowDBEP, self).__init__()
 
     search_args = \
         {
@@ -216,16 +216,16 @@ class SearchTraktEP(fr.Resource):
         search_text = args['search_text']
 
         if len(search_text) < 2:
-            return flask.jsonify({'search_trakt': 'failure', 'msg': 'Search text needs at least two characters.'})
+            return flask.jsonify({'search_show_db': 'failure', 'msg': 'Search text needs at least two characters.'})
 
         shows = processing.search_show_information(search_text)
 
-        return flask.jsonify({'search_trakt': 'success', 'show_list': shows})
+        return flask.jsonify({'search_show_db': 'success', 'show_list': shows})
 
 
-class SearchDBEP(fr.Resource):
+class SearchListingsEP(fr.Resource):
     def __init__(self):
-        super(SearchDBEP, self).__init__()
+        super(SearchListingsEP, self).__init__()
 
     search_args = \
         {
@@ -236,7 +236,7 @@ class SearchDBEP(fr.Resource):
     @fp.use_args(search_args)
     @cross_origin(supports_credentials=True)
     def get(self, args):
-        """Get search results for the search_text in the DB."""
+        """Get search results for the search_text in the listings."""
 
         search_text: str = args['search_text'].strip()
         search_adult: bool = False
@@ -249,14 +249,14 @@ class SearchDBEP(fr.Resource):
                 search_adult = v
 
         if len(search_text) < 2:
-            return flask.jsonify({'search_db': 'failure', 'msg': 'Search text needs at least two characters.'})
+            return flask.jsonify({'search_listings': 'failure', 'msg': 'Search text needs at least two characters.'})
 
         db_shows = processing.search_db([search_text], complete_title=False, search_adult=search_adult)
 
         if len(db_shows) != 0:
-            return flask.jsonify({'search_db': 'success', 'show_list': db_shows})
+            return flask.jsonify({'search_listings': 'success', 'show_list': db_shows})
 
-        return flask.jsonify({'search_db': 'failure', 'msg': 'No results found.'})
+        return flask.jsonify({'search_listings': 'failure', 'msg': 'No results found.'})
 
 
 class ReminderEP(fr.Resource):
@@ -350,8 +350,8 @@ api.add_resource(RegistrationEP, '/0.1/registration', endpoint='registration')
 api.add_resource(LoginEP, '/0.1/login', endpoint='login')
 api.add_resource(LogoutEP, '/0.1/logout', endpoint='logout')
 api.add_resource(AccessEP, '/0.1/access', endpoint='access')
-api.add_resource(SearchTraktEP, '/0.1/search_trakt', endpoint='search_trakt')
-api.add_resource(SearchDBEP, '/0.1/search_db', endpoint='search_db')
+api.add_resource(SearchShowDBEP, '/0.1/search_trakt', endpoint='search_show_db')
+api.add_resource(SearchListingsEP, '/0.1/search_listings', endpoint='search_db')
 api.add_resource(ReminderEP, '/0.1/reminder', endpoint='reminder')
 
 if __name__ == '__main__':
