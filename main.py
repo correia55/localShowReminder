@@ -280,7 +280,7 @@ class ReminderEP(fr.Resource):
     register_args = \
         {
             'show_id': webargs.fields.Str(required=True),
-            'is_show': webargs.fields.Bool(required=True),
+            'is_movie': webargs.fields.Bool(required=True),
             'type': webargs.fields.Str(required=True),
             'show_season': webargs.fields.Int(),
             'show_episode': webargs.fields.Int()
@@ -292,7 +292,7 @@ class ReminderEP(fr.Resource):
         """Register a reminder."""
 
         show_id = args['show_id']
-        is_show = args['is_show']
+        is_movie = args['is_movie']
         reminder_type = args['type']
         show_season = None
         show_episode = None
@@ -311,7 +311,7 @@ class ReminderEP(fr.Resource):
         except KeyError:
             return flask.jsonify({'reminder': 'failure', 'msg': 'Unknown reminder type.'})
 
-        if is_show and (show_season is None or show_episode is None):
+        if not is_movie and (show_season is None or show_episode is None):
             return flask.jsonify({'reminder': 'failure',
                                   'msg': 'Reminders for tv shows require a season and an episode.'})
 
@@ -319,7 +319,7 @@ class ReminderEP(fr.Resource):
         token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
         user_id = authentication.access_token_field(token.encode(), 'user')
 
-        processing.register_reminder(show_id, is_show, reminder_type, show_season, show_episode, user_id)
+        processing.register_reminder(show_id, is_movie, reminder_type, show_season, show_episode, user_id)
 
         return flask.jsonify({'reminder': 'success', 'msg': 'Reminder successfully registered.',
                               'reminder_list': processing.list_to_json(processing.get_reminders(user_id))})

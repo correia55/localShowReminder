@@ -43,7 +43,7 @@ class MEPG:
         configuration.session.commit()
 
     @staticmethod
-    def update_show_list_day(db_channels, db_last_update):
+    def update_show_list_day(db_channels: [models.Channel], db_last_update):
         """
         Make the request for the shows of a set of channels on a given day, and add them to the database.
 
@@ -57,13 +57,13 @@ class MEPG:
         first = True
 
         for c in db_channels:
-            pid = urllib.parse.quote(c.pid)
+            acronym = urllib.parse.quote(c.acronym)
 
             if first:
                 first = False
-                shows_url += pid
+                shows_url += acronym
             else:
-                shows_url += ',' + pid
+                shows_url += ',' + acronym
 
         shows_url += '&startDate=' + db_last_update.date.strftime('%Y-%m-%d') + '%2000:00:01'
         shows_url += '&endDate=' + db_last_update.date.strftime('%Y-%m-%d') + '%2023:59:59'
@@ -81,7 +81,7 @@ class MEPG:
         for c in root:
             channel_shows = c[4]
             channel_id = configuration.session.query(models.Channel).filter(
-                models.Channel.pid == c[1].text).first().id
+                models.Channel.acronym == c[1].text).first().id
 
             for s in channel_shows:
                 show_datetime = s[11].text

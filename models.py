@@ -28,17 +28,17 @@ class Channel(base):
     __tablename__ = 'Channel'
 
     id = Column(Integer, primary_key=True)
-    pid = Column(String, unique=True)
+    acronym = Column(String, unique=True)
     name = Column(String, unique=True)
     adult = Column(Boolean)
 
-    def __init__(self, pid, name):
-        self.pid = pid
+    def __init__(self, acronym, name):
+        self.acronym = acronym
         self.name = name
         self.adult = False
 
     def __str__(self):
-        return 'id: %d; pid: %s; name: %s; adult: %r' % (self.id, self.pid, self.name, self.adult)
+        return 'id: %d; acronym: %s; name: %s; adult: %r' % (self.id, self.acronym, self.name, self.adult)
 
 
 class Show(base):
@@ -110,7 +110,7 @@ class ShowReminder(base):
     # Corresponds to the show's series_id or pid, if the series_id is null
     show_id = Column(String, nullable=False)
 
-    is_show = Column(Boolean, nullable=False)
+    is_movie = Column(Boolean, nullable=False)
     reminder_type = Column(Integer, nullable=False)
 
     show_season = Column(Integer)
@@ -118,18 +118,18 @@ class ShowReminder(base):
 
     user_id = Column(Integer, ForeignKey('User.id'))
 
-    def __init__(self, show_id, is_show, reminder_type, show_season, show_episode, user_id):
+    def __init__(self, show_id, is_movie, reminder_type, show_season, show_episode, user_id):
         self.show_id = show_id
-        self.is_show = is_show
+        self.is_movie = is_movie
         self.reminder_type = reminder_type
         self.show_season = show_season
         self.show_episode = show_episode
         self.user_id = user_id
 
     def __str__(self):
-        return 'id: %d; show_id: %s; is_show: %r; reminder_type: %d; show_season: %d; show_episode: %d; ' \
+        return 'id: %d; show_id: %s; is_movie: %r; reminder_type: %d; show_season: %d; show_episode: %d; ' \
                'user_id: %d' % \
-               (self.id, self.show_id, self.is_show, self.reminder_type, self.show_season, self.show_episode,
+               (self.id, self.show_id, self.is_movie, self.reminder_type, self.show_season, self.show_episode,
                 self.user_id)
 
 
@@ -138,10 +138,12 @@ class TraktTitle(base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     trakt_id = Column(String, nullable=False)
+    is_movie = Column(Boolean, nullable=False)
     trakt_title = Column(String, nullable=False)
 
-    def __init__(self, trakt_id, trakt_title):
+    def __init__(self, trakt_id, is_movie, trakt_title):
         self.trakt_id = trakt_id
+        self.is_movie = is_movie
         self.trakt_title = trakt_title
 
 

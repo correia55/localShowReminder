@@ -66,12 +66,12 @@ def search_show_information_by_type(search_text, show_type):
     # Parse the list of shows from the request
     shows = json.loads(shows_json)
 
-    is_show = show_type == 'show'
+    is_movie = show_type == 'movie'
 
     for s in shows:
         imdb_id = s[show_type]['ids']['imdb']
 
-        show_dict = {'is_show': is_show, 'show_title': s[show_type]['title'], 'show_year': s[show_type]['year'],
+        show_dict = {'is_movie': is_movie, 'show_title': s[show_type]['title'], 'show_year': s[show_type]['year'],
                      'show_image': 'N/A', 'show_slug': s[show_type]['ids']['slug'],
                      'show_overview': s[show_type]['overview']}
 
@@ -263,19 +263,19 @@ def get_corresponding_id(imdb_id):
     return show_match.show_id
 
 
-def search_db_id(show_id, is_show, below_date=None, show_season=None, show_episode=None):
+def search_db_id(show_id, is_movie, below_date=None, show_season=None, show_episode=None):
     """
     Get the results of the search in the DB, using show id (either series_id or pid).
 
     :param show_id: the id to search for.
-    :param is_show: true if it is a show.
+    :param is_movie: true if it is a movie.
     :param below_date: a date below to limit the search.
     :param show_season: to specify a season.
     :param show_episode: to specify an episode.
     :return: results of the search in the DB.
     """
 
-    if is_show:
+    if not is_movie:
         query = configuration.session.query(models.Show).filter(
             models.Show.series_id == show_id)
 
@@ -294,12 +294,12 @@ def search_db_id(show_id, is_show, below_date=None, show_season=None, show_episo
     return query.all()
 
 
-def register_reminder(show_id, is_show, reminder_type: models.ReminderType, show_season, show_episode, user_id):
+def register_reminder(show_id, is_movie, reminder_type: models.ReminderType, show_season, show_episode, user_id):
     """
     Create a reminder for the given data.
 
     :param show_id: the id to search for.
-    :param is_show: true if it is a show.
+    :param is_movie: true if it is a movie.
     :param reminder_type: reminder type.
     :param show_season: show season for the reminder.
     :param show_episode: show episode for the reminder.
@@ -308,43 +308,49 @@ def register_reminder(show_id, is_show, reminder_type: models.ReminderType, show
 
     show = configuration.session.query(models.ShowReminder) \
         .filter(models.ShowReminder.user_id == user_id) \
-        .filter(models.ShowReminder.is_show == is_show) \
+        .filter(models.ShowReminder.is_movie == is_movie) \
         .filter(models.ShowReminder.show_id == show_id).first()
 
-    if not is_show:
+    if is_movie:
         show_season = None
         show_episode = None
 
     if show is not None:
-        update_reminder(show, show_id, is_show, reminder_type, show_season, show_episode, user_id)
+        update_reminder(show, show_id, is_movie, reminder_type, show_season, show_episode, user_id)
         return
 
     configuration.session.add(
-        models.ShowReminder(show_id, is_show, reminder_type.value, show_season, show_episode, user_id))
+        models.ShowReminder(show_id, is_movie, reminder_type.value, show_season, show_episode, user_id))
 
     # Add all possible titles for that trakt id to the DB
     if models.ReminderType.DB == reminder_type:
-        if is_show:
-            show_type = 'show'
-        else:
+        if is_movie:
             show_type = 'movie'
+        else:
+            show_type = 'show'
 
         titles = get_titles_trakt(show_id, show_type)
 
+        query = configuration.session.query(models.TraktTitle) \
+            .filter(models.TraktTitle.trakt_id == show_id) \
+            .filter(models.TraktTitle.is_movie == is_movie)
+
         for t in titles:
-            configuration.session.add(models.TraktTitle(show_id, t))
+            # Only add new entries
+            if query.filter(models.TraktTitle.trakt_title == t).first() is None:
+                configuration.session.add(models.TraktTitle(show_id, is_movie, t))
 
     configuration.session.commit()
 
 
-def update_reminder(show: models.ShowReminder, show_id, is_show, reminder_type: models.ReminderType, show_season,
+def update_reminder(show: models.ShowReminder, show_id, is_movie, reminder_type: models.ReminderType, show_season,
                     show_episode, user_id):
     """
     Update a reminder with the given data.
 
     :param show: the show to update, or None.
     :param show_id: the id to search for.
-    :param is_show: true if it is a show.
+    :param is_movie: true if it is a movie.
     :param reminder_type: reminder type.
     :param show_season: show season for the reminder.
     :param show_episode: show episode for the reminder.
@@ -356,10 +362,10 @@ def update_reminder(show: models.ShowReminder, show_id, is_show, reminder_type: 
             .filter(models.ShowReminder.user_id == user_id) \
             .filter(models.ShowReminder.show_id == show_id).first()
 
-    show.is_show = is_show
+    show.is_movie = is_movie
     show.reminder_type = reminder_type.value
 
-    if show.is_show:
+    if not show.is_movie:
         show.show_season = show_season
         show.show_episode = show_episode
 
@@ -394,7 +400,7 @@ def get_reminders(user_id):
             titles = [r.show_id]
 
         final_reminders.append(
-            ShowReminder(r.id, r.show_id, r.is_show, models.ReminderType(r.reminder_type), r.show_season,
+            ShowReminder(r.id, r.show_id, r.is_movie, models.ReminderType(r.reminder_type), r.show_season,
                          r.show_episode, titles))
 
     return final_reminders
@@ -427,12 +433,12 @@ def process_reminders(last_date):
 
     for r in reminders:
         if r.reminder_type == models.ReminderType.LISTINGS:
-            db_shows = search_db_id(r.show_id, r.is_show, last_date, r.show_season, r.show_episode)
+            db_shows = search_db_id(r.show_id, r.is_movie, last_date, r.show_season, r.show_episode)
         else:
             db_id = get_corresponding_id(r.show_id)
 
             if db_id is not None:
-                db_shows = search_db_id(db_id, r.is_show, last_date, r.show_season, r.show_episode)
+                db_shows = search_db_id(db_id, r.is_movie, last_date, r.show_season, r.show_episode)
             else:
                 titles = get_titles_db(r.show_id)
 
