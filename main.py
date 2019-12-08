@@ -350,8 +350,8 @@ api.add_resource(RegistrationEP, '/0.1/registration', endpoint='registration')
 api.add_resource(LoginEP, '/0.1/login', endpoint='login')
 api.add_resource(LogoutEP, '/0.1/logout', endpoint='logout')
 api.add_resource(AccessEP, '/0.1/access', endpoint='access')
-api.add_resource(SearchShowDBEP, '/0.1/search_trakt', endpoint='search_show_db')
-api.add_resource(SearchListingsEP, '/0.1/search_listings', endpoint='search_db')
+api.add_resource(SearchShowDBEP, '/0.1/search_show_db', endpoint='search_show_db')
+api.add_resource(SearchListingsEP, '/0.1/search_listings', endpoint='search_listings')
 api.add_resource(ReminderEP, '/0.1/reminder', endpoint='reminder')
 
 if __name__ == '__main__':
