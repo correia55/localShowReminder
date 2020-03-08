@@ -1,5 +1,3 @@
-import json
-
 from models import ReminderType
 
 
@@ -22,4 +20,4 @@ class ShowReminder:
 
         return {'id': self.id, 'show_id': self.show_id, 'is_movie': self.is_movie, 'reminder_type': self.reminder_type.name,
                 'show_season': self.show_season, 'show_episode': self.show_episode,
-                'show_titles': json.dumps(self.show_titles, ensure_ascii=False)}
+                'show_titles': self.show_titles}
