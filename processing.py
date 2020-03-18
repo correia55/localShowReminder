@@ -418,8 +418,9 @@ def remove_reminder(reminder_id, user_id):
         .filter(models.ShowReminder.user_id == user_id) \
         .first()
 
-    configuration.session.delete(reminder)
-    configuration.session.commit()
+    if reminder is not None:
+        configuration.session.delete(reminder)
+        configuration.session.commit()
 
 
 def process_reminders(last_date):
