@@ -294,6 +294,33 @@ def search_db_id(show_id, is_movie, below_date=None, show_season=None, show_epis
     return query.all()
 
 
+def register_trakt_titles(show_id, is_movie):
+    """
+    Register all trakt titles for a show_id.
+
+    :param show_id: the id to search for.
+    :param is_movie: true if it is a movie.
+    """
+
+    if is_movie:
+        show_type = 'movie'
+    else:
+        show_type = 'show'
+
+    titles = get_titles_trakt(show_id, show_type)
+
+    query = configuration.session.query(models.TraktTitle) \
+        .filter(models.TraktTitle.trakt_id == show_id) \
+        .filter(models.TraktTitle.is_movie == is_movie)
+
+    for t in titles:
+        # Only add new entries
+        if query.filter(models.TraktTitle.trakt_title == t).first() is None:
+            configuration.session.add(models.TraktTitle(show_id, is_movie, t))
+
+    configuration.session.commit()
+
+
 def register_reminder(show_id, is_movie, reminder_type: models.ReminderType, show_season, show_episode, user_id):
     """
     Create a reminder for the given data.
@@ -316,7 +343,7 @@ def register_reminder(show_id, is_movie, reminder_type: models.ReminderType, sho
         show_episode = None
 
     if show is not None:
-        update_reminder(show, show_id, is_movie, reminder_type, show_season, show_episode, user_id)
+        update_reminder(show, show_season, show_episode)
         return
 
     configuration.session.add(
@@ -324,50 +351,26 @@ def register_reminder(show_id, is_movie, reminder_type: models.ReminderType, sho
 
     # Add all possible titles for that trakt id to the DB
     if models.ReminderType.DB == reminder_type:
-        if is_movie:
-            show_type = 'movie'
-        else:
-            show_type = 'show'
-
-        titles = get_titles_trakt(show_id, show_type)
-
-        query = configuration.session.query(models.TraktTitle) \
-            .filter(models.TraktTitle.trakt_id == show_id) \
-            .filter(models.TraktTitle.is_movie == is_movie)
-
-        for t in titles:
-            # Only add new entries
-            if query.filter(models.TraktTitle.trakt_title == t).first() is None:
-                configuration.session.add(models.TraktTitle(show_id, is_movie, t))
+        register_trakt_titles(show_id, is_movie)
 
     configuration.session.commit()
 
 
-def update_reminder(show: models.ShowReminder, show_id, is_movie, reminder_type: models.ReminderType, show_season,
-                    show_episode, user_id):
+def update_reminder(show: models.ShowReminder, show_season, show_episode):
     """
     Update a reminder with the given data.
+    This only matters when the show is not a movie, so we can update the season and/or episode.
 
     :param show: the show to update, or None.
-    :param show_id: the id to search for.
-    :param is_movie: true if it is a movie.
-    :param reminder_type: reminder type.
     :param show_season: show season for the reminder.
     :param show_episode: show episode for the reminder.
-    :param user_id: the owner of the reminder.
     """
 
-    if show is None:
-        show = configuration.session.query(models.ShowReminder) \
-            .filter(models.ShowReminder.user_id == user_id) \
-            .filter(models.ShowReminder.show_id == show_id).first()
+    if show.is_movie:
+        return
 
-    show.is_movie = is_movie
-    show.reminder_type = reminder_type.value
-
-    if not show.is_movie:
-        show.show_season = show_season
-        show.show_episode = show_episode
+    show.show_season = show_season
+    show.show_episode = show_episode
 
     configuration.session.commit()
 
