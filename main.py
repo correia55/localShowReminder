@@ -149,7 +149,9 @@ class LoginEP(fr.Resource):
 
         if user is not None:
             auth_token = authentication.generate_token(user.id, authentication.TokenType.REFRESH).decode()
-            return flask.jsonify({'login': 'success', 'token': str(auth_token)})
+            username = auth['username'][:auth['username'].index('@')] if auth['username'].find('@') != -1 else auth['username']
+
+            return flask.jsonify({'login': 'success', 'token': str(auth_token), 'username': username})
         else:
             return flask.jsonify({'login': 'failure'})
 
