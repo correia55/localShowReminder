@@ -107,8 +107,8 @@ class ShowReminder(base):
 
     id = Column(Integer, primary_key=True)
 
-    # Corresponds to the show's series_id or pid, if the series_id is null
     show_id = Column(String, nullable=False)
+    show_slug = Column(String, nullable=True)
 
     is_movie = Column(Boolean, nullable=False)
     reminder_type = Column(Integer, nullable=False)
@@ -118,18 +118,19 @@ class ShowReminder(base):
 
     user_id = Column(Integer, ForeignKey('User.id'))
 
-    def __init__(self, show_id, is_movie, reminder_type, show_season, show_episode, user_id):
+    def __init__(self, show_id: str, is_movie: bool, reminder_type, show_season, show_episode, user_id, show_slug: str):
         self.show_id = show_id
         self.is_movie = is_movie
         self.reminder_type = reminder_type
         self.show_season = show_season
         self.show_episode = show_episode
         self.user_id = user_id
+        self.show_slug = show_slug
 
     def __str__(self):
         return 'id: %d; show_id: %s; is_movie: %r; reminder_type: %d; show_season: %d; show_episode: %d; ' \
                'user_id: %d' % \
-               (self.id, self.show_id, self.is_movie, self.reminder_type, self.show_season, self.show_episode,
+               (self.id, self.show_name, self.is_movie, self.reminder_type, self.show_season, self.show_episode,
                 self.user_id)
 
 

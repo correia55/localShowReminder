@@ -318,13 +318,14 @@ def register_trakt_titles(show_id, is_movie):
     configuration.session.commit()
 
 
-def register_reminder(show_id, is_movie, reminder_type: models.ReminderType, show_season, show_episode, user_id):
+def register_reminder(show_id: str, is_movie: bool, reminder_type: models.ReminderType, show_slug: str, show_season, show_episode, user_id):
     """
     Create a reminder for the given data.
 
     :param show_id: the id to search for.
     :param is_movie: true if it is a movie.
     :param reminder_type: reminder type.
+    :param show_slug: show slug for the reminder.
     :param show_season: show season for the reminder.
     :param show_episode: show episode for the reminder.
     :param user_id: the owner of the reminder.
@@ -344,11 +345,11 @@ def register_reminder(show_id, is_movie, reminder_type: models.ReminderType, sho
         return
 
     configuration.session.add(
-        models.ShowReminder(show_id, is_movie, reminder_type.value, show_season, show_episode, user_id))
+        models.ShowReminder(show_id, is_movie, reminder_type.value, show_season, show_episode, user_id, show_slug))
 
     # Add all possible titles for that trakt id to the DB
     if models.ReminderType.DB == reminder_type:
-        register_trakt_titles(show_id, is_movie)
+        register_trakt_titles(show_slug, is_movie)
 
     configuration.session.commit()
 
@@ -390,7 +391,7 @@ def get_reminders(user_id):
         reminder_type = models.ReminderType(r.reminder_type)
 
         if models.ReminderType.DB == reminder_type:
-            db_titles = get_titles_db(r.show_id)
+            db_titles = get_titles_db(r.show_slug)
 
             titles = []
 
@@ -441,7 +442,7 @@ def process_reminders(last_date):
             if db_id is not None:
                 db_shows = search_db_id(db_id, r.is_movie, last_date, r.show_season, r.show_episode)
             else:
-                titles = auxiliary.get_names_list_from_trakttitles_list(get_titles_db(r.show_id))
+                titles = auxiliary.get_names_list_from_trakttitles_list(get_titles_db(r.show_slug))
 
                 user = configuration.session.query(models.User).filter(models.User.id == r.user_id).first()
 
