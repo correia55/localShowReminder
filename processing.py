@@ -1,17 +1,17 @@
-from enum import Enum
-from sqlalchemy.exc import IntegrityError, InvalidRequestError
-
-import urllib.request
+import datetime
+import json
+import re
 import urllib.error
 import urllib.parse
-import json
-import datetime
-import re
-import flask_bcrypt as fb
+import urllib.request
+from enum import Enum
 
-import models
-import configuration
+import flask_bcrypt as fb
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
+
 import auxiliary
+import configuration
+import models
 from response_models import ShowReminder
 
 
@@ -105,11 +105,8 @@ def search_show_information(search_text):
     :return: the list of results.
     """
 
-    # TODO: UNCOMENT THIS AND REPLACE THE READING OF THE FILE
-    # results = search_show_information_by_type(search_text, 'show')
-    # results += search_show_information_by_type(search_text, 'movie')
-
-    results = json.loads(open('dummy_data/trakt_data.json').read())
+    results = search_show_information_by_type(search_text, 'show')
+    results += search_show_information_by_type(search_text, 'movie')
 
     return results
 
@@ -444,7 +441,7 @@ def process_reminders(last_date):
             if db_id is not None:
                 db_shows = search_db_id(db_id, r.is_movie, last_date, r.show_season, r.show_episode)
             else:
-                titles = get_titles_db(r.show_id)
+                titles = auxiliary.get_names_list_from_trakttitles_list(get_titles_db(r.show_id))
 
                 user = configuration.session.query(models.User).filter(models.User.id == r.user_id).first()
 

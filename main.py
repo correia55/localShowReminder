@@ -36,8 +36,7 @@ def daily_tasks():
 
 class FlaskApp(flask.Flask):
     def __init__(self, *args, **kwargs):
-        # TODO: UNCOMMENT THIS WHEN UPDATE IS NEEDED
-        # threading.Timer(10, daily_tasks).start()
+        threading.Timer(10, daily_tasks).start()
         super(FlaskApp, self).__init__(*args, **kwargs)
 
 

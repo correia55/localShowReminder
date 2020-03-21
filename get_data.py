@@ -1,8 +1,10 @@
+import datetime
+import re
 import urllib.parse
 import urllib.request
-import datetime
 import xml.etree.ElementTree as ET
-import re
+
+import requests
 
 import configuration
 import models
@@ -52,47 +54,56 @@ class MEPG:
         """
 
         # Create the shows' info request url
-        shows_url = configuration.shows_url + '?channelSiglas='
+        shows_url = configuration.shows_url
+
+        channels = ''
 
         first = True
 
         for c in db_channels:
-            acronym = urllib.parse.quote(c.acronym)
-
             if first:
                 first = False
-                shows_url += acronym
+                channels += '"%s"' % c.acronym
             else:
-                shows_url += ',' + acronym
+                channels += ',\n\t"%s"' % c.acronym
 
-        shows_url += '&startDate=' + db_last_update.date.strftime('%Y-%m-%d') + '%2000:00:01'
-        shows_url += '&endDate=' + db_last_update.date.strftime('%Y-%m-%d') + '%2023:59:59'
+        payload = '''
+{
+    "service": "channelsguide",
+    "channels": [
+    %s
+    ],
+    "dateStart": "%sT00:00:00.000Z",
+    "dateEnd": "%sT00:00:00.000Z",
+    "accountID": ""
+}
+        ''' % (channels, db_last_update.date.strftime('%Y-%m-%d'),
+               (db_last_update.date + datetime.timedelta(days=1)).strftime('%Y-%m-%d'))
 
-        print(shows_url)
+        print(payload)
 
         # Get the shows info for our list of channels
-        shows_xml = urllib.request.urlopen(shows_url).read().decode()
-
-        # Parse the list of channels from the request
-        root = ET.fromstring(shows_xml)[0]
+        response_json = requests.post(shows_url, data=payload, headers={'Content-Type': 'application/json'}).json()
 
         shows_added = False
 
-        for c in root:
-            channel_shows = c[4]
+        for c in response_json['d']['channels']:
+            channel_shows = c['programs']
             channel_id = configuration.session.query(models.Channel).filter(
-                models.Channel.acronym == c[1].text).first().id
+                models.Channel.acronym == c['sigla']).first().id
 
             for s in channel_shows:
-                show_datetime = s[11].text
+                show_date = datetime.datetime.strptime(s['date'], '%d-%m-%Y').strftime('%Y-%m-%d')
 
                 # Skip if it's referent to a show from a different day
-                if show_datetime.split()[0] != db_last_update.date.strftime('%Y-%m-%d'):
+                if show_date != db_last_update.date.strftime('%Y-%m-%d'):
                     continue
+
+                show_datetime = '%s %s' % (s['date'], s['timeIni'])
 
                 shows_added = True
 
-                program_title = s[1].text
+                program_title = s['name']
                 series = re.search('(.+) T([0-9]+) - Ep\. ([0-9]+)', program_title)
 
                 # If it is an episode of a series with season and episode
@@ -117,11 +128,11 @@ class MEPG:
                         show_episode = None
 
                 series_id = None
-                pid = s[0].text
+                pid = s['uniqueId']
 
                 # Add the show to the db
                 show = models.Show(pid, series_id, show_title.strip(), show_season, show_episode,
-                                   s[2].text, show_datetime, int(s[12].text) / 60, channel_id,
+                                   '', show_datetime, 0, channel_id,
                                    processing.make_searchable_title(show_title.strip()))
 
                 configuration.session.add(show)
@@ -160,6 +171,8 @@ class MEPG:
         if db_last_update.date < datetime.date.today():
             db_last_update.date = datetime.date.today() - datetime.timedelta(1)
 
+        max_channels_request = int(configuration.max_channels_request)
+
         # For each day until six days from today
         while db_last_update.date < datetime.date.today() + datetime.timedelta(6):
             db_last_update.date += datetime.timedelta(1)
@@ -170,7 +183,7 @@ class MEPG:
             for i in range(len(db_channels)):
                 current.append(db_channels[i])
 
-                if i % 90 == 0 and i > 0:
+                if i % max_channels_request == 0 and i > 0:
                     MEPG.update_show_list_day(current, db_last_update)
 
                     current = []

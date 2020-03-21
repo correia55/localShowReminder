@@ -66,6 +66,9 @@ selected_epg = os.environ.get('EPG', None)
 channels_url = os.environ.get('CHANNELS_URL', None)
 shows_url = os.environ.get('SHOWS_URL', None)
 
+# Max channels per request
+max_channels_request = os.environ.get('MAX_CHANNELS_REQUEST', '90')
+
 # endregion
 
 # region Shows Information Services

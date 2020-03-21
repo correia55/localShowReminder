@@ -76,7 +76,7 @@
     "show_image": "https://m.media-amazon.com/images/M/MV5BMTkyODgxNDk5Nl5BMl5BanBnXkFtZTcwMTM1NTc0Mw@@._V1_SX300.jpg",
     "show_overview": null,
     "show_slug": "blindlings-1969",
-    "show_title": "Blindlings",
+    "show_title": "This is a very long title",
     "show_year": 2009
   },
   {
@@ -86,5 +86,13 @@
     "show_slug": "nose-to-tail",
     "show_title": "Nose to Tail",
     "show_year": null
+  },
+  {
+    "is_movie": false,
+    "show_image": "https://walter.trakt.tv/images/shows/000/043/973/posters/thumb/735e733dbc.jpg.webp",
+    "show_overview": "Vikings follows the adventures of Ragnar Lothbrok the greatest hero of his age. The series tells the sagas of Ragnar's band of Viking brothers and his family, as he rises to become King of the Viking tribes. As well as being a fearless warrior, Ragnar embodies the Norse traditions of devotion to the gods, legend has it that he was a direct descendant of Odin, the god of war and warriors.",
+    "show_slug": "vikings",
+    "show_title": "Vikings",
+    "show_year": 2013
   }
 ]
