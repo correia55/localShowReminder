@@ -98,16 +98,23 @@ def search_show_information_by_type(search_text, show_type):
     return results
 
 
-def search_show_information(search_text):
+def search_show_information(search_text: str, is_movie: bool):
     """
     Uses trakt and omdb to search for shows using a given search text.
 
     :param search_text: the search text introduced by the user.
+    :param is_movie: if it is a movie.
+
     :return: the list of results.
     """
 
-    results = search_show_information_by_type(search_text, 'show')
-    results += search_show_information_by_type(search_text, 'movie')
+    results = []
+
+    if is_movie is None or not is_movie:
+        results += search_show_information_by_type(search_text, 'show')
+
+    if is_movie is None or is_movie:
+        results += search_show_information_by_type(search_text, 'movie')
 
     return results
 

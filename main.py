@@ -210,7 +210,8 @@ class SearchShowDBEP(fr.Resource):
 
     search_args = \
         {
-            'search_text': webargs.fields.Str(required=True)
+            'search_text': webargs.fields.Str(required=True),
+            'is_movie': webargs.fields.Bool(),
         }
 
     @fp.use_args(search_args)
@@ -219,11 +220,19 @@ class SearchShowDBEP(fr.Resource):
         """Get search results for the search_text, using the Trakt API."""
 
         search_text = args['search_text']
+        is_movie = None
+
+        for k, v in args.items():
+            if v is None:
+                continue
+
+            if k == 'is_movie':
+                is_movie = v
 
         if len(search_text) < 2:
             return flask.jsonify({'search_show_db': 'failure', 'msg': 'Search text needs at least two characters.'})
 
-        shows = processing.search_show_information(search_text)
+        shows = processing.search_show_information(search_text, is_movie)
 
         return flask.jsonify({'search_show_db': 'success', 'show_list': shows})
 
