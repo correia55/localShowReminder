@@ -10,7 +10,9 @@ import webargs.flaskparser as fp
 from flask_cors import CORS, cross_origin
 
 import authentication
+import configuration
 import get_data
+import models
 import processing
 from response_models import ReminderType
 
@@ -243,8 +245,7 @@ class SearchListingsEP(fr.Resource):
 
     search_args = \
         {
-            'search_text': webargs.fields.Str(required=True),
-            'search_adult': webargs.fields.Bool()
+            'search_text': webargs.fields.Str(required=True)
         }
 
     @fp.use_args(search_args)
@@ -253,17 +254,19 @@ class SearchListingsEP(fr.Resource):
         """Get search results for the search_text in the listings."""
 
         search_text: str = args['search_text'].strip()
-        search_adult: bool = False
-
-        for k, v in args.items():
-            if v is None:
-                continue
-
-            if k == 'search_adult':
-                search_adult = v
 
         if len(search_text) < 2:
             return flask.jsonify({'search_listings': 'failure', 'msg': 'Search text needs at least two characters.'})
+
+        search_adult = False
+
+        # Get the user settings of whether it should look in channels with adult content or not
+        if 'HTTP_AUTHORIZATION' in flask.request.headers.environ:
+            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+            user_id = authentication.access_token_field(token.encode(), 'user')
+
+            user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
+            search_adult = user.show_adult if user is not None else False
 
         db_shows = processing.search_db([search_text], complete_title=False, search_adult=search_adult)
 
