@@ -12,20 +12,23 @@ from flask_cors import CORS, cross_origin
 import authentication
 import get_data
 import processing
-from models import ReminderType
+from response_models import ReminderType
 
 
 def daily_tasks():
     """Run the daily tasks."""
 
+    # Delete old shows from the DB
+    processing.clear_show_list()
+
     # Get the date of the last update
     last_update_date = processing.get_last_update()
 
-    processing.clear_show_list()
-
+    # Update the list of shows in the DB
     if get_data.configuration.selected_epg == 'MEPG':
         get_data.MEPG.update_show_list()
 
+    # Search the shows for the existing reminders
     processing.process_reminders(last_update_date)
 
     # Schedule the new update
@@ -148,7 +151,8 @@ class LoginEP(fr.Resource):
 
         if user is not None:
             auth_token = authentication.generate_token(user.id, authentication.TokenType.REFRESH).decode()
-            username = auth['username'][:auth['username'].index('@')] if auth['username'].find('@') != -1 else auth['username']
+            username = auth['username'][:auth['username'].index('@')] if auth['username'].find('@') != -1 else auth[
+                'username']
 
             return flask.jsonify({'login': 'success', 'token': str(auth_token), 'username': username})
         else:
@@ -280,7 +284,7 @@ class ReminderEP(fr.Resource):
 
     register_args = \
         {
-            'show_id': webargs.fields.Str(required=True),
+            'show_name': webargs.fields.Str(required=True),
             'is_movie': webargs.fields.Bool(required=True),
             'type': webargs.fields.Str(required=True),
             'show_season': webargs.fields.Int(),
@@ -293,7 +297,7 @@ class ReminderEP(fr.Resource):
     def post(self, args):
         """Register a reminder."""
 
-        show_id = args['show_id']
+        show_name = args['show_name']
         is_movie = args['is_movie']
         reminder_type = args['type']
         show_slug = None
@@ -327,10 +331,38 @@ class ReminderEP(fr.Resource):
         token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
         user_id = authentication.access_token_field(token.encode(), 'user')
 
-        processing.register_reminder(show_id, is_movie, reminder_type, show_slug, show_season, show_episode, user_id)
+        if processing.register_reminder(show_name, is_movie, reminder_type, show_slug, show_season, show_episode,
+                                        user_id):
+            return flask.jsonify({'reminder': 'success', 'msg': 'Reminder successfully registered.',
+                                  'reminder_list': processing.list_to_json(processing.get_reminders(user_id))})
+        else:
+            return flask.jsonify({'reminder': 'failure', 'msg': 'Reminder already exists.'})
 
-        return flask.jsonify({'reminder': 'success', 'msg': 'Reminder successfully registered.',
-                              'reminder_list': processing.list_to_json(processing.get_reminders(user_id))})
+    update_args = \
+        {
+            'reminder_id': webargs.fields.Int(required=True),
+            'show_season': webargs.fields.Int(required=True),
+            'show_episode': webargs.fields.Int(required=True)
+        }
+
+    @fp.use_args(update_args)
+    @cross_origin(supports_credentials=True)
+    def put(self, args):
+        """Update a reminder."""
+
+        reminder_id = args['reminder_id']
+        show_season = args['show_season']
+        show_episode = args['show_episode']
+
+        # Get the user id from the token
+        token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+        user_id = authentication.access_token_field(token.encode(), 'user')
+
+        if processing.update_reminder(reminder_id, show_season, show_episode, user_id):
+            return flask.jsonify({'reminder': 'success', 'msg': 'Reminder successfully updated.',
+                                  'reminder_list': processing.list_to_json(processing.get_reminders(user_id))})
+        else:
+            return flask.jsonify({'reminder': 'failure', 'msg': 'Reminder not found.'})
 
     delete_args = \
         {

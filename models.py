@@ -1,15 +1,8 @@
-from enum import Enum
-
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, Date, DateTime
+from sqlalchemy.ext.declarative import declarative_base
 
 # Base class for DB Classes
 base = declarative_base()
-
-
-class ReminderType(Enum):
-    LISTINGS = 0
-    DB = 1
 
 
 class LastUpdate(base):
@@ -102,12 +95,12 @@ class ShowMatch(base):
         self.verified = verified
 
 
-class ShowReminder(base):
-    __tablename__ = 'ShowReminder'
+class DBReminder(base):
+    __tablename__ = 'DBReminder'
 
     id = Column(Integer, primary_key=True)
 
-    show_id = Column(String, nullable=False)
+    show_name = Column(String, nullable=False)
     show_slug = Column(String, nullable=True)
 
     is_movie = Column(Boolean, nullable=False)
@@ -118,20 +111,15 @@ class ShowReminder(base):
 
     user_id = Column(Integer, ForeignKey('User.id'))
 
-    def __init__(self, show_id: str, is_movie: bool, reminder_type, show_season, show_episode, user_id, show_slug: str):
-        self.show_id = show_id
+    def __init__(self, show_name: str, is_movie: bool, reminder_type: int, show_season: int, show_episode: int,
+                 user_id: int, show_slug: str):
+        self.show_name = show_name
         self.is_movie = is_movie
         self.reminder_type = reminder_type
         self.show_season = show_season
         self.show_episode = show_episode
         self.user_id = user_id
         self.show_slug = show_slug
-
-    def __str__(self):
-        return 'id: %d; show_id: %s; is_movie: %r; reminder_type: %d; show_season: %d; show_episode: %d; ' \
-               'user_id: %d' % \
-               (self.id, self.show_name, self.is_movie, self.reminder_type, self.show_season, self.show_episode,
-                self.user_id)
 
 
 class TraktTitle(base):

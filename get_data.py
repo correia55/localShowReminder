@@ -190,3 +190,5 @@ class MEPG:
 
             if len(current) != 0:
                 MEPG.update_show_list_day(current, db_last_update)
+
+        print('Shows list updated!')
