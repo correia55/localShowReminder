@@ -454,7 +454,7 @@ def process_reminders(last_date):
 
     for r in reminders:
         if r.reminder_type == response_models.ReminderType.LISTINGS:
-            db_shows = search_db_id(r.show_name, r.is_movie, last_date, r.show_season, r.show_episode)
+            db_shows = search_db([r.show_name], True, last_date, r.show_season, r.show_episode, search_adult)
         else:
             db_id = get_corresponding_id(r.show_name)
 
