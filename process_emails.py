@@ -1,11 +1,12 @@
+import email.mime.text as emt
 import re
-import jinja2
 import smtplib
 
 import dns.resolver as dnsr
-import email.mime.text as emt
+import jinja2
 
 import configuration
+import models
 
 env = jinja2.Environment(loader=jinja2.FileSystemLoader('templates'))
 
@@ -46,7 +47,7 @@ def verify_email(email):
     return True
 
 
-def send_email(content, subject, destination):
+def send_email(content: str, subject: str, destination: str):
     """
     Send an email.
 
@@ -55,7 +56,7 @@ def send_email(content, subject, destination):
     :param str destination: the destination address.
     """
 
-    if valid_configuration():
+    if not valid_configuration():
         print('Invalid email configuration!')
         return
 
@@ -68,7 +69,7 @@ def send_email(content, subject, destination):
     s = smtplib.SMTP(configuration.email_domain)
     s.starttls()
     s.login(configuration.email_user, configuration.email_password)
-    s.sendmail(configuration.email_user, [destination], msg.as_string())
+    s.sendmail(configuration.email_account, [destination], msg.as_string())
     s.quit()
 
 
@@ -82,8 +83,25 @@ def send_activation_email(username, destination):
 
     content = env.get_template('activation_email.html').render(username=username, code=None)
 
-    print(content)
-
     subject = 'Activation Email'
+
+    send_email(content, subject, destination)
+
+
+def send_reminders_email(destination: str, reminder: models.DBReminder, results: [models.Show]):
+    """
+    Send an email with the results found for the reminders created.
+
+    :param str destination: the destination address.
+    :param DBReminder reminder: the corresponding reminder.
+    :param list results: the list of results.
+    """
+
+    subject = 'Reminder results'
+
+    content = env.get_template('reminders_email.html').render(application_name=configuration.application_name,
+                                                              application_link=configuration.application_link,
+                                                              username=destination, reminder=reminder, results=results,
+                                                              title=subject)
 
     send_email(content, subject, destination)

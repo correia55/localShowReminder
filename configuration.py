@@ -1,10 +1,9 @@
 import os
 
-import alembic.config as aleconf
-import alembic.command as alecomm
-import alembic.migration as alemig
 import alembic.autogenerate as aleauto
-
+import alembic.command as alecomm
+import alembic.config as aleconf
+import alembic.migration as alemig
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -115,5 +114,12 @@ email_domain = os.environ.get('EMAIL_DOMAIN', None)
 email_account = os.environ.get('EMAIL_ACCOUNT', None)
 email_user = os.environ.get('EMAIL_USER', None)
 email_password = os.environ.get('EMAIL_PASSWORD', None)
+
+# endregion
+
+# region Application
+
+application_name = os.environ.get('APPLICATION_NAME', None)
+application_link = os.environ.get('APPLICATION_LINK', None)
 
 # endregion

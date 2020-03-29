@@ -1,0 +1,30 @@
+{% extends "base_email.html" %}
+
+{% set application_name = application_name %}
+{% set application_link = application_link %}
+
+{% block content %}
+    <p>Dear {{ username }},</p>
+    <p>These are the results for the reminders you created.</p>
+
+    {% for show in results %}
+        {% if loop.index > 0 %}
+            <p class="smallP"></p>
+        {% endif %}
+
+        <p class="circled result">
+            {{ show.show_title }}
+
+            {% if show.show_episode is not none %}
+                S{{ show.show_season }} E{{ show.show_episode }}
+            {% endif %}
+
+            at {{ show.date_time }}, in {{ show.channel}}.
+        </p>
+    {% endfor %}
+
+    <p></p>
+
+    <p>Best regards,<br>
+    the {{ application_name }} Team.</p>
+{% endblock %}

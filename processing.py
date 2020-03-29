@@ -12,6 +12,7 @@ from sqlalchemy.exc import IntegrityError, InvalidRequestError
 import auxiliary
 import configuration
 import models
+import process_emails
 import response_models
 from response_models import ShowReminder
 
@@ -453,7 +454,10 @@ def process_reminders(last_date):
     reminders = configuration.session.query(models.DBReminder).all()
 
     for r in reminders:
-        if r.reminder_type == response_models.ReminderType.LISTINGS:
+        user = configuration.session.query(models.User).filter(models.User.id == r.user_id).first()
+        search_adult = user.show_adult if user is not None else False
+
+        if r.reminder_type == response_models.ReminderType.LISTINGS.value:
             db_shows = search_db([r.show_name], True, last_date, r.show_season, r.show_episode, search_adult)
         else:
             db_id = get_corresponding_id(r.show_name)
@@ -463,17 +467,10 @@ def process_reminders(last_date):
             else:
                 titles = auxiliary.get_names_list_from_trakttitles_list(get_titles_db(r.show_slug))
 
-                user = configuration.session.query(models.User).filter(models.User.id == r.user_id).first()
-
-                search_adult = user.show_adult if user is not None else False
-
                 db_shows = search_db(titles, True, last_date, r.show_season, r.show_episode, search_adult)
 
-        # TODO: Send notification with shows found
-        print('Number of shows: %d' % len(db_shows))
-
-        for s in db_shows:
-            print(s)
+        if len(db_shows) > 0:
+            process_emails.send_reminders_email(user.email, r, db_shows)
 
     print('Reminders processed!')
 

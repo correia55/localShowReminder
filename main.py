@@ -31,7 +31,8 @@ def daily_tasks():
         get_data.MEPG.update_show_list()
 
     # Search the shows for the existing reminders
-    processing.process_reminders(last_update_date)
+    # The date needs to be the day after because it is at 00:00
+    processing.process_reminders(last_update_date + datetime.timedelta(days=1))
 
     # Schedule the new update
     next_update = datetime.datetime.now() + datetime.timedelta(days=1)
