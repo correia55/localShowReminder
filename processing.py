@@ -88,7 +88,7 @@ def search_show_information_by_type(search_text, show_type):
         show = json.loads(show_json)
 
         # When the omdb can't find the information
-        if not show['Response']:
+        if show['Response'] == 'False':
             results.append(show_dict)
             continue
 
