@@ -21,8 +21,8 @@ class Channel(base):
     __tablename__ = 'Channel'
 
     id = Column(Integer, primary_key=True)
-    acronym = Column(String, unique=True)
-    name = Column(String, unique=True)
+    acronym = Column(String(255), unique=True)
+    name = Column(String(255), unique=True)
     adult = Column(Boolean)
 
     def __init__(self, acronym, name):
@@ -39,14 +39,14 @@ class Show(base):
 
     id = Column(Integer, primary_key=True)
     pid = Column(Integer)
-    series_id = Column(String)
-    show_title = Column(String)
+    series_id = Column(String(255))
+    show_title = Column(String(255))
     show_season = Column(Integer)
     show_episode = Column(Integer)
-    show_details = Column(String)
+    show_details = Column(String(255))
     date_time = Column(DateTime)
     duration = Column(Integer)
-    search_title = Column(String)
+    search_title = Column(String(255))
 
     channel_id = Column(Integer, ForeignKey('Channel.id'))
 
@@ -85,8 +85,8 @@ class ShowMatch(base):
     __tablename__ = 'ShowMatch'
 
     id = Column(Integer, primary_key=True)
-    imdb_id = Column(String)
-    show_id = Column(String)  # Corresponds to the show's series_id or pid, if the series_id is null
+    imdb_id = Column(String(255))
+    show_id = Column(String(255))  # Corresponds to the show's series_id or pid, if the series_id is null
     verified = Column(Boolean)
 
     def __init__(self, imdb_id, show_id, verified=False):
@@ -100,8 +100,8 @@ class DBReminder(base):
 
     id = Column(Integer, primary_key=True)
 
-    show_name = Column(String, nullable=False)
-    show_slug = Column(String, nullable=True)
+    show_name = Column(String(255), nullable=False)
+    show_slug = Column(String(255), nullable=True)
 
     is_movie = Column(Boolean, nullable=False)
     reminder_type = Column(Integer, nullable=False)
@@ -126,9 +126,9 @@ class TraktTitle(base):
     __tablename__ = 'TraktTitle'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    trakt_id = Column(String, nullable=False)
+    trakt_id = Column(String(255), nullable=False)
     is_movie = Column(Boolean, nullable=False)
-    trakt_title = Column(String, nullable=False)
+    trakt_title = Column(String(255), nullable=False)
 
     def __init__(self, trakt_id, is_movie, trakt_title):
         self.trakt_id = trakt_id
