@@ -9,6 +9,7 @@ from enum import Enum
 import flask_bcrypt as fb
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
+import authentication
 import auxiliary
 import configuration
 import models
@@ -497,12 +498,54 @@ def register_user(email: str, password: str):
     password = fb.generate_password_hash(password, configuration.bcrypt_rounds).decode()
 
     try:
-        configuration.session.add(models.User(email, password))
+        user = models.User(email, password)
+        configuration.session.add(user)
         configuration.session.commit()
-        # TODO: Send registration email
+
+        send_verifcation_email(user)
     except (IntegrityError, InvalidRequestError):
         configuration.session.rollback()
         # TODO: Send warning email
+
+
+def verify_account(verification_token: str):
+    """
+    Verify an account.
+
+    :param verification_token: the verification token.
+    :return: whether the verification was success or not.
+    """
+
+    # Validate verification token
+    valid, user_id = authentication.validate_token(verification_token.encode(), authentication.TokenType.VERIFICATION)
+
+    if not valid:
+        return False
+
+    # Get user
+    user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
+
+    # Check if the user was found
+    if user is None:
+        return False
+
+    # Set user account to verified
+    user.verified = True
+
+    configuration.session.commit()
+
+    return True
+
+
+def send_verifcation_email(user: models.User):
+    """
+    Send a verification email.
+
+    :param user: the user.
+    """
+
+    verification_token = authentication.generate_token(user.id, authentication.TokenType.VERIFICATION).decode()
+    process_emails.send_verification_email(user.email, verification_token)
 
 
 def check_login(email: str, password: str):

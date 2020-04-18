@@ -143,11 +143,13 @@ class User(base):
     email = Column(String(255), unique=True, nullable=False)
     password = Column(String(255), nullable=False)
     show_adult = Column(Boolean)
+    verified = Column(Boolean)
 
     def __init__(self, email, password):
         self.email = email
         self.password = password
         self.show_adult = False
+        self.verified = False
 
 
 class Token(base):

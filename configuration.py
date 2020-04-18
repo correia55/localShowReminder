@@ -105,6 +105,7 @@ if secret_key is None:
 # Validity of the different types of token
 REFRESH_TOKEN_VALIDITY_DAYS = 365
 ACCESS_TOKEN_VALIDITY_HOURS = 1
+VERIFICATION_TOKEN_VALIDITY_DAYS = 2
 
 # endregion
 

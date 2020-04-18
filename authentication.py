@@ -10,6 +10,7 @@ import configuration
 class TokenType(Enum):
     REFRESH = 0
     ACCESS = 1
+    VERIFICATION = 2
 
 
 def generate_access_token(auth_token: bytearray):
@@ -21,10 +22,10 @@ def generate_access_token(auth_token: bytearray):
     message otherwise).
     """
 
-    valid, msg = validate_token(auth_token, TokenType.REFRESH)
+    valid, user_id = validate_token(auth_token, TokenType.REFRESH)
 
     if valid:
-        return True, generate_token(msg, TokenType.ACCESS)
+        return True, generate_token(user_id, TokenType.ACCESS)
     else:
         return False, None
 
@@ -42,6 +43,8 @@ def generate_token(user_id: int, token_type: TokenType) -> any:
     # Set the expiration date based on the type of token
     if token_type == TokenType.REFRESH:
         exp = datetime.datetime.utcnow() + datetime.timedelta(days=configuration.REFRESH_TOKEN_VALIDITY_DAYS)
+    elif token_type == TokenType.VERIFICATION:
+        exp = datetime.datetime.utcnow() + datetime.timedelta(days=configuration.VERIFICATION_TOKEN_VALIDITY_DAYS)
     else:
         exp = datetime.datetime.utcnow() + datetime.timedelta(hours=configuration.ACCESS_TOKEN_VALIDITY_HOURS)
 

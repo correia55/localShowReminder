@@ -120,7 +120,8 @@ Contains the information related to a user.
 - id - *int* - the primary key;
 - email - *string* - the email of the user;
 - password - *string* - the hash of the password plus a random value;
-- show_adult - *bool* - if the user wants his searches to include results from channels with adult content.
+- show_adult - *bool* - if the user wants his searches to include results from channels with adult content;
+- verified - *bool* - if the user's email was verified.
 
 
 ## Token

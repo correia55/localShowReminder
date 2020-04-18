@@ -139,6 +139,48 @@ class RegistrationEP(fr.Resource):
         return flask.jsonify({'registration': 'success', 'msg:': 'An email was sent to your inbox.'})
 
 
+class SendVerificationEmailEP(fr.Resource):
+    decorators = [basic_auth.login_required]
+
+    def __init__(self):
+        super(SendVerificationEmailEP, self).__init__()
+
+    @cross_origin(supports_credentials=True)
+    def post(self):
+        """Send another verification email."""
+
+        auth = flask.request.authorization
+        user = processing.get_user_by_email(auth['username'])
+
+        if user is not None and not user.verified:
+            processing.send_verifcation_email(user)
+            return flask.jsonify({'send_verification': 'success'})
+        else:
+            return flask.jsonify({'send_verification': 'failure'})
+
+
+class VerificationEP(fr.Resource):
+    def __init__(self):
+        super(VerificationEP, self).__init__()
+
+    verification_args = \
+        {
+            'verification_token': webargs.fields.Str(required=True)
+        }
+
+    @fp.use_args(verification_args)
+    def post(self, args):
+        """Verify a user account."""
+
+        verification_token = args['verification_token']
+        verified = processing.verify_account(verification_token)
+
+        if verified:
+            return flask.jsonify({'verification': 'success'})
+        else:
+            return flask.jsonify({'verification': 'failure'})
+
+
 class LoginEP(fr.Resource):
     decorators = [basic_auth.login_required]
 
@@ -153,13 +195,16 @@ class LoginEP(fr.Resource):
         user = processing.get_user_by_email(auth['username'])
 
         if user is not None:
-            auth_token = authentication.generate_token(user.id, authentication.TokenType.REFRESH).decode()
-            username = auth['username'][:auth['username'].index('@')] if auth['username'].find('@') != -1 else auth[
-                'username']
+            if user.verified:
+                auth_token = authentication.generate_token(user.id, authentication.TokenType.REFRESH).decode()
+                username = auth['username'][:auth['username'].index('@')] if auth['username'].find('@') != -1 else auth[
+                    'username']
 
-            return flask.jsonify({'login': 'success', 'token': str(auth_token), 'username': username})
+                return flask.jsonify({'login': 'success', 'token': str(auth_token), 'username': username})
+            else:
+                return flask.jsonify({'login': 'failure', 'error': 'unverified_account'})
         else:
-            return flask.jsonify({'login': 'failure'})
+            return flask.jsonify({'login': 'failure', 'error': 'invalid_login'})
 
 
 class LogoutEP(fr.Resource):
@@ -406,6 +451,8 @@ api.add_resource(AccessEP, '/0.1/access', endpoint='access')
 api.add_resource(SearchShowDBEP, '/0.1/search_show_db', endpoint='search_show_db')
 api.add_resource(SearchListingsEP, '/0.1/search_listings', endpoint='search_listings')
 api.add_resource(ReminderEP, '/0.1/reminder', endpoint='reminder')
+api.add_resource(SendVerificationEmailEP, '/0.1/send_verification_email', endpoint='send_verification_email')
+api.add_resource(VerificationEP, '/0.1/verification', endpoint='verification')
 
 if __name__ == '__main__':
     app.run(debug=True, threaded=True, use_reloader=False)

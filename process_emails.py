@@ -73,17 +73,22 @@ def send_email(content: str, subject: str, destination: str):
     s.quit()
 
 
-def send_activation_email(username, destination):
+def send_verification_email(destination: str, verification_token: str):
     """
-    Send an activation email.
+    Send a verification email.
 
-    :param str username: the username.
     :param str destination: the destination address.
+    :param str verification_token: the verification token.
     """
 
-    content = env.get_template('activation_email.html').render(username=username, code=None)
+    subject = 'Verification Email'
 
-    subject = 'Activation Email'
+    content = env.get_template('verification_email.html').render(application_name=configuration.application_name,
+                                                                 application_link=configuration.application_link,
+                                                                 username=destination,
+                                                                 verification_token=verification_token,
+                                                                 verification_hours=configuration.VERIFICATION_TOKEN_VALIDITY_DAYS * 24,
+                                                                 title=subject)
 
     send_email(content, subject, destination)
 
