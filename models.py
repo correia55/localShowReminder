@@ -144,12 +144,14 @@ class User(base):
     password = Column(String(255), nullable=False)
     show_adult = Column(Boolean)
     verified = Column(Boolean)
+    language = Column(String(5))
 
     def __init__(self, email, password):
         self.email = email
         self.password = password
         self.show_adult = False
         self.verified = False
+        self.language = 'pt'
 
 
 class Token(base):

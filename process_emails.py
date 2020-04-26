@@ -15,12 +15,8 @@ en = gettext.translation('main', localedir='locales', languages=['en'])
 extensions = ['jinja2.ext.i18n']
 env = jinja2.Environment(loader=jinja2.FileSystemLoader('templates'), extensions=extensions)
 
-# TODO: CHANGE THIS TO BE DINAMICALLY CHANGED DEPENDING ON THE USER
 current = pt
 env.install_gettext_callables(gettext=current.gettext, ngettext=current.ngettext, newstyle=True)
-# env.install_gettext_callables(gettext=pt.gettext, ngettext=pt.ngettext, newstyle=True)
-# or
-# env.install_gettext_callables(gettext=en.gettext, ngettext=en.ngettext, newstyle=True)
 
 
 def valid_configuration():
@@ -32,6 +28,22 @@ def valid_configuration():
 
     return configuration.email_domain is not None and configuration.email_account is not None and \
            configuration.email_user is not None and configuration.email_password is not None
+
+
+def set_language(language: str):
+    """
+    Set the language for the emails.
+
+    :param language: the language string.
+    """
+    global current, pt, en
+
+    if language == 'pt':
+        current = pt
+    else:
+        current = en
+
+    env.install_gettext_callables(gettext=current.gettext, ngettext=current.ngettext, newstyle=True)
 
 
 def verify_email(email):

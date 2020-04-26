@@ -471,6 +471,7 @@ def process_reminders(last_date):
                 db_shows = search_db(titles, True, last_date, r.show_season, r.show_episode, search_adult)
 
         if len(db_shows) > 0:
+            process_emails.set_language(user.language)
             process_emails.send_reminders_email(user.email, r, db_shows)
 
     print('Reminders processed!')
@@ -545,6 +546,8 @@ def send_verifcation_email(user: models.User):
     """
 
     verification_token = authentication.generate_token(user.id, authentication.TokenType.VERIFICATION).decode()
+
+    process_emails.set_language(user.language)
     process_emails.send_verification_email(user.email, verification_token)
 
 
