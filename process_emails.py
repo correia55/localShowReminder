@@ -7,8 +7,20 @@ import jinja2
 
 import configuration
 import models
+import gettext
 
-env = jinja2.Environment(loader=jinja2.FileSystemLoader('templates'))
+pt = gettext.translation('main', localedir='locales', languages=['pt'])
+en = gettext.translation('main', localedir='locales', languages=['en'])
+
+extensions = ['jinja2.ext.i18n']
+env = jinja2.Environment(loader=jinja2.FileSystemLoader('templates'), extensions=extensions)
+
+# TODO: CHANGE THIS TO BE DINAMICALLY CHANGED DEPENDING ON THE USER
+current = pt
+env.install_gettext_callables(gettext=current.gettext, ngettext=current.ngettext, newstyle=True)
+# env.install_gettext_callables(gettext=pt.gettext, ngettext=pt.ngettext, newstyle=True)
+# or
+# env.install_gettext_callables(gettext=en.gettext, ngettext=en.ngettext, newstyle=True)
 
 
 def valid_configuration():
@@ -81,7 +93,7 @@ def send_verification_email(destination: str, verification_token: str):
     :param str verification_token: the verification token.
     """
 
-    subject = 'Verification Email'
+    subject = current.gettext('verification_email')
 
     content = env.get_template('verification_email.html').render(application_name=configuration.application_name,
                                                                  application_link=configuration.application_link,
@@ -102,7 +114,7 @@ def send_reminders_email(destination: str, reminder: models.DBReminder, results:
     :param list results: the list of results.
     """
 
-    subject = 'Reminder results'
+    subject = current.gettext('reminder_results')
 
     content = env.get_template('reminders_email.html').render(application_name=configuration.application_name,
                                                               application_link=configuration.application_link,

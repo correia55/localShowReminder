@@ -1,0 +1,66 @@
+# Local Show Reminder.
+# Copyright (C) 2020 LocalShowReminder
+# Acácio Correia, 2020.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 1.0\n"
+"POT-Creation-Date: 2020-04-26 13:13+0100\n"
+"PO-Revision-Date: 2020-04-26 13:13+0100\n"
+"Last-Translator: Acácio Correia\n"
+"Language-Team: English\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+
+msgid "verification_email"
+msgstr "Verification Email"
+
+msgid "reminder_results"
+msgstr "Reminder results"
+
+msgid "dear"
+msgstr "Dear"
+
+msgid "regards_sentence"
+msgstr "Best regards"
+
+msgid "unsubscribe_sentence"
+msgstr "Don't like these emails? Delete your reminders or account at"
+
+msgid "registration_sentence"
+msgstr "Thank you for registering at"
+
+msgid "verification_sentence"
+msgstr "Before using the system you need to verify your account by pressing the button"
+
+msgid "verify_account"
+msgstr "Verify Account"
+
+msgid "accessing_sentence"
+msgstr "or accessing the link"
+
+msgid "validation_time_sentence"
+msgstr "This email is only valid for"
+
+msgid "hours"
+msgstr "hours"
+
+msgid "expiration_sentence"
+msgstr "If you let it expire, you will need to login to our system and request a new email"
+
+msgid "results_sentence"
+msgstr "These are the results for the reminders you created"
+
+msgid "first_letter_of_season"
+msgstr "S"
+
+msgid "first_letter_of_episode"
+msgstr "E"
+
+msgid "at_date"
+msgstr "at"
+
+msgid "in_channel"
+msgstr "in"

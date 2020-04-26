@@ -1,0 +1,66 @@
+# Local Show Reminder.
+# Copyright (C) 2020 LocalShowReminder
+# Acácio Correia, 2020.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 1.0\n"
+"POT-Creation-Date: 2020-04-26 13:13+0100\n"
+"PO-Revision-Date: 2020-04-26 13:13+0100\n"
+"Last-Translator: Acácio Correia\n"
+"Language-Team: Portuguese\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+
+msgid "verification_email"
+msgstr "Email de Verificação"
+
+msgid "reminder_results"
+msgstr "Resultados dos Lembretes"
+
+msgid "dear"
+msgstr "Caro"
+
+msgid "regards_sentence"
+msgstr "Melhores cumprimentos"
+
+msgid "unsubscribe_sentence"
+msgstr "Não quer receber mais destes emails? Apague os seu lembretes ou conta em"
+
+msgid "registration_sentence"
+msgstr "Obrigado por se registar em"
+
+msgid "verification_sentence"
+msgstr "Antes de poder utilizar a aplicação, precisar de validar a sua conta carregando no botão"
+
+msgid "verify_account"
+msgstr "Verificar Conta"
+
+msgid "accessing_sentence"
+msgstr "ou através do link"
+
+msgid "validation_time_sentence"
+msgstr "Este email só é válido por"
+
+msgid "hours"
+msgstr "horas"
+
+msgid "expiration_sentence"
+msgstr "Se o deixar expirar, precisará de pedir um novo email depois de fazer login no site"
+
+msgid "results_sentence"
+msgstr "São estes os resultados para os lembretes criados"
+
+msgid "first_letter_of_season"
+msgstr "T"
+
+msgid "first_letter_of_episode"
+msgstr "E"
+
+msgid "at_date"
+msgstr "dia"
+
+msgid "in_channel"
+msgstr "no"

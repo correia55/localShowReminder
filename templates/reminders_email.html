@@ -5,8 +5,7 @@
 {% set application_link = application_link %}
 
 {% block content %}
-    <p>Dear {{ username }},</p>
-    <p>These are the results for the reminders you created.</p>
+    <p>{% trans %}results_sentence{% endtrans %}:</p>
 
     {% for show in results %}
         {% if loop.index > 0 %}
@@ -17,15 +16,12 @@
             {{ show.show_title }}
 
             {% if show.show_episode is not none %}
-                S{{ show.show_season }} E{{ show.show_episode }}
+                {% trans %}first_letter_of_season{% endtrans %}{{ show.show_season }} {% trans %}first_letter_of_episode{% endtrans %}{{ show.show_episode }}
             {% endif %}
 
-            at {{ show.date_time }}, in {{ show.channel}}.
+            {% trans %}at_date{% endtrans %} {{ show.date_time }}, {% trans %}in_channel{% endtrans %} {{ show.channel}}.
         </p>
     {% endfor %}
 
     <p></p>
-
-    <p>Best regards,<br>
-    the {{ application_name }} Team.</p>
 {% endblock %}
