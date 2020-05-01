@@ -5,8 +5,7 @@
 {% set application_link = application_link %}
 
 {% block content %}
-    <p>{% trans %}registration_sentence{% endtrans %} {{ application_link }}.</p>
-    <p>{% trans %}verification_sentence{% endtrans %}:</p>
+    <p>{% trans %}deletion_sentence{% endtrans %} {{ application_link }}.</p>
     <table border="0" cellpadding="0" cellspacing="0" class="btn btn-primary">
     <tbody>
     <tr>
@@ -14,7 +13,7 @@
     <table border="0" cellpadding="0" cellspacing="0">
     <tbody>
     <tr>
-    <td> <a href="{{ application_link }}/verification/{{ verification_token }}" target="_blank">{% trans %}verify_account{% endtrans %}</a> </td>
+    <td> <a href="{{ application_link }}/account/{{ deletion_token }}" target="_blank">{% trans %}delete_account{% endtrans %}</a> </td>
     </tr>
     </tbody>
     </table>
@@ -22,7 +21,7 @@
     </tr>
     </tbody>
     </table>
-    <p>{% trans %}accessing_sentence{% endtrans %} {{ application_link }}/verification/{{ verification_token }}<p>
+    <p>{% trans %}accessing_sentence{% endtrans %} {{ application_link }}/account/{{ deletion_token }}<p>
     <p>{% trans %}validation_time_sentence{% endtrans %} {{ validity_hours }} {% trans %}hours{% endtrans %}.</p>
     <p>{% trans %}expiration_sentence{% endtrans %}.</p>
 {% endblock %}

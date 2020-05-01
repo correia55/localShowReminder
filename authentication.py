@@ -11,6 +11,7 @@ class TokenType(Enum):
     REFRESH = 0
     ACCESS = 1
     VERIFICATION = 2
+    DELETION = 3
 
 
 def generate_access_token(auth_token: bytearray):
@@ -45,6 +46,8 @@ def generate_token(user_id: int, token_type: TokenType) -> any:
         exp = datetime.datetime.utcnow() + datetime.timedelta(days=configuration.REFRESH_TOKEN_VALIDITY_DAYS)
     elif token_type == TokenType.VERIFICATION:
         exp = datetime.datetime.utcnow() + datetime.timedelta(days=configuration.VERIFICATION_TOKEN_VALIDITY_DAYS)
+    elif token_type == TokenType.DELETION:
+        exp = datetime.datetime.utcnow() + datetime.timedelta(days=configuration.DELETION_TOKEN_VALIDITY_DAYS)
     else:
         exp = datetime.datetime.utcnow() + datetime.timedelta(hours=configuration.ACCESS_TOKEN_VALIDITY_HOURS)
 
@@ -70,7 +73,7 @@ def generate_token(user_id: int, token_type: TokenType) -> any:
         return e
 
 
-def validate_token(auth_token: bytearray, token_type: TokenType):
+def validate_token(auth_token: bytearray, token_type: TokenType) -> (bool, str):
     """
     Source: https://realpython.com/token-based-authentication-with-flask/
 

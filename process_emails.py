@@ -111,8 +111,28 @@ def send_verification_email(destination: str, verification_token: str):
                                                                  application_link=configuration.application_link,
                                                                  username=destination,
                                                                  verification_token=verification_token,
-                                                                 verification_hours=configuration.VERIFICATION_TOKEN_VALIDITY_DAYS * 24,
+                                                                 validity_hours=configuration.VERIFICATION_TOKEN_VALIDITY_DAYS * 24,
                                                                  title=subject)
+
+    send_email(content, subject, destination)
+
+
+def send_deletion_email(destination: str, deletion_token: str):
+    """
+    Send a deletion email.
+
+    :param str destination: the destination address.
+    :param str deletion_token: the deletion token.
+    """
+
+    subject = current.gettext('deletion_email')
+
+    content = env.get_template('deletion_email.html').render(application_name=configuration.application_name,
+                                                           application_link=configuration.application_link,
+                                                           username=destination,
+                                                           deletion_token=deletion_token,
+                                                           validity_hours=configuration.DELETION_TOKEN_VALIDITY_DAYS * 24,
+                                                           title=subject)
 
     send_email(content, subject, destination)
 

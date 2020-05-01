@@ -551,6 +551,27 @@ def send_verifcation_email(user: models.User):
     process_emails.send_verification_email(user.email, verification_token)
 
 
+def send_deletion_email(user_id: str) -> bool:
+    """
+    Send a verification email.
+
+    :param user_id: the user id.
+    """
+
+    # Get user
+    user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
+
+    if user is None:
+        return False
+
+    deletion_token = authentication.generate_token(user.id, authentication.TokenType.DELETION).decode()
+
+    process_emails.set_language(user.language)
+    process_emails.send_deletion_email(user.email, deletion_token)
+
+    return True
+
+
 def check_login(email: str, password: str):
     """
     Verify with the user's credentials.
@@ -614,6 +635,34 @@ def make_searchable_title(title):
     words = re.compile('[^0-9A-Za-z]+').split(unaccented_title)
 
     return '_' + '_'.join(words) + '_'
+
+
+def delete_account(deletion_token: str):
+    """
+    Delete an account.
+
+    :param deletion_token: the deletion token.
+    :return: whether the deletion was success or not.
+    """
+
+    # Validate deletion token
+    valid, user_id = authentication.validate_token(deletion_token.encode(), authentication.TokenType.DELETION)
+
+    if not valid:
+        return False
+
+    # Get user
+    user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
+
+    # Check if the user was found
+    if user is None:
+        return False
+
+    # Delete user
+    configuration.session.delete(user)
+    configuration.session.commit()
+
+    return True
 
 
 def main():

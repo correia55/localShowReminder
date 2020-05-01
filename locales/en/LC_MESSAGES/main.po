@@ -15,7 +15,10 @@ msgstr ""
 "Generated-By: pygettext.py 1.5\n"
 
 msgid "verification_email"
-msgstr "Verification Email"
+msgstr "Account Verification"
+
+msgid "deletion_email"
+msgstr "Delete Account"
 
 msgid "reminder_results"
 msgstr "Reminder results"
@@ -64,3 +67,9 @@ msgstr "at"
 
 msgid "in_channel"
 msgstr "in"
+
+msgid "delete_account"
+msgstr "Delete Account"
+
+msgid "deletion_sentence"
+msgstr "A deletion request was made for the account associated with this email, to confirm press the button"

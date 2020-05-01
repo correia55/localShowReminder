@@ -116,9 +116,9 @@ def handle_error(error, req, schema, status_code, headers):
 # endregion
 
 
-class RegistrationEP(fr.Resource):
+class AccountEP(fr.Resource):
     def __init__(self):
-        super(RegistrationEP, self).__init__()
+        super(AccountEP, self).__init__()
 
     registration_args = \
         {
@@ -129,14 +129,31 @@ class RegistrationEP(fr.Resource):
     @fp.use_args(registration_args)
     @cross_origin(supports_credentials=True)
     def post(self, args):
-        """Register a new user."""
+        """Create a new account."""
 
         email = args['email']
         password = args['password']
 
         processing.register_user(email, password)
 
-        return flask.jsonify({'registration': 'success', 'msg:': 'An email was sent to your inbox.'})
+        return flask.jsonify({'account': 'success', 'msg:': 'An email was sent to your inbox.'})
+
+    deletion_args = \
+        {
+            'deletion_token': webargs.fields.Str(required=True)
+        }
+
+    @fp.use_args(deletion_args)
+    @cross_origin(supports_credentials=True)
+    def delete(self, args):
+        """Delete an account."""
+
+        deletion_token = args['deletion_token']
+
+        if processing.delete_account(deletion_token):
+            return flask.jsonify({'account': 'success'})
+        else:
+            return flask.jsonify({'account': 'failure'})
 
 
 class SendVerificationEmailEP(fr.Resource):
@@ -157,6 +174,26 @@ class SendVerificationEmailEP(fr.Resource):
             return flask.jsonify({'send_verification': 'success'})
         else:
             return flask.jsonify({'send_verification': 'failure'})
+
+
+class SendDeletionEmailEP(fr.Resource):
+    decorators = [token_auth.login_required]
+
+    def __init__(self):
+        super(SendDeletionEmailEP, self).__init__()
+
+    @cross_origin(supports_credentials=True)
+    def post(self):
+        """Send deletion email."""
+
+        # Get the user id from the token
+        token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+        user_id = authentication.access_token_field(token.encode(), 'user')
+
+        if processing.send_deletion_email(user_id):
+            return flask.jsonify({'send_deletion': 'success'})
+        else:
+            return flask.jsonify({'send_deletion': 'failure'})
 
 
 class VerificationEP(fr.Resource):
@@ -242,9 +279,9 @@ class AccessEP(fr.Resource):
     def post(self, args):
         """Getting a new access token."""
 
-        auth_token = args['refresh_token']
+        refresh_token = args['refresh_token']
 
-        valid, access_token = authentication.generate_access_token(auth_token.encode())
+        valid, access_token = authentication.generate_access_token(refresh_token.encode())
 
         if valid:
             return flask.jsonify({'access': 'success', 'token': str(access_token.decode())})
@@ -444,7 +481,7 @@ class ReminderEP(fr.Resource):
                               'reminder_list': processing.list_to_json(processing.get_reminders(user_id))})
 
 
-api.add_resource(RegistrationEP, '/0.1/registration', endpoint='registration')
+api.add_resource(AccountEP, '/0.1/account', endpoint='account')
 api.add_resource(LoginEP, '/0.1/login', endpoint='login')
 api.add_resource(LogoutEP, '/0.1/logout', endpoint='logout')
 api.add_resource(AccessEP, '/0.1/access', endpoint='access')
@@ -453,6 +490,7 @@ api.add_resource(SearchListingsEP, '/0.1/search_listings', endpoint='search_list
 api.add_resource(ReminderEP, '/0.1/reminder', endpoint='reminder')
 api.add_resource(SendVerificationEmailEP, '/0.1/send_verification_email', endpoint='send_verification_email')
 api.add_resource(VerificationEP, '/0.1/verification', endpoint='verification')
+api.add_resource(SendDeletionEmailEP, '/0.1/send_deletion_email', endpoint='send_deletion_email')
 
 if __name__ == '__main__':
     app.run(debug=True, threaded=True, use_reloader=False)
