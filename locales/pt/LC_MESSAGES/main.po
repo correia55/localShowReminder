@@ -73,3 +73,6 @@ msgstr "Apagar Conta"
 
 msgid "deletion_sentence"
 msgstr "Foi feito um pedido para apagar a conta associada a este email, para confirmar carregue no botão"
+
+msgid "the_application_team"
+msgstr "a equipa do Cinembraria"
