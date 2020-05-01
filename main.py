@@ -88,7 +88,7 @@ def unauthorized():
 
 
 @token_auth.verify_token
-def verify_auth_token(token):
+def verify_access_token(token):
     """
     Verify if the access token is valid.
 
@@ -196,11 +196,11 @@ class LoginEP(fr.Resource):
 
         if user is not None:
             if user.verified:
-                auth_token = authentication.generate_token(user.id, authentication.TokenType.REFRESH).decode()
+                refresh_token = authentication.generate_token(user.id, authentication.TokenType.REFRESH).decode()
                 username = auth['username'][:auth['username'].index('@')] if auth['username'].find('@') != -1 else auth[
                     'username']
 
-                return flask.jsonify({'login': 'success', 'token': str(auth_token), 'username': username})
+                return flask.jsonify({'login': 'success', 'token': str(refresh_token), 'username': username})
             else:
                 return flask.jsonify({'login': 'failure', 'error': 'unverified_account'})
         else:
@@ -213,7 +213,7 @@ class LogoutEP(fr.Resource):
 
     logout_args = \
         {
-            'auth_token': webargs.fields.Str(required=True)
+            'refresh_token': webargs.fields.Str(required=True)
         }
 
     @fp.use_args(logout_args)
@@ -221,9 +221,9 @@ class LogoutEP(fr.Resource):
     def post(self, args):
         """Logout of a user's account."""
 
-        auth_token = args['auth_token']
+        refresh_token = args['refresh_token']
 
-        processing.logout(auth_token)
+        processing.logout(refresh_token)
 
         return flask.jsonify({'logout': 'success'})
 

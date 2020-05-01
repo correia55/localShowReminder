@@ -587,14 +587,14 @@ def get_user_by_email(email: str):
     return user
 
 
-def logout(auth_token: str):
+def logout(refresh_token: str):
     """
     Logout, by eliminating a token from the DB.
 
-    :param auth_token: the authentication token.
+    :param refresh_token: the refresh token.
     """
 
-    token = configuration.session.query(models.Token).filter(models.Token.token == auth_token).first()
+    token = configuration.session.query(models.Token).filter(models.Token.token == refresh_token).first()
 
     if token is not None:
         configuration.session.delete(token)
