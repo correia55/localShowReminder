@@ -1,4 +1,5 @@
 import email.mime.text as emt
+import gettext
 import re
 import smtplib
 
@@ -7,7 +8,6 @@ import jinja2
 
 import configuration
 import models
-import gettext
 
 pt = gettext.translation('main', localedir='locales', languages=['pt'])
 en = gettext.translation('main', localedir='locales', languages=['en'])
@@ -128,11 +128,53 @@ def send_deletion_email(destination: str, deletion_token: str):
     subject = current.gettext('deletion_email')
 
     content = env.get_template('deletion_email.html').render(application_name=configuration.application_name,
-                                                           application_link=configuration.application_link,
-                                                           username=destination,
-                                                           deletion_token=deletion_token,
-                                                           validity_hours=configuration.DELETION_TOKEN_VALIDITY_DAYS * 24,
-                                                           title=subject)
+                                                             application_link=configuration.application_link,
+                                                             username=destination,
+                                                             deletion_token=deletion_token,
+                                                             validity_hours=configuration.DELETION_TOKEN_VALIDITY_DAYS * 24,
+                                                             title=subject)
+
+    send_email(content, subject, destination)
+
+
+def send_change_email_old(destination: str, token: str):
+    """
+    Send a change email email to the old email.
+
+    :param str destination: the destination address.
+    :param str token: the change email old token.
+    """
+
+    subject = current.gettext('change_email')
+
+    content = env.get_template('change_email_old.html').render(application_name=configuration.application_name,
+                                                               application_link=configuration.application_link,
+                                                               username=destination,
+                                                               token=token,
+                                                               validity_hours=configuration.CHANGE_EMAIL_TOKEN_VALIDITY_DAYS * 24,
+                                                               title=subject)
+
+    send_email(content, subject, destination)
+
+
+def send_change_email_new(destination: str, token: str, old_email: str):
+    """
+    Send a change email email to the new email.
+
+    :param str destination: the destination address.
+    :param str token: the change email new token.
+    :param str old_email: the old email.
+    """
+
+    subject = current.gettext('change_email')
+
+    content = env.get_template('change_email_new.html').render(application_name=configuration.application_name,
+                                                               application_link=configuration.application_link,
+                                                               username=destination,
+                                                               token=token,
+                                                               old_email=old_email,
+                                                               validity_hours=configuration.CHANGE_EMAIL_TOKEN_VALIDITY_DAYS * 24,
+                                                               title=subject)
 
     send_email(content, subject, destination)
 

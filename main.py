@@ -1,5 +1,6 @@
 import datetime
 import threading
+from enum import Enum
 
 import flask
 import flask_httpauth as fh
@@ -61,6 +62,7 @@ limiter = fl.Limiter(
 
 
 @basic_auth.error_handler
+@token_auth.error_handler
 def unauthorized():
     """The response of the server when getting unauthorized."""
 
@@ -78,13 +80,6 @@ def verify_login_credentials(username, password):
     """
 
     return processing.check_login(username, password)
-
-
-@token_auth.error_handler
-def unauthorized():
-    """The response of the server when getting unauthorized."""
-
-    return flask.make_response('Unauthorized Access', 403)
 
 
 @token_auth.verify_token
@@ -116,9 +111,9 @@ def handle_error(error, req, schema, status_code, headers):
 # endregion
 
 
-class AccountEP(fr.Resource):
+class UserEP(fr.Resource):
     def __init__(self):
-        super(AccountEP, self).__init__()
+        super(UserEP, self).__init__()
 
     registration_args = \
         {
@@ -129,14 +124,30 @@ class AccountEP(fr.Resource):
     @fp.use_args(registration_args)
     @cross_origin(supports_credentials=True)
     def post(self, args):
-        """Create a new account."""
+        """Create a new user's account."""
 
         email = args['email']
         password = args['password']
 
         processing.register_user(email, password)
 
-        return flask.jsonify({'account': 'success', 'msg:': 'An email was sent to your inbox.'})
+        return flask.jsonify({'user': 'success', 'msg:': 'email_sent'})
+
+    patch_args = \
+        {
+            'change_token': webargs.fields.Str(required=True)
+        }
+
+    @fp.use_args(patch_args)
+    def patch(self, args):
+        """Change user's settings."""
+
+        change_token = args['change_token']
+
+        if processing.change_user_settings(change_token):
+            return flask.jsonify({'user': 'success'})
+        else:
+            return flask.jsonify({'user': 'failure'})
 
     deletion_args = \
         {
@@ -146,14 +157,14 @@ class AccountEP(fr.Resource):
     @fp.use_args(deletion_args)
     @cross_origin(supports_credentials=True)
     def delete(self, args):
-        """Delete an account."""
+        """Delete a user's account."""
 
         deletion_token = args['deletion_token']
 
-        if processing.delete_account(deletion_token):
-            return flask.jsonify({'account': 'success'})
+        if processing.delete_user(deletion_token):
+            return flask.jsonify({'user': 'success'})
         else:
-            return flask.jsonify({'account': 'failure'})
+            return flask.jsonify({'user': 'failure'})
 
 
 class SendVerificationEmailEP(fr.Resource):
@@ -164,10 +175,10 @@ class SendVerificationEmailEP(fr.Resource):
 
     @cross_origin(supports_credentials=True)
     def post(self):
-        """Send another verification email."""
+        """Send verification email."""
 
         auth = flask.request.authorization
-        user = processing.get_user_by_email(auth['username'])
+        user = processing.get_user_by_email(auth.username)
 
         if user is not None and not user.verified:
             processing.send_verifcation_email(user)
@@ -176,24 +187,74 @@ class SendVerificationEmailEP(fr.Resource):
             return flask.jsonify({'send_verification': 'failure'})
 
 
-class SendDeletionEmailEP(fr.Resource):
+class SendEmailEP(fr.Resource):
     decorators = [token_auth.login_required]
 
     def __init__(self):
-        super(SendDeletionEmailEP, self).__init__()
+        super(SendEmailEP, self).__init__()
+
+    class EmailType(Enum):
+        DELETION = 0
+        CHANGE_OLD = 1
+
+    email_args = \
+        {
+            'type': webargs.fields.Str(required=True)
+        }
 
     @cross_origin(supports_credentials=True)
-    def post(self):
-        """Send deletion email."""
+    @fp.use_args(email_args)
+    def post(self, args):
+        """Send settings email."""
+
+        token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+        email_type = args['type']
 
         # Get the user id from the token
-        token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
-        user_id = authentication.access_token_field(token.encode(), 'user')
+        user_id = authentication.get_token_field(token.encode(), 'user')
 
-        if processing.send_deletion_email(user_id):
-            return flask.jsonify({'send_deletion': 'success'})
+        # If it is a user's deletion email request
+        if email_type == SendEmailEP.EmailType.DELETION.name:
+            if processing.send_deletion_email(user_id):
+                return flask.jsonify({'send_email': 'success'})
+            else:
+                return flask.jsonify({'send_email': 'failure'})
+
+        # If it is an email change email request
+        elif email_type == SendEmailEP.EmailType.CHANGE_OLD.name:
+            if processing.send_change_email_old(user_id):
+                return flask.jsonify({'send_email': 'success'})
+            else:
+                return flask.jsonify({'send_email': 'failure'})
+
+
+class SendChangeEmailEP(fr.Resource):
+    def __init__(self):
+        super(SendChangeEmailEP, self).__init__()
+
+    email_args = \
+        {
+            'change_token': webargs.fields.Str(required=True),
+            'new_email': webargs.fields.Str(required=True)
+        }
+
+    @cross_origin(supports_credentials=True)
+    @fp.use_args(email_args)
+    def post(self, args):
+        """Send 'change email' email to new email address."""
+
+        change_token = args['change_token']
+        new_email = args['new_email']
+
+        success, already_exists = processing.send_change_email_new(change_token, new_email)
+
+        if success:
+            return flask.jsonify({'send_change_email': 'success'})
         else:
-            return flask.jsonify({'send_deletion': 'failure'})
+            if already_exists:
+                return flask.jsonify({'send_change_email': 'failure', 'msg': 'email_already_exists'})
+            else:
+                return flask.jsonify({'send_change_email': 'failure'})
 
 
 class VerificationEP(fr.Resource):
@@ -207,10 +268,10 @@ class VerificationEP(fr.Resource):
 
     @fp.use_args(verification_args)
     def post(self, args):
-        """Verify a user account."""
+        """Verify a user's account."""
 
         verification_token = args['verification_token']
-        verified = processing.verify_account(verification_token)
+        verified = processing.verify_user(verification_token)
 
         if verified:
             return flask.jsonify({'verification': 'success'})
@@ -346,7 +407,7 @@ class SearchListingsEP(fr.Resource):
         # Get the user settings of whether it should look in channels with adult content or not
         if 'HTTP_AUTHORIZATION' in flask.request.headers.environ:
             token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
-            user_id = authentication.access_token_field(token.encode(), 'user')
+            user_id = authentication.get_token_field(token.encode(), 'user')
 
             user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
             search_adult = user.show_adult if user is not None else False
@@ -371,7 +432,7 @@ class ReminderEP(fr.Resource):
 
         # Get the user id from the token
         token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
-        user_id = authentication.access_token_field(token.encode(), 'user')
+        user_id = authentication.get_token_field(token.encode(), 'user')
 
         reminders = processing.get_reminders(user_id)
 
@@ -424,7 +485,7 @@ class ReminderEP(fr.Resource):
 
         # Get the user id from the token
         token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
-        user_id = authentication.access_token_field(token.encode(), 'user')
+        user_id = authentication.get_token_field(token.encode(), 'user')
 
         if processing.register_reminder(show_name, is_movie, reminder_type, show_slug, show_season, show_episode,
                                         user_id):
@@ -451,7 +512,7 @@ class ReminderEP(fr.Resource):
 
         # Get the user id from the token
         token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
-        user_id = authentication.access_token_field(token.encode(), 'user')
+        user_id = authentication.get_token_field(token.encode(), 'user')
 
         if processing.update_reminder(reminder_id, show_season, show_episode, user_id):
             return flask.jsonify({'reminder': 'success', 'msg': 'Reminder successfully updated.',
@@ -473,7 +534,7 @@ class ReminderEP(fr.Resource):
 
         # Get the user id from the token
         token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
-        user_id = authentication.access_token_field(token.encode(), 'user')
+        user_id = authentication.get_token_field(token.encode(), 'user')
 
         processing.remove_reminder(reminder_id, user_id)
 
@@ -481,16 +542,17 @@ class ReminderEP(fr.Resource):
                               'reminder_list': processing.list_to_json(processing.get_reminders(user_id))})
 
 
-api.add_resource(AccountEP, '/0.1/account', endpoint='account')
+api.add_resource(UserEP, '/0.1/user', endpoint='user')
 api.add_resource(LoginEP, '/0.1/login', endpoint='login')
 api.add_resource(LogoutEP, '/0.1/logout', endpoint='logout')
 api.add_resource(AccessEP, '/0.1/access', endpoint='access')
 api.add_resource(SearchShowDBEP, '/0.1/search_show_db', endpoint='search_show_db')
 api.add_resource(SearchListingsEP, '/0.1/search_listings', endpoint='search_listings')
 api.add_resource(ReminderEP, '/0.1/reminder', endpoint='reminder')
-api.add_resource(SendVerificationEmailEP, '/0.1/send_verification_email', endpoint='send_verification_email')
 api.add_resource(VerificationEP, '/0.1/verification', endpoint='verification')
-api.add_resource(SendDeletionEmailEP, '/0.1/send_deletion_email', endpoint='send_deletion_email')
+api.add_resource(SendEmailEP, '/0.1/send_email', endpoint='send_email')
+api.add_resource(SendVerificationEmailEP, '/0.1/send_verification_email', endpoint='send_verification_email')
+api.add_resource(SendChangeEmailEP, '/0.1/send_change_email', endpoint='send_change_email')
 
 if __name__ == '__main__':
     app.run(debug=True, threaded=True, use_reloader=False)

@@ -76,3 +76,15 @@ msgstr "A deletion request was made for the account associated with this email, 
 
 msgid "the_application_team"
 msgstr "the Cinembraria Team"
+
+msgid "change_email"
+msgstr "Change Email"
+
+msgid "change_email_old_sentence"
+msgstr "An email change request was made for the associated account, to continue press the button"
+
+msgid "change_email_new_old"
+msgstr "A change email request was made for the account associated with"
+
+msgid "change_email_new_confirm"
+msgstr "to be associated with this email. To confirm press the button"

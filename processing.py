@@ -24,6 +24,10 @@ class ComparisonType(Enum):
     SMALLER = 2
 
 
+class Changes(Enum):
+    CHANGE_EMAIL = 'change_email'
+
+
 def list_to_json(list_of_objects):
     """Create a list with the result of to_dict for each element."""
 
@@ -509,9 +513,9 @@ def register_user(email: str, password: str):
         # TODO: Send warning email
 
 
-def verify_account(verification_token: str):
+def verify_user(verification_token: str):
     """
-    Verify an account.
+    Verify a user's account.
 
     :param verification_token: the verification token.
     :return: whether the verification was success or not.
@@ -530,7 +534,7 @@ def verify_account(verification_token: str):
     if user is None:
         return False
 
-    # Set user account to verified
+    # Set user's account to verified
     user.verified = True
 
     configuration.session.commit()
@@ -570,6 +574,68 @@ def send_deletion_email(user_id: str) -> bool:
     process_emails.send_deletion_email(user.email, deletion_token)
 
     return True
+
+
+def send_change_email_old(user_id: str) -> bool:
+    """
+    Send a change email email to the old email.
+
+    :param user_id: the user id.
+    """
+
+    # Get user
+    user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
+
+    if user is None:
+        return False
+
+    change_email_old_token = authentication.generate_token(user.id, authentication.TokenType.CHANGE_EMAIL_OLD).decode()
+
+    process_emails.set_language(user.language)
+    process_emails.send_change_email_old(user.email, change_email_old_token)
+
+    return True
+
+
+def send_change_email_new(change_token_old: str, new_email: str) -> (bool, bool):
+    """
+    Send a 'Change Email' email to the new email address.
+
+    :param change_token_old: the change token from the old email address.
+    :param new_email: the new email.
+    :return: a pair of booleans: the first is the success of the operation and the second is if the motif of the failure
+    is that the new email is already at use.
+    """
+
+    # Validate the change token from the old email address
+    valid, user_id = authentication.validate_token(change_token_old.encode(), authentication.TokenType.CHANGE_EMAIL_OLD)
+
+    if not valid:
+        return False, False
+
+    # Get the user id from the token
+    user_id = authentication.get_token_field(change_token_old.encode(), 'user')
+
+    # Get user
+    user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
+
+    if user is None:
+        return False, False
+
+    # Check if the new email is valid
+    new_email_user = configuration.session.query(models.User).filter(models.User.email == new_email).first()
+
+    if new_email_user is not None:
+        return False, True
+
+    changes = {Changes.CHANGE_EMAIL.value: new_email}
+    change_email_new_token = authentication.generate_change_token(user.id, authentication.TokenType.CHANGE_EMAIL_NEW,
+                                                                  changes).decode()
+
+    process_emails.set_language(user.language)
+    process_emails.send_change_email_new(new_email, change_email_new_token, user.email)
+
+    return True, True
 
 
 def check_login(email: str, password: str):
@@ -637,9 +703,9 @@ def make_searchable_title(title):
     return '_' + '_'.join(words) + '_'
 
 
-def delete_account(deletion_token: str):
+def delete_user(deletion_token: str):
     """
-    Delete an account.
+    Delete a user's account.
 
     :param deletion_token: the deletion token.
     :return: whether the deletion was success or not.
@@ -660,6 +726,45 @@ def delete_account(deletion_token: str):
 
     # Delete user
     configuration.session.delete(user)
+    configuration.session.commit()
+
+    return True
+
+
+def change_user_settings(change_token: str):
+    """
+    Change settings from a user's account.
+
+    :param change_token: the change token.
+    :return: whether the deletion was success or not.
+    """
+
+    # Validate change token
+    valid, user_id = authentication.validate_token(change_token.encode(), authentication.TokenType.CHANGE_EMAIL_NEW)
+
+    if not valid:
+        return False
+
+    # Get user
+    user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
+
+    # Check if the user was found
+    if user is None:
+        return False
+
+    # Check for changes
+    payload = authentication.get_token_payload(change_token)
+
+    something_changed = False
+
+    if Changes.CHANGE_EMAIL.value in payload:
+        something_changed = True
+        user.email = payload[Changes.CHANGE_EMAIL.value]
+
+    if not something_changed:
+        return False
+
+    # Commit the changes
     configuration.session.commit()
 
     return True

@@ -76,3 +76,15 @@ msgstr "Foi feito um pedido para apagar a conta associada a este email, para con
 
 msgid "the_application_team"
 msgstr "a equipa do Cinembraria"
+
+msgid "change_email"
+msgstr "Alteração de Email"
+
+msgid "change_email_old_sentence"
+msgstr "Foi feito um pedido para alteração do email da conta associada, para continuar carregue no botão"
+
+msgid "change_email_new_old"
+msgstr "Foi feito um pedido para alteração do email da conta associada a"
+
+msgid "change_email_new_confirm"
+msgstr "para que seja associada a este email. Para confirmar carregue no botão"
