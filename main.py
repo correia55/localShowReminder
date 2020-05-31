@@ -106,8 +106,6 @@ parser = flaskparser.FlaskParser()
 @parser.error_handler
 def handle_error(error, req, schema, status_code, headers):
     return flask.make_response('Unprocessable entity: ' + error, 422)
-
-
 # endregion
 
 
@@ -130,11 +128,14 @@ class LoginEP(fr.Resource):
                 username = auth['username'][:auth['username'].index('@')] if auth['username'].find('@') != -1 else auth[
                     'username']
 
-                return flask.jsonify({'token': str(refresh_token), 'username': username}), 200
+                return flask.make_response(flask.jsonify({'token': str(refresh_token), 'username': username}), 200)
             else:
-                return flask.jsonify({'error': 'unverified_account'}), 400
+                return flask.make_response('Unverified Account', 400)
+
+        # This should never happen
         else:
-            return flask.jsonify({'error': 'invalid_login'}), 403  # Should be 503
+            print('ERROR: The user passed the decorator verification!')
+            return flask.make_response('Unauthorized Access', 403)  # Should be 503
 
 
 class LogoutEP(fr.Resource):
@@ -174,7 +175,7 @@ class RemindersEP(fr.Resource):
 
         reminders = processing.get_reminders(user_id)
 
-        return flask.jsonify({'reminder_list': processing.list_to_json(reminders)}), 200
+        return flask.make_response(flask.jsonify({'reminder_list': processing.list_to_json(reminders)}), 200)
 
     register_args = \
         {
@@ -212,13 +213,13 @@ class RemindersEP(fr.Resource):
         try:
             reminder_type = ReminderType[reminder_type]
         except KeyError:
-            return flask.jsonify({'error': 'invalid_reminder_type'}), 400
+            return flask.make_response('Invalid Reminder Type', 400)
 
         if reminder_type == ReminderType.DB and show_slug is None:
-            return flask.jsonify({'error': 'missing_show_slug'}), 400
+            return flask.make_response('Missing Show Slug', 400)
 
         if not is_movie and (show_season is None or show_episode is None):
-            return flask.jsonify({'error': 'missing_season_episode'}), 400
+            return flask.make_response('Missing Season Episode', 400)
 
         # Get the user id from the token
         token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
@@ -226,9 +227,9 @@ class RemindersEP(fr.Resource):
 
         if processing.register_reminder(show_name, is_movie, reminder_type, show_slug, show_season, show_episode,
                                         user_id):
-            return flask.jsonify({'reminder_list': processing.list_to_json(processing.get_reminders(user_id))}), 201
+            return flask.make_response(flask.jsonify({'reminder_list': processing.list_to_json(processing.get_reminders(user_id))}), 201)
         else:
-            return flask.jsonify({'error': 'reminder_already_exists'}), 400
+            return flask.make_response('Reminder Already Exists', 400)
 
     update_args = \
         {
@@ -251,7 +252,7 @@ class RemindersEP(fr.Resource):
         user_id = authentication.get_token_field(token.encode(), 'user')
 
         if processing.update_reminder(reminder_id, show_season, show_episode, user_id):
-            return flask.jsonify({'reminder_list': processing.list_to_json(processing.get_reminders(user_id))}), 201
+            return flask.make_response(flask.jsonify({'reminder_list': processing.list_to_json(processing.get_reminders(user_id))}), 201)
         else:
             return flask.make_response('', 404)
 
@@ -273,7 +274,7 @@ class RemindersEP(fr.Resource):
 
         processing.remove_reminder(reminder_id, user_id)
 
-        return flask.jsonify({'reminder_list': processing.list_to_json(processing.get_reminders(user_id))}), 200
+        return flask.make_response(flask.jsonify({'reminder_list': processing.list_to_json(processing.get_reminders(user_id))}), 200)
 
 
 class SendEmailEP(fr.Resource):
@@ -316,6 +317,10 @@ class SendEmailEP(fr.Resource):
             else:
                 return flask.make_response('', 400)
 
+        # If something else is sent
+        else:
+            return flask.make_response('', 400)
+
 
 class SendChangeEmailEP(fr.Resource):
     def __init__(self):
@@ -332,20 +337,21 @@ class SendChangeEmailEP(fr.Resource):
     def post(self, args):
         """Send 'change email' email to new email address."""
 
-        return flask.jsonify({'user': 'success'})
-
         change_token = args['change_token']
         new_email = args['new_email']
 
         success, already_exists = processing.send_change_email_new(change_token, new_email)
 
-        if success:
+        if success or already_exists:
+            # Even though this means it's a failure
+            # returning a different message from success would result in revealing that there's an associated account
+            if already_exists:
+                # TODO: SEND WARNING EMAIL
+                pass
+
             return flask.make_response('', 200)
         else:
-            if already_exists:
-                return flask.jsonify({'error': 'email_already_exists'}), 400
-            else:
-                return flask.make_response('', 400)
+            return flask.make_response('', 400)
 
 
 class SendVerificationEmailEP(fr.Resource):
@@ -387,9 +393,9 @@ class SessionEP(fr.Resource):
         valid, access_token = authentication.generate_access_token(refresh_token.encode())
 
         if valid:
-            return flask.jsonify({'token': str(access_token.decode())}), 200
+            return flask.make_response(flask.jsonify({'token': str(access_token.decode())}), 200)
         else:
-            return flask.jsonify({'token': 'invalid_token'}), 403
+            return flask.make_response('Invalid Token', 403)
 
 
 class ShowsEP(fr.Resource):
@@ -418,11 +424,11 @@ class ShowsEP(fr.Resource):
                 is_movie = v
 
         if len(search_text) < 2:
-            return flask.jsonify({'error': 'search_too_small'}), 400
+            return flask.make_response('Search Text Too Small', 400)
 
         shows = processing.search_show_information(search_text, is_movie)
 
-        return flask.jsonify({'show_list': shows}), 200
+        return flask.make_response(flask.jsonify({'show_list': shows}), 200)
 
 
 class ShowsSessionsEP(fr.Resource):
@@ -442,7 +448,7 @@ class ShowsSessionsEP(fr.Resource):
         search_text: str = args['search_text'].strip()
 
         if len(search_text) < 2:
-            return flask.jsonify({'search_listings': 'failure', 'msg': 'Search text needs at least two characters.'})
+            return flask.make_response({'Search Text Too Small'}, 400)
 
         search_adult = False
 
@@ -457,9 +463,9 @@ class ShowsSessionsEP(fr.Resource):
         db_shows = processing.search_db([search_text], complete_title=False, search_adult=search_adult)
 
         if len(db_shows) != 0:
-            return flask.jsonify({'show_list': db_shows}), 200
+            return flask.make_response(flask.jsonify({'show_list': db_shows}), 200)
 
-        return flask.jsonify({'error': 'no_results'}), 404
+        return flask.make_response('Not Found', 404)
 
 
 class UsersEP(fr.Resource):
@@ -482,7 +488,7 @@ class UsersEP(fr.Resource):
 
         processing.register_user(email, password)
 
-        return flask.jsonify({'msg:': 'email_sent'}), 200
+        return flask.make_response('', 200)
 
     update_args = \
         {
@@ -511,7 +517,7 @@ class UsersEP(fr.Resource):
             if processing.change_user_settings(change_token):
                 return flask.make_response('', 200)
             else:
-                return flask.jsonify({'error': 'invalid_change_token'}), 400
+                return flask.make_response('Invalid Token', 400)
 
         # Verify the account
         elif verification_token is not None:
@@ -520,11 +526,11 @@ class UsersEP(fr.Resource):
             if verified:
                 return flask.make_response('', 200)
             else:
-                return flask.jsonify({'error': 'invalid_verification_token'})
+                return flask.make_response('Invalid Token', 400)
 
         # No parameters
         else:
-            return flask.jsonify({'error': 'missing_parameter'}), 400
+            return flask.make_response('Missing Parameter', 400)
 
     deletion_args = \
         {
@@ -536,14 +542,14 @@ class UsersEP(fr.Resource):
     def delete(self, args):
         """Delete a user's account."""
 
-        return flask.jsonify({'user': 'success'})
+        return flask.make_response('', 200)
 
         deletion_token = args['deletion_token']
 
         if processing.delete_user(deletion_token):
             return flask.make_response('', 200)
         else:
-            return flask.jsonify({'error': 'invalid_deletion_token'}), 400
+            return flask.make_response('Invalid Token', 400)
 
 
 # Functions
