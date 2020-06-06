@@ -15,6 +15,7 @@ import configuration
 import get_data
 import models
 import processing
+from processing import Changes
 from response_models import ReminderType
 
 
@@ -66,7 +67,7 @@ limiter = fl.Limiter(
 def unauthorized():
     """The response of the server when getting unauthorized."""
 
-    return flask.make_response('Unauthorized Access', 403)
+    return flask.make_response('Unauthorized Access', 403)  # Should be 503
 
 
 @basic_auth.verify_password
@@ -106,6 +107,8 @@ parser = flaskparser.FlaskParser()
 @parser.error_handler
 def handle_error(error, req, schema, status_code, headers):
     return flask.make_response('Unprocessable entity: ' + error, 422)
+
+
 # endregion
 
 
@@ -227,7 +230,8 @@ class RemindersEP(fr.Resource):
 
         if processing.register_reminder(show_name, is_movie, reminder_type, show_slug, show_season, show_episode,
                                         user_id):
-            return flask.make_response(flask.jsonify({'reminder_list': processing.list_to_json(processing.get_reminders(user_id))}), 201)
+            return flask.make_response(
+                flask.jsonify({'reminder_list': processing.list_to_json(processing.get_reminders(user_id))}), 201)
         else:
             return flask.make_response('Reminder Already Exists', 400)
 
@@ -252,7 +256,8 @@ class RemindersEP(fr.Resource):
         user_id = authentication.get_token_field(token.encode(), 'user')
 
         if processing.update_reminder(reminder_id, show_season, show_episode, user_id):
-            return flask.make_response(flask.jsonify({'reminder_list': processing.list_to_json(processing.get_reminders(user_id))}), 201)
+            return flask.make_response(
+                flask.jsonify({'reminder_list': processing.list_to_json(processing.get_reminders(user_id))}), 201)
         else:
             return flask.make_response('', 404)
 
@@ -274,7 +279,8 @@ class RemindersEP(fr.Resource):
 
         processing.remove_reminder(reminder_id, user_id)
 
-        return flask.make_response(flask.jsonify({'reminder_list': processing.list_to_json(processing.get_reminders(user_id))}), 200)
+        return flask.make_response(
+            flask.jsonify({'reminder_list': processing.list_to_json(processing.get_reminders(user_id))}), 200)
 
 
 class SendEmailEP(fr.Resource):
@@ -395,7 +401,7 @@ class SessionEP(fr.Resource):
         if valid:
             return flask.make_response(flask.jsonify({'token': str(access_token.decode())}), 200)
         else:
-            return flask.make_response('Invalid Token', 403)
+            return flask.make_response('Invalid Token', 403)  # Should be 503
 
 
 class ShowsEP(fr.Resource):
@@ -498,7 +504,7 @@ class UsersEP(fr.Resource):
 
     @fp.use_args(update_args)
     def put(self, args):
-        """Change user's settings."""
+        """Change user's settings that require a token."""
 
         change_token = None
         verification_token = None
@@ -512,9 +518,9 @@ class UsersEP(fr.Resource):
             elif k == 'verification_token':
                 verification_token = v
 
-        # Update something on the account
+        # Update something, that requires email confirmation, on the account
         if change_token is not None:
-            if processing.change_user_settings(change_token):
+            if processing.change_user_settings_token(change_token):
                 return flask.make_response('', 200)
             else:
                 return flask.make_response('Invalid Token', 400)
@@ -552,6 +558,102 @@ class UsersEP(fr.Resource):
             return flask.make_response('Invalid Token', 400)
 
 
+class UsersSettingsEP(fr.Resource):
+    decorators = [token_auth.login_required]
+
+    def __init__(self):
+        super(UsersSettingsEP, self).__init__()
+
+    update_args = \
+        {
+            'include_adult_channels': webargs.fields.Bool()
+        }
+
+    @fp.use_args(update_args)
+    @cross_origin(supports_credentials=True)
+    def put(self, args):
+        """Change user's settings, that don't require anything."""
+
+        include_adult_channels = None
+
+        for k, v in args.items():
+            if v is None:
+                continue
+
+            if k == 'include_adult_channels':
+                include_adult_channels = v
+
+        # Get the user id from the token
+        token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+        user_id = authentication.get_token_field(token.encode(), 'user')
+
+        # Update include_adult_channels
+        if include_adult_channels is not None:
+            if processing.change_user_settings({Changes.INCLUDE_ADULT_CHANNELS.value: include_adult_channels}, user_id):
+                return flask.make_response('', 200)
+            else:
+                return flask.make_response('', 400)
+
+        # No parameters
+        else:
+            return flask.make_response('Missing Parameter', 400)
+
+
+class UsersBASettingsEP(fr.Resource):
+    decorators = [token_auth.login_required]
+
+    def __init__(self):
+        super(UsersBASettingsEP, self).__init__()
+
+    update_args = \
+        {
+            'password': webargs.fields.Str(required=True),
+            'new_password': webargs.fields.Str()
+        }
+
+    @fp.use_args(update_args)
+    @cross_origin(supports_credentials=True)
+    def put(self, args):
+        """Change user's settings, that require the password to be sent."""
+
+        password = args['password']
+
+        new_password = None
+
+        for k, v in args.items():
+            if v is None:
+                continue
+
+            if k == 'new_password':
+                new_password = v
+
+        # Get the user id from the token
+        token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+        user_id = authentication.get_token_field(token.encode(), 'user')
+
+        user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
+
+        # Check if the password is valid
+        valid = verify_login_credentials(user.email, password)
+
+        if not valid:
+            return flask.make_response('Unauthorized Access', 403)  # Should be 503
+
+        # Update new_password
+        if new_password is not None:
+            if password == new_password:
+                return flask.make_response('Same Password', 400)
+
+            if processing.change_user_settings({Changes.NEW_PASSWORD.value: new_password}, user_id):
+                return flask.make_response('', 200)
+            else:
+                return flask.make_response('', 400)
+
+        # No parameters
+        else:
+            return flask.make_response('Missing Parameter', 400)
+
+
 # Functions
 api.add_resource(LoginEP, '/login', endpoint='login')
 api.add_resource(LogoutEP, '/logout', endpoint='logout')
@@ -565,6 +667,8 @@ api.add_resource(SessionEP, '/session', endpoint='session')
 api.add_resource(ShowsEP, '/shows', endpoint='shows')
 api.add_resource(ShowsSessionsEP, '/shows-sessions', endpoint='shows_sessions')
 api.add_resource(UsersEP, '/users', endpoint='users')
+api.add_resource(UsersSettingsEP, '/users-settings', endpoint='users-settings')
+api.add_resource(UsersBASettingsEP, '/users-ba-settings', endpoint='users-ba-settings')
 
 if __name__ == '__main__':
     app.run(debug=True, threaded=True, use_reloader=False)

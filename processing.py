@@ -25,7 +25,9 @@ class ComparisonType(Enum):
 
 
 class Changes(Enum):
-    CHANGE_EMAIL = 'change_email'
+    NEW_EMAIL = 'change_email'
+    INCLUDE_ADULT_CHANNELS = 'include_adult_channels'
+    NEW_PASSWORD = 'new_password'
 
 
 def list_to_json(list_of_objects):
@@ -628,7 +630,7 @@ def send_change_email_new(change_token_old: str, new_email: str) -> (bool, bool)
     if new_email_user is not None:
         return False, True
 
-    changes = {Changes.CHANGE_EMAIL.value: new_email}
+    changes = {Changes.NEW_EMAIL.value: new_email}
     change_email_new_token = authentication.generate_change_token(user.id, authentication.TokenType.CHANGE_EMAIL_NEW,
                                                                   changes).decode()
 
@@ -655,7 +657,7 @@ def check_login(email: str, password: str):
 
     try:
         valid = fb.check_password_hash(user_password, password)
-    except TypeError:
+    except (TypeError, ValueError):
         valid = False
 
     return valid
@@ -731,7 +733,7 @@ def delete_user(deletion_token: str):
     return True
 
 
-def change_user_settings(change_token: str):
+def change_user_settings_token(change_token: str):
     """
     Change settings from a user's account.
 
@@ -745,6 +747,21 @@ def change_user_settings(change_token: str):
     if not valid:
         return False
 
+    # Check for changes
+    payload = authentication.get_token_payload(change_token)
+
+    return change_user_settings(payload, user_id)
+
+
+def change_user_settings(changes: dict, user_id: str):
+    """
+    Change the settings that are present in the dictionary.
+
+    :param changes: the dictionary with the changes to be applied.
+    :param user_id: the id of the user.
+    :return: True if something has been changed.
+    """
+
     # Get user
     user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
 
@@ -752,14 +769,19 @@ def change_user_settings(change_token: str):
     if user is None:
         return False
 
-    # Check for changes
-    payload = authentication.get_token_payload(change_token)
-
     something_changed = False
 
-    if Changes.CHANGE_EMAIL.value in payload:
+    if Changes.NEW_EMAIL.value in changes:
         something_changed = True
-        user.email = payload[Changes.CHANGE_EMAIL.value]
+        user.email = changes[Changes.NEW_EMAIL.value]
+
+    if Changes.NEW_PASSWORD.value in changes:
+        something_changed = True
+        user.password = fb.generate_password_hash(changes[Changes.NEW_PASSWORD.value], configuration.bcrypt_rounds).decode()
+
+    if Changes.INCLUDE_ADULT_CHANNELS.value in changes:
+        something_changed = True
+        user.show_adult = changes[Changes.INCLUDE_ADULT_CHANNELS.value]
 
     if not something_changed:
         return False
