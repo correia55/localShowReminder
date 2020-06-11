@@ -24,10 +24,11 @@ class ComparisonType(Enum):
     SMALLER = 2
 
 
-class Changes(Enum):
+class ChangeType(Enum):
     NEW_EMAIL = 'change_email'
     INCLUDE_ADULT_CHANNELS = 'include_adult_channels'
     NEW_PASSWORD = 'new_password'
+    LANGUAGE = 'language'
 
 
 def list_to_json(list_of_objects):
@@ -494,18 +495,24 @@ def get_last_update():
     return last_update.date
 
 
-def register_user(email: str, password: str):
+def register_user(email: str, password: str, language: str):
     """
     Register a new user.
 
     :param email: the user's email.
     :param password: the user's password.
+    :param language: the user's language of choice.
     """
 
     password = fb.generate_password_hash(password, configuration.bcrypt_rounds).decode()
 
     try:
         user = models.User(email, password)
+
+        # Set the language for the user
+        if language is not None and language in models.AVAILABLE_LANGUAGES:
+            user.language = language
+
         configuration.session.add(user)
         configuration.session.commit()
 
@@ -630,7 +637,7 @@ def send_change_email_new(change_token_old: str, new_email: str) -> (bool, bool)
     if new_email_user is not None:
         return False, True
 
-    changes = {Changes.NEW_EMAIL.value: new_email}
+    changes = {ChangeType.NEW_EMAIL.value: new_email}
     change_email_new_token = authentication.generate_change_token(user.id, authentication.TokenType.CHANGE_EMAIL_NEW,
                                                                   changes).decode()
 
@@ -771,17 +778,21 @@ def change_user_settings(changes: dict, user_id: str):
 
     something_changed = False
 
-    if Changes.NEW_EMAIL.value in changes:
+    if ChangeType.NEW_EMAIL.value in changes:
         something_changed = True
-        user.email = changes[Changes.NEW_EMAIL.value]
+        user.email = changes[ChangeType.NEW_EMAIL.value]
 
-    if Changes.NEW_PASSWORD.value in changes:
+    if ChangeType.NEW_PASSWORD.value in changes:
         something_changed = True
-        user.password = fb.generate_password_hash(changes[Changes.NEW_PASSWORD.value], configuration.bcrypt_rounds).decode()
+        user.password = fb.generate_password_hash(changes[ChangeType.NEW_PASSWORD.value], configuration.bcrypt_rounds).decode()
 
-    if Changes.INCLUDE_ADULT_CHANNELS.value in changes:
+    if ChangeType.INCLUDE_ADULT_CHANNELS.value in changes:
         something_changed = True
-        user.show_adult = changes[Changes.INCLUDE_ADULT_CHANNELS.value]
+        user.show_adult = changes[ChangeType.INCLUDE_ADULT_CHANNELS.value]
+
+    if ChangeType.LANGUAGE.value in changes:
+        something_changed = True
+        user.language = changes[ChangeType.LANGUAGE.value]
 
     if not something_changed:
         return False

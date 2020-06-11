@@ -1,8 +1,18 @@
+from enum import Enum
+
 from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, Date, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 
 # Base class for DB Classes
 base = declarative_base()
+
+
+class AvailableLanguage(Enum):
+    PT = 'pt'
+    EN = 'en'
+
+
+AVAILABLE_LANGUAGES = [item.value for item in AvailableLanguage]
 
 
 class LastUpdate(base):
@@ -151,7 +161,7 @@ class User(base):
         self.password = password
         self.show_adult = False
         self.verified = False
-        self.language = 'pt'
+        self.language = AvailableLanguage.PT.value
 
 
 class Token(base):

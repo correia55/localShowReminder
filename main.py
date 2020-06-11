@@ -15,7 +15,7 @@ import configuration
 import get_data
 import models
 import processing
-from processing import Changes
+from processing import ChangeType
 from response_models import ReminderType
 
 
@@ -481,7 +481,8 @@ class UsersEP(fr.Resource):
     registration_args = \
         {
             'email': webargs.fields.Str(required=True),
-            'password': webargs.fields.Str(required=True)
+            'password': webargs.fields.Str(required=True),
+            'language': webargs.fields.Str()
         }
 
     @fp.use_args(registration_args)
@@ -492,7 +493,16 @@ class UsersEP(fr.Resource):
         email = args['email']
         password = args['password']
 
-        processing.register_user(email, password)
+        language = None
+
+        for k, v in args.items():
+            if v is None:
+                continue
+
+            if k == 'language':
+                language = v
+
+        processing.register_user(email, password, language)
 
         return flask.make_response('', 200)
 
@@ -566,7 +576,8 @@ class UsersSettingsEP(fr.Resource):
 
     update_args = \
         {
-            'include_adult_channels': webargs.fields.Bool()
+            'include_adult_channels': webargs.fields.Bool(),
+            'language': webargs.fields.Str(),
         }
 
     @fp.use_args(update_args)
@@ -575,6 +586,7 @@ class UsersSettingsEP(fr.Resource):
         """Change user's settings, that don't require anything."""
 
         include_adult_channels = None
+        language = None
 
         for k, v in args.items():
             if v is None:
@@ -582,21 +594,33 @@ class UsersSettingsEP(fr.Resource):
 
             if k == 'include_adult_channels':
                 include_adult_channels = v
+            elif k == 'language':
+                language = v
 
         # Get the user id from the token
         token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
         user_id = authentication.get_token_field(token.encode(), 'user')
 
+        changes = {}
+
         # Update include_adult_channels
         if include_adult_channels is not None:
-            if processing.change_user_settings({Changes.INCLUDE_ADULT_CHANNELS.value: include_adult_channels}, user_id):
+            changes[ChangeType.INCLUDE_ADULT_CHANNELS.value] = include_adult_channels
+
+        # Update language
+        if language is not None and language in models.AVAILABLE_LANGUAGES:
+            changes[ChangeType.LANGUAGE.value] = language
+
+        # If there are changes to be made
+        if changes != {}:
+            if processing.change_user_settings(changes, user_id):
                 return flask.make_response('', 200)
             else:
                 return flask.make_response('', 400)
 
-        # No parameters
+        # If there are no changes to be made
         else:
-            return flask.make_response('Missing Parameter', 400)
+            return flask.make_response('Invalid Parameters', 400)
 
 
 class UsersBASettingsEP(fr.Resource):
@@ -644,7 +668,7 @@ class UsersBASettingsEP(fr.Resource):
             if password == new_password:
                 return flask.make_response('Same Password', 400)
 
-            if processing.change_user_settings({Changes.NEW_PASSWORD.value: new_password}, user_id):
+            if processing.change_user_settings({ChangeType.NEW_PASSWORD.value: new_password}, user_id):
                 return flask.make_response('', 200)
             else:
                 return flask.make_response('', 400)
