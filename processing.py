@@ -784,7 +784,8 @@ def change_user_settings(changes: dict, user_id: str):
 
     if ChangeType.NEW_PASSWORD.value in changes:
         something_changed = True
-        user.password = fb.generate_password_hash(changes[ChangeType.NEW_PASSWORD.value], configuration.bcrypt_rounds).decode()
+        user.password = fb.generate_password_hash(changes[ChangeType.NEW_PASSWORD.value],
+                                                  configuration.bcrypt_rounds).decode()
 
     if ChangeType.INCLUDE_ADULT_CHANNELS.value in changes:
         something_changed = True
@@ -801,6 +802,24 @@ def change_user_settings(changes: dict, user_id: str):
     configuration.session.commit()
 
     return True
+
+
+def get_settings(user_id: int):
+    """
+    Get a list of settings for the user who's id is user_id.
+
+    :param user_id: the id of the user.
+    :return: a list of settings for the user who's id is user_id.
+    """
+
+    # Get user
+    user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
+
+    # Check if the user was found
+    if user is None:
+        return {}
+
+    return {'include_adult_channels': user.show_adult, 'language': user.language}
 
 
 def main():

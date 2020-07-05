@@ -131,7 +131,7 @@ class LoginEP(fr.Resource):
                 username = auth['username'][:auth['username'].index('@')] if auth['username'].find('@') != -1 else auth[
                     'username']
 
-                return flask.make_response(flask.jsonify({'token': str(refresh_token), 'username': username}), 200)
+                return flask.make_response(flask.jsonify({'token': str(refresh_token), 'username': username, **processing.get_settings(user.id)}), 200)
             else:
                 return flask.make_response('Unverified Account', 400)
 
@@ -574,6 +574,21 @@ class UsersSettingsEP(fr.Resource):
     def __init__(self):
         super(UsersSettingsEP, self).__init__()
 
+    @cross_origin(supports_credentials=True)
+    def get(self):
+        """Get the user's settings, that don't require anything."""
+
+        # Get the user id from the token
+        token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+        user_id = authentication.get_token_field(token.encode(), 'user')
+
+        settings = processing.get_settings(user_id)
+
+        if settings != {}:
+            return flask.make_response(flask.jsonify(settings), 200)
+        else:
+            return flask.make_response('', 404)
+
     update_args = \
         {
             'include_adult_channels': webargs.fields.Bool(),
@@ -614,7 +629,7 @@ class UsersSettingsEP(fr.Resource):
         # If there are changes to be made
         if changes != {}:
             if processing.change_user_settings(changes, user_id):
-                return flask.make_response('', 200)
+                return flask.make_response(flask.jsonify(processing.get_settings(user_id)), 200)
             else:
                 return flask.make_response('', 400)
 
