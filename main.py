@@ -162,6 +162,30 @@ class LogoutEP(fr.Resource):
         return flask.make_response('', 200)
 
 
+class RecoverPasswordEP(fr.Resource):
+    def __init__(self):
+        super(RecoverPasswordEP, self).__init__()
+
+    recover_args = \
+        {
+            'token': webargs.fields.Str(required=True),
+            'password': webargs.fields.Str(required=True)
+        }
+
+    @cross_origin(supports_credentials=True)
+    @fp.use_args(recover_args)
+    def put(self, args):
+        """Change the password after a password recovery."""
+
+        token = args['token']
+        password = args['password']
+
+        if processing.recover_password(token, password):
+            return flask.make_response('', 200)
+        else:
+            return flask.make_response('Invalid Token', 400)
+
+
 class RemindersEP(fr.Resource):
     decorators = [token_auth.login_required]
 
@@ -358,6 +382,29 @@ class SendChangeEmailEP(fr.Resource):
             return flask.make_response('', 200)
         else:
             return flask.make_response('', 400)
+
+
+class SendPasswordRecoveryEmailEP(fr.Resource):
+    def __init__(self):
+        super(SendPasswordRecoveryEmailEP, self).__init__()
+
+    logout_args = \
+        {
+            'email': webargs.fields.Str(required=True),
+        }
+
+    @fp.use_args(logout_args)
+    @cross_origin(supports_credentials=True)
+    def post(self, args):
+        """Logout of a user's account."""
+
+        email = args['email']
+        user = processing.get_user_by_email(email)
+
+        if user is not None:
+            processing.send_password_recovery_email(user.id)
+
+        return flask.make_response('', 200)
 
 
 class SendVerificationEmailEP(fr.Resource):
@@ -696,8 +743,10 @@ class UsersBASettingsEP(fr.Resource):
 # Functions
 api.add_resource(LoginEP, '/login', endpoint='login')
 api.add_resource(LogoutEP, '/logout', endpoint='logout')
+api.add_resource(RecoverPasswordEP, '/recover-password', endpoint='recover_password')
 api.add_resource(SendEmailEP, '/send-email', endpoint='send_email')
 api.add_resource(SendChangeEmailEP, '/send-change-email', endpoint='send_change_email')
+api.add_resource(SendPasswordRecoveryEmailEP, '/send-password-recovery-email', endpoint='send_password_recovery_email')
 api.add_resource(SendVerificationEmailEP, '/send-verification-email', endpoint='send_verification_email')
 
 # Resources

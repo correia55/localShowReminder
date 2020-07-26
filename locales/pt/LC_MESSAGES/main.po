@@ -42,7 +42,7 @@ msgid "verify_account"
 msgstr "Verificar Conta"
 
 msgid "accessing_sentence"
-msgstr "ou através do link"
+msgstr "ou utilize o link"
 
 msgid "validation_time_sentence"
 msgstr "Este email só é válido por"
@@ -88,3 +88,15 @@ msgstr "Foi feito um pedido para alteração do email da conta associada a"
 
 msgid "change_email_new_confirm"
 msgstr "para que seja associada a este email. Para confirmar carregue no botão"
+
+msgid "password_recovery_email"
+msgstr "Email para Recuperação da Palavra Chave"
+
+msgid "recover_password"
+msgstr "Recuperar Palavra Chave"
+
+msgid "password_recovery_email_sentence"
+msgstr "Foi feito um pedido para recuperação da palavra chave da conta associada a este email, para continuar carregue no botão"
+
+msgid "others_sentence"
+msgstr "Se o pedido de alteração não foi feito por si, por favor ignore-o."

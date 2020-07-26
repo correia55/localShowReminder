@@ -14,6 +14,7 @@ class TokenType(Enum):
     DELETION = 3
     CHANGE_EMAIL_OLD = 4
     CHANGE_EMAIL_NEW = 5
+    PASSWORD_RECOVERY = 6
 
 
 def generate_token(user_id: int, token_type: TokenType) -> any:
@@ -37,6 +38,8 @@ def generate_token(user_id: int, token_type: TokenType) -> any:
         exp = datetime.datetime.utcnow() + datetime.timedelta(days=configuration.DELETION_TOKEN_VALIDITY_DAYS)
     elif token_type == TokenType.CHANGE_EMAIL_OLD:
         exp = datetime.datetime.utcnow() + datetime.timedelta(days=configuration.CHANGE_EMAIL_TOKEN_VALIDITY_DAYS)
+    elif token_type == TokenType.PASSWORD_RECOVERY:
+        exp = datetime.datetime.utcnow() + datetime.timedelta(days=configuration.PASSWORD_RECOVERY_TOKEN_VALIDITY_DAYS)
     else:
         return None
 

@@ -196,3 +196,22 @@ def send_reminders_email(destination: str, reminder: models.DBReminder, results:
                                                               title=subject)
 
     send_email(content, subject, destination)
+
+
+def send_password_recovery_email(destination: str, token: str):
+    """
+    Send a password recovery email.
+
+    :param str destination: the destination address.
+    :param str token: the password recovery token.
+    """
+
+    subject = current.gettext('password_recovery_email')
+
+    content = env.get_template('password_recovery_email.html').render(application_name=configuration.application_name,
+                                                                      application_link=configuration.application_link,
+                                                                      username=destination, token=token,
+                                                                      validity_hours=configuration.PASSWORD_RECOVERY_TOKEN_VALIDITY_DAYS * 24,
+                                                                      title=subject)
+
+    send_email(content, subject, destination)

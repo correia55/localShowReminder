@@ -647,6 +647,27 @@ def send_change_email_new(change_token_old: str, new_email: str) -> (bool, bool)
     return True, True
 
 
+def send_password_recovery_email(user_id: str) -> bool:
+    """
+    Send a recover password email.
+
+    :param user_id: the user id.
+    """
+
+    # Get user
+    user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
+
+    if user is None:
+        return False
+
+    password_recovery_token = authentication.generate_token(user.id, authentication.TokenType.PASSWORD_RECOVERY).decode()
+
+    process_emails.set_language(user.language)
+    process_emails.send_password_recovery_email(user.email, password_recovery_token)
+
+    return True
+
+
 def check_login(email: str, password: str):
     """
     Verify with the user's credentials.
@@ -802,6 +823,25 @@ def change_user_settings(changes: dict, user_id: str):
     configuration.session.commit()
 
     return True
+
+
+def recover_password(recover_token: str, new_password: str):
+    """
+    Change the password of the user's account.
+
+    :param recover_token: the recover token.
+    :param new_password: the new password.
+    :return: whether the deletion was success or not.
+    """
+
+    # Validate change token
+    valid, user_id = authentication.validate_token(recover_token.encode(), authentication.TokenType.PASSWORD_RECOVERY)
+
+    if not valid:
+        return False
+
+    # Change the password
+    return change_user_settings({ChangeType.NEW_PASSWORD.value: new_password}, user_id)
 
 
 def get_settings(user_id: int):
