@@ -55,12 +55,13 @@ def clear_show_list():
     print('Shows list cleared!')
 
 
-def search_show_information_by_type(search_text, show_type):
+def search_show_information_by_type(search_text: str, show_type: str, language: str):
     """
     Uses trakt and omdb to search for shows, of a given type, using a given search text.
 
     :param search_text: the search text introduced by the user.
     :param show_type: 'show' for tv shows and 'movie' for movies.
+    :param language: the language of interest.
     :return: the list of results.
     """
 
@@ -85,6 +86,17 @@ def search_show_information_by_type(search_text, show_type):
                      'show_image': 'N/A', 'show_slug': s[show_type]['ids']['slug'],
                      'show_overview': s[show_type]['overview']}
 
+        # Get the translation of the overview
+        if language != 'en':
+            available_translations = s[show_type]['available_translations']
+
+            if language in available_translations:
+                translated_overview = get_translated_overview(s[show_type]['ids']['slug'], show_type, language)
+
+                if translated_overview is not None:
+                    show_dict['show_overview'] = translated_overview
+
+        # Check if we can get the poster
         if imdb_id is None or configuration.omdb_key is None:
             results.append(show_dict)
             continue
@@ -107,12 +119,13 @@ def search_show_information_by_type(search_text, show_type):
     return results
 
 
-def search_show_information(search_text: str, is_movie: bool):
+def search_show_information(search_text: str, is_movie: bool, language: str):
     """
     Uses trakt and omdb to search for shows using a given search text.
 
     :param search_text: the search text introduced by the user.
     :param is_movie: if it is a movie.
+    :param language: the language.
 
     :return: the list of results.
     """
@@ -120,12 +133,41 @@ def search_show_information(search_text: str, is_movie: bool):
     results = []
 
     if is_movie is None or not is_movie:
-        results += search_show_information_by_type(search_text, 'show')
+        results += search_show_information_by_type(search_text, 'show', language)
 
     if is_movie is None or is_movie:
-        results += search_show_information_by_type(search_text, 'movie')
+        results += search_show_information_by_type(search_text, 'movie', language)
 
     return results
+
+
+def get_translated_overview(trakt_slug: str, show_type: str, language: str):
+    """
+    Get the translated overview of a show.
+
+    :param trakt_slug: the selected title.
+    :param show_type: 'show' for tv shows and 'movie' for movies.
+    :param language: the language of the translation.
+    :return: the translated overview.
+    """
+
+    translations_request = urllib.request.Request('https://api.trakt.tv/%ss/%s/translations/%s' % (show_type, trakt_slug, language))
+    translations_request.add_header('trakt-api-key', configuration.trakt_key)
+
+    try:
+        translations_json = urllib.request.urlopen(translations_request).read()
+    except urllib.error.HTTPError:
+        print('Slug was not found!')
+        return None
+
+    # Parse the list of translations from the request
+    translations = json.loads(translations_json)
+
+    for t in translations:
+        if t['overview'] != '':
+            return t['overview']
+
+    return None
 
 
 def get_titles_trakt(trakt_slug, show_type):

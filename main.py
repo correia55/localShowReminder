@@ -459,6 +459,7 @@ class ShowsEP(fr.Resource):
         {
             'search_text': webargs.fields.Str(required=True),
             'is_movie': webargs.fields.Bool(),
+            'language': webargs.fields.Str(required=True)
         }
 
     @fp.use_args(search_args)
@@ -467,6 +468,7 @@ class ShowsEP(fr.Resource):
         """Get search results for the search_text, using the Trakt API."""
 
         search_text = args['search_text']
+        language = args['language']
         is_movie = None
 
         for k, v in args.items():
@@ -479,7 +481,7 @@ class ShowsEP(fr.Resource):
         if len(search_text) < 2:
             return flask.make_response('Search Text Too Small', 400)
 
-        shows = processing.search_show_information(search_text, is_movie)
+        shows = processing.search_show_information(search_text, is_movie, language)
 
         return flask.make_response(flask.jsonify({'show_list': shows}), 200)
 
