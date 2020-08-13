@@ -861,8 +861,12 @@ def change_user_settings(changes: dict, user_id: str):
     if not something_changed:
         return False
 
-    # Commit the changes
-    configuration.session.commit()
+    try:
+        # Commit the changes
+        configuration.session.commit()
+    except (IntegrityError, InvalidRequestError):
+        configuration.session.rollback()
+        # TODO: Send warning email
 
     return True
 
