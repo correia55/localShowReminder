@@ -558,7 +558,9 @@ class UsersEP(fr.Resource):
     update_args = \
         {
             'change_token': webargs.fields.Str(),
-            'verification_token': webargs.fields.Str()
+            'verification_token': webargs.fields.Str(),
+            'current_email': webargs.fields.Str(),
+            'new_email': webargs.fields.Str()
         }
 
     @fp.use_args(update_args)
@@ -567,6 +569,8 @@ class UsersEP(fr.Resource):
 
         change_token = None
         verification_token = None
+        current_email = None
+        new_email = None
 
         for k, v in args.items():
             if v is None:
@@ -576,6 +580,10 @@ class UsersEP(fr.Resource):
                 change_token = v
             elif k == 'verification_token':
                 verification_token = v
+            elif k == 'current_email':
+                current_email = v
+            elif k == 'new_email':
+                new_email = v
 
         # Update something, that requires email confirmation, on the account
         if change_token is not None:
@@ -592,6 +600,20 @@ class UsersEP(fr.Resource):
                 return flask.make_response('', 200)
             else:
                 return flask.make_response('Invalid Token', 400)
+
+        # Correct email before verification
+        elif current_email is not None and new_email is not None:
+            user = processing.get_user_by_email(current_email)
+
+            # No user was found with that email
+            # or user has already verified its account
+            if user is None or user.verified:
+                return flask.make_response('', 400)
+
+            if processing.change_user_settings({ChangeType.NEW_EMAIL.value: new_email}, user.id):
+                return flask.make_response('', 200)
+            else:
+                return flask.make_response('', 400)
 
         # No parameters
         else:
