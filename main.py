@@ -408,21 +408,28 @@ class SendPasswordRecoveryEmailEP(fr.Resource):
 
 
 class SendVerificationEmailEP(fr.Resource):
-    decorators = [basic_auth.login_required]
-
     def __init__(self):
         super(SendVerificationEmailEP, self).__init__()
 
+    send_args = \
+        {
+            'email': webargs.fields.Str(required=True)
+        }
+
+    @fp.use_args(send_args)
     @cross_origin(supports_credentials=True)
-    def post(self):
+    def post(self, args):
         """Send verification email."""
 
-        auth = flask.request.authorization
-        user = processing.get_user_by_email(auth.username)
+        email = args['email']
+
+        user = processing.get_user_by_email(email)
 
         if user is not None and not user.verified:
-            processing.send_verifcation_email(user)
-            return flask.make_response('', 200)
+            if processing.send_verifcation_email(user):
+                return flask.make_response('', 200)
+            else:
+                return flask.make_response('', 400)
         else:
             return flask.make_response('', 400)
 
@@ -551,9 +558,10 @@ class UsersEP(fr.Resource):
             if k == 'language':
                 language = v
 
-        processing.register_user(email, password, language)
-
-        return flask.make_response('', 200)
+        if processing.register_user(email, password, language):
+            return flask.make_response('', 200)
+        else:
+            return flask.make_response('', 400)
 
     update_args = \
         {
@@ -611,7 +619,11 @@ class UsersEP(fr.Resource):
                 return flask.make_response('', 400)
 
             if processing.change_user_settings({ChangeType.NEW_EMAIL.value: new_email}, user.id):
-                return flask.make_response('', 200)
+                if processing.send_verifcation_email(user):
+                    return flask.make_response('', 200)
+                else:
+                    return flask.make_response('Invalid email', 400)
+
             else:
                 return flask.make_response('', 400)
 

@@ -537,7 +537,7 @@ def get_last_update():
     return last_update.date
 
 
-def register_user(email: str, password: str, language: str):
+def register_user(email: str, password: str, language: str) -> bool:
     """
     Register a new user.
 
@@ -558,10 +558,12 @@ def register_user(email: str, password: str, language: str):
         configuration.session.add(user)
         configuration.session.commit()
 
-        send_verifcation_email(user)
+        return send_verifcation_email(user)
     except (IntegrityError, InvalidRequestError):
         configuration.session.rollback()
         # TODO: Send warning email
+
+        return False
 
 
 def verify_user(verification_token: str):
@@ -603,7 +605,7 @@ def send_verifcation_email(user: models.User):
     verification_token = authentication.generate_token(user.id, authentication.TokenType.VERIFICATION).decode()
 
     process_emails.set_language(user.language)
-    process_emails.send_verification_email(user.email, verification_token)
+    return process_emails.send_verification_email(user.email, verification_token)
 
 
 def send_deletion_email(user_id: str) -> bool:
@@ -622,9 +624,7 @@ def send_deletion_email(user_id: str) -> bool:
     deletion_token = authentication.generate_token(user.id, authentication.TokenType.DELETION).decode()
 
     process_emails.set_language(user.language)
-    process_emails.send_deletion_email(user.email, deletion_token)
-
-    return True
+    return process_emails.send_deletion_email(user.email, deletion_token)
 
 
 def send_change_email_old(user_id: str) -> bool:
@@ -643,9 +643,7 @@ def send_change_email_old(user_id: str) -> bool:
     change_email_old_token = authentication.generate_token(user.id, authentication.TokenType.CHANGE_EMAIL_OLD).decode()
 
     process_emails.set_language(user.language)
-    process_emails.send_change_email_old(user.email, change_email_old_token)
-
-    return True
+    return process_emails.send_change_email_old(user.email, change_email_old_token)
 
 
 def send_change_email_new(change_token_old: str, new_email: str) -> (bool, bool):
@@ -684,9 +682,7 @@ def send_change_email_new(change_token_old: str, new_email: str) -> (bool, bool)
                                                                   changes).decode()
 
     process_emails.set_language(user.language)
-    process_emails.send_change_email_new(new_email, change_email_new_token, user.email)
-
-    return True, True
+    return process_emails.send_change_email_new(new_email, change_email_new_token, user.email), True
 
 
 def send_password_recovery_email(user_id: str) -> bool:
@@ -705,9 +701,7 @@ def send_password_recovery_email(user_id: str) -> bool:
     password_recovery_token = authentication.generate_token(user.id, authentication.TokenType.PASSWORD_RECOVERY).decode()
 
     process_emails.set_language(user.language)
-    process_emails.send_password_recovery_email(user.email, password_recovery_token)
-
-    return True
+    return process_emails.send_password_recovery_email(user.email, password_recovery_token)
 
 
 def check_login(email: str, password: str):
@@ -864,7 +858,7 @@ def change_user_settings(changes: dict, user_id: str):
     try:
         # Commit the changes
         configuration.session.commit()
-    except (IntegrityError, InvalidRequestError):
+    except Exception:
         configuration.session.rollback()
         # TODO: Send warning email
 

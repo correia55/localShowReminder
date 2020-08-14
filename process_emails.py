@@ -71,18 +71,22 @@ def verify_email(email):
     return True
 
 
-def send_email(content: str, subject: str, destination: str):
+def send_email(content: str, subject: str, destination: str) -> bool:
     """
     Send an email.
 
     :param str content: the content of the email.
     :param str subject: the subject of the email.
     :param str destination: the destination address.
+    :return: true if it sent the email with success.
     """
 
     if not valid_configuration():
         print('Invalid email configuration!')
-        return
+        return False
+
+    if not verify_email(destination):
+        return False
 
     msg = emt.MIMEText(content, 'html', 'utf-8')
 
@@ -96,8 +100,10 @@ def send_email(content: str, subject: str, destination: str):
     s.sendmail(configuration.email_account, [destination], msg.as_string())
     s.quit()
 
+    return True
 
-def send_verification_email(destination: str, verification_token: str):
+
+def send_verification_email(destination: str, verification_token: str) -> bool:
     """
     Send a verification email.
 
@@ -114,10 +120,10 @@ def send_verification_email(destination: str, verification_token: str):
                                                                  validity_hours=configuration.VERIFICATION_TOKEN_VALIDITY_DAYS * 24,
                                                                  title=subject)
 
-    send_email(content, subject, destination)
+    return send_email(content, subject, destination)
 
 
-def send_deletion_email(destination: str, deletion_token: str):
+def send_deletion_email(destination: str, deletion_token: str) -> bool:
     """
     Send a deletion email.
 
@@ -134,10 +140,10 @@ def send_deletion_email(destination: str, deletion_token: str):
                                                              validity_hours=configuration.DELETION_TOKEN_VALIDITY_DAYS * 24,
                                                              title=subject)
 
-    send_email(content, subject, destination)
+    return send_email(content, subject, destination)
 
 
-def send_change_email_old(destination: str, token: str):
+def send_change_email_old(destination: str, token: str) -> bool:
     """
     Send a change email email to the old email.
 
@@ -154,10 +160,10 @@ def send_change_email_old(destination: str, token: str):
                                                                validity_hours=configuration.CHANGE_EMAIL_TOKEN_VALIDITY_DAYS * 24,
                                                                title=subject)
 
-    send_email(content, subject, destination)
+    return send_email(content, subject, destination)
 
 
-def send_change_email_new(destination: str, token: str, old_email: str):
+def send_change_email_new(destination: str, token: str, old_email: str) -> bool:
     """
     Send a change email email to the new email.
 
@@ -176,10 +182,10 @@ def send_change_email_new(destination: str, token: str, old_email: str):
                                                                validity_hours=configuration.CHANGE_EMAIL_TOKEN_VALIDITY_DAYS * 24,
                                                                title=subject)
 
-    send_email(content, subject, destination)
+    return send_email(content, subject, destination)
 
 
-def send_reminders_email(destination: str, reminder: models.DBReminder, results: [models.Show]):
+def send_reminders_email(destination: str, reminder: models.DBReminder, results: [models.Show]) -> bool:
     """
     Send an email with the results found for the reminders created.
 
@@ -195,10 +201,10 @@ def send_reminders_email(destination: str, reminder: models.DBReminder, results:
                                                               username=destination, reminder=reminder, results=results,
                                                               title=subject)
 
-    send_email(content, subject, destination)
+    return send_email(content, subject, destination)
 
 
-def send_password_recovery_email(destination: str, token: str):
+def send_password_recovery_email(destination: str, token: str) -> bool:
     """
     Send a password recovery email.
 
@@ -214,4 +220,4 @@ def send_password_recovery_email(destination: str, token: str):
                                                                       validity_hours=configuration.PASSWORD_RECOVERY_TOKEN_VALIDITY_DAYS * 24,
                                                                       title=subject)
 
-    send_email(content, subject, destination)
+    return send_email(content, subject, destination)
