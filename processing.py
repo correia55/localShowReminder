@@ -84,10 +84,11 @@ def search_show_information_by_type(search_text: str, show_type: str, language: 
 
         show_dict = {'is_movie': is_movie, 'show_title': s[show_type]['title'], 'show_year': s[show_type]['year'],
                      'show_image': 'N/A', 'show_slug': s[show_type]['ids']['slug'],
-                     'show_overview': s[show_type]['overview']}
+                     'show_overview': s[show_type]['overview'], 'language': s[show_type]['language'],
+                     'available_translations': s[show_type]['available_translations']}
 
         # Get the translation of the overview
-        if language != 'en':
+        if language != s[show_type]['language']:
             available_translations = s[show_type]['available_translations']
 
             if language in available_translations:
@@ -151,7 +152,8 @@ def get_translated_overview(trakt_slug: str, show_type: str, language: str):
     :return: the translated overview.
     """
 
-    translations_request = urllib.request.Request('https://api.trakt.tv/%ss/%s/translations/%s' % (show_type, trakt_slug, language))
+    translations_request = urllib.request.Request(
+        'https://api.trakt.tv/%ss/%s/translations/%s' % (show_type, trakt_slug, language))
     translations_request.add_header('trakt-api-key', configuration.trakt_key)
 
     try:
@@ -170,14 +172,21 @@ def get_translated_overview(trakt_slug: str, show_type: str, language: str):
     return None
 
 
-def get_titles_trakt(trakt_slug, show_type):
+def get_titles_trakt(trakt_slug, trakt_name, trakt_show_language, trakt_available_translations, show_type):
     """
     Get the various possible titles for the selected title, in both english and portuguese, using the trakt API.
 
     :param trakt_slug: the selected title.
+    :param trakt_name: the name of the show.
+    :param trakt_show_language: the main language of the show.
+    :param trakt_available_translations: the available translations for the show.
     :param show_type: 'show' for tv shows and 'movie' for movies.
     :return: the various possible titles.
     """
+
+    # If there are no translations, return the original name
+    if 'en' not in trakt_available_translations and 'pt' not in trakt_available_translations:
+        return [trakt_name]
 
     translations_request = urllib.request.Request('https://api.trakt.tv/%ss/%s/translations' % (show_type, trakt_slug))
     translations_request.add_header('trakt-api-key', configuration.trakt_key)
@@ -194,7 +203,7 @@ def get_titles_trakt(trakt_slug, show_type):
     results = set()
 
     for t in translations:
-        if t['language'] == 'en' or t['language'] == 'pt':
+        if t['language'] == 'en' or t['language'] == 'pt' or trakt_show_language:
             results.add(t['title'])
 
     aliases_request = urllib.request.Request('https://api.trakt.tv/%ss/%s/aliases' % (show_type, trakt_slug))
@@ -351,11 +360,14 @@ def search_db_id(show_name, is_movie, below_date=None, show_season=None, show_ep
     return query.all()
 
 
-def register_trakt_titles(show_slug, is_movie):
+def register_trakt_titles(show_slug, show_name, show_language, show_available_translations, is_movie):
     """
     Register all trakt titles for a show_slug.
 
     :param show_slug: the slug that represents this show.
+    :param show_name: the movie's original name.
+    :param show_language: the main language of the show.
+    :param show_available_translations: the available translations for the show.
     :param is_movie: true if it is a movie.
     """
 
@@ -364,7 +376,7 @@ def register_trakt_titles(show_slug, is_movie):
     else:
         show_type = 'show'
 
-    titles = get_titles_trakt(show_slug, show_type)
+    titles = get_titles_trakt(show_slug, show_name, show_language, show_available_translations, show_type)
 
     query = configuration.session.query(models.TraktTitle) \
         .filter(models.TraktTitle.trakt_id == show_slug) \
@@ -379,7 +391,7 @@ def register_trakt_titles(show_slug, is_movie):
 
 
 def register_reminder(show_name: str, is_movie: bool, reminder_type: response_models.ReminderType, show_slug: str,
-                      show_season, show_episode, user_id):
+                      show_season, show_episode, user_id, show_language: str, show_available_translations: [str]):
     """
     Create a reminder for the given data.
 
@@ -390,6 +402,8 @@ def register_reminder(show_name: str, is_movie: bool, reminder_type: response_mo
     :param show_season: show season for the reminder.
     :param show_episode: show episode for the reminder.
     :param user_id: the owner of the reminder.
+    :param show_language: the main language of the show.
+    :param show_available_translations: the available translations for the show.
     """
 
     reminder = configuration.session.query(models.DBReminder) \
@@ -410,7 +424,7 @@ def register_reminder(show_name: str, is_movie: bool, reminder_type: response_mo
 
     # Add all possible titles for that trakt id to the DB
     if response_models.ReminderType.DB == reminder_type:
-        register_trakt_titles(show_slug, is_movie)
+        register_trakt_titles(show_slug, show_name, show_language, show_available_translations, is_movie)
 
     configuration.session.commit()
 
@@ -699,7 +713,8 @@ def send_password_recovery_email(user_id: str) -> bool:
     if user is None:
         return False
 
-    password_recovery_token = authentication.generate_token(user.id, authentication.TokenType.PASSWORD_RECOVERY).decode()
+    password_recovery_token = authentication.generate_token(user.id,
+                                                            authentication.TokenType.PASSWORD_RECOVERY).decode()
 
     process_emails.set_language(user.language)
     return process_emails.send_password_recovery_email(user.email, password_recovery_token)

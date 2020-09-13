@@ -211,7 +211,9 @@ class RemindersEP(fr.Resource):
             'type': webargs.fields.Str(required=True),
             'show_season': webargs.fields.Int(),
             'show_slug': webargs.fields.Str(),
-            'show_episode': webargs.fields.Int()
+            'show_episode': webargs.fields.Int(),
+            'show_language': webargs.fields.Str(),
+            'show_available_translations': webargs.fields.List(webargs.fields.Str())
         }
 
     @fp.use_args(register_args)
@@ -225,6 +227,8 @@ class RemindersEP(fr.Resource):
         show_slug = None
         show_season = None
         show_episode = None
+        show_language = None
+        show_available_translations = None
 
         for k, v in args.items():
             if v is None:
@@ -236,6 +240,10 @@ class RemindersEP(fr.Resource):
                 show_episode = v
             elif k == 'show_slug':
                 show_slug = v
+            elif k == 'show_language':
+                show_language = v
+            elif k == 'show_available_translations':
+                show_available_translations = v
 
         try:
             reminder_type = ReminderType[reminder_type]
@@ -253,7 +261,7 @@ class RemindersEP(fr.Resource):
         user_id = authentication.get_token_field(token.encode(), 'user')
 
         if processing.register_reminder(show_name, is_movie, reminder_type, show_slug, show_season, show_episode,
-                                        user_id):
+                                        user_id, show_language, show_available_translations):
             return flask.make_response(
                 flask.jsonify({'reminder_list': processing.list_to_json(processing.get_reminders(user_id))}), 201)
         else:
@@ -536,7 +544,7 @@ class UsersEP(fr.Resource):
 
     registration_args = \
         {
-            'email': webargs.fields.Str(required=True),
+            'email': webargs.fields.Email(required=True),
             'password': webargs.fields.Str(required=True),
             'language': webargs.fields.Str()
         }
