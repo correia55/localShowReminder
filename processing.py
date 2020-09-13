@@ -277,7 +277,8 @@ def search_db(search_list, complete_title=False, below_date=None, show_season=No
             query = query.filter(models.Show.show_episode == show_episode)
 
         if not search_adult:
-            query = query.filter(models.Channel.adult is not True)
+            # Can't use "is" here, it needs to be "=="
+            query = query.filter(models.Channel.adult == False)
 
         if below_date is not None:
             query = query.filter(models.Show.date_time > below_date)
