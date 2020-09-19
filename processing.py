@@ -201,6 +201,7 @@ def get_titles_trakt(trakt_slug, trakt_name, trakt_show_language, trakt_availabl
     translations = json.loads(translations_json)
 
     results = set()
+    results.add(trakt_name)
 
     for t in translations:
         if t['title'] is None:
