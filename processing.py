@@ -203,7 +203,10 @@ def get_titles_trakt(trakt_slug, trakt_name, trakt_show_language, trakt_availabl
     results = set()
 
     for t in translations:
-        if t['language'] == 'en' or t['language'] == 'pt' or trakt_show_language:
+        if t['title'] is None:
+            continue
+
+        if t['language'] == 'en' or t['language'] == 'pt' or t['language'] == trakt_show_language:
             results.add(t['title'])
 
     aliases_request = urllib.request.Request('https://api.trakt.tv/%ss/%s/aliases' % (show_type, trakt_slug))
@@ -383,6 +386,9 @@ def register_trakt_titles(show_slug, show_name, show_language, show_available_tr
         .filter(models.TraktTitle.is_movie == is_movie)
 
     for t in titles:
+        if t is None:
+            continue
+
         # Only add new entries
         if query.filter(models.TraktTitle.trakt_title == t).first() is None:
             configuration.session.add(models.TraktTitle(show_slug, is_movie, t))
