@@ -8,7 +8,7 @@ import flask_limiter as fl
 import flask_restful as fr
 import webargs
 import webargs.flaskparser as fp
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 
 import authentication
 import configuration
@@ -51,7 +51,7 @@ class FlaskApp(flask.Flask):
 basic_auth = fh.HTTPBasicAuth()
 token_auth = fh.HTTPTokenAuth()
 app = FlaskApp(__name__)
-CORS(app, support_credentials=True)
+CORS(app, supports_credentials=True, resources={r'*': {'origins': configuration.application_link}})
 api = fr.Api(app)
 
 # Limit the number of requests that can be made in a certain time period
@@ -118,7 +118,6 @@ class LoginEP(fr.Resource):
     def __init__(self):
         super(LoginEP, self).__init__()
 
-    @cross_origin(supports_credentials=True)
     def post(self):
         """Login made by the user, generating an authentication token."""
 
@@ -151,7 +150,6 @@ class LogoutEP(fr.Resource):
         }
 
     @fp.use_args(logout_args)
-    @cross_origin(supports_credentials=True)
     def post(self, args):
         """Logout of a user's account."""
 
@@ -172,7 +170,6 @@ class RecoverPasswordEP(fr.Resource):
             'password': webargs.fields.Str(required=True)
         }
 
-    @cross_origin(supports_credentials=True)
     @fp.use_args(recover_args)
     def put(self, args):
         """Change the password after a password recovery."""
@@ -192,7 +189,6 @@ class RemindersEP(fr.Resource):
     def __init__(self):
         super(RemindersEP, self).__init__()
 
-    @cross_origin(supports_credentials=True)
     def get(self):
         """Get the list of reminders of the user."""
 
@@ -217,7 +213,6 @@ class RemindersEP(fr.Resource):
         }
 
     @fp.use_args(register_args)
-    @cross_origin(supports_credentials=True)
     def post(self, args):
         """Register a reminder."""
 
@@ -275,7 +270,6 @@ class RemindersEP(fr.Resource):
         }
 
     @fp.use_args(update_args)
-    @cross_origin(supports_credentials=True)
     def put(self, args):
         """Update a reminder."""
 
@@ -299,7 +293,6 @@ class RemindersEP(fr.Resource):
         }
 
     @fp.use_args(delete_args)
-    @cross_origin(supports_credentials=True)
     def delete(self, args):
         """Delete a reminder."""
 
@@ -330,7 +323,6 @@ class SendEmailEP(fr.Resource):
             'type': webargs.fields.Str(required=True)
         }
 
-    @cross_origin(supports_credentials=True)
     @fp.use_args(email_args)
     def post(self, args):
         """Send settings email."""
@@ -370,7 +362,6 @@ class SendChangeEmailEP(fr.Resource):
             'new_email': webargs.fields.Str(required=True)
         }
 
-    @cross_origin(supports_credentials=True)
     @fp.use_args(email_args)
     def post(self, args):
         """Send 'change email' email to new email address."""
@@ -402,7 +393,6 @@ class SendPasswordRecoveryEmailEP(fr.Resource):
         }
 
     @fp.use_args(logout_args)
-    @cross_origin(supports_credentials=True)
     def post(self, args):
         """Logout of a user's account."""
 
@@ -425,7 +415,6 @@ class SendVerificationEmailEP(fr.Resource):
         }
 
     @fp.use_args(send_args)
-    @cross_origin(supports_credentials=True)
     def post(self, args):
         """Send verification email."""
 
@@ -452,7 +441,6 @@ class SessionEP(fr.Resource):
         }
 
     @fp.use_args(access_args)
-    @cross_origin(supports_credentials=True)
     def post(self, args):
         """Getting a new access token."""
 
@@ -478,7 +466,6 @@ class ShowsEP(fr.Resource):
         }
 
     @fp.use_args(search_args)
-    @cross_origin(supports_credentials=True)
     def get(self, args):
         """Get search results for the search_text, using the Trakt API."""
 
@@ -511,7 +498,6 @@ class ShowsSessionsEP(fr.Resource):
         }
 
     @fp.use_args(search_args)
-    @cross_origin(supports_credentials=True)
     def get(self, args):
         """Get search results for the search_text in the listings."""
 
@@ -550,7 +536,6 @@ class UsersEP(fr.Resource):
         }
 
     @fp.use_args(registration_args)
-    @cross_origin(supports_credentials=True)
     def post(self, args):
         """Create a new user's account."""
 
@@ -645,11 +630,8 @@ class UsersEP(fr.Resource):
         }
 
     @fp.use_args(deletion_args)
-    @cross_origin(supports_credentials=True)
     def delete(self, args):
         """Delete a user's account."""
-
-        return flask.make_response('', 200)
 
         deletion_token = args['deletion_token']
 
@@ -665,7 +647,6 @@ class UsersSettingsEP(fr.Resource):
     def __init__(self):
         super(UsersSettingsEP, self).__init__()
 
-    @cross_origin(supports_credentials=True)
     def get(self):
         """Get the user's settings, that don't require anything."""
 
@@ -687,7 +668,6 @@ class UsersSettingsEP(fr.Resource):
         }
 
     @fp.use_args(update_args)
-    @cross_origin(supports_credentials=True)
     def put(self, args):
         """Change user's settings, that don't require anything."""
 
@@ -742,7 +722,6 @@ class UsersBASettingsEP(fr.Resource):
         }
 
     @fp.use_args(update_args)
-    @cross_origin(supports_credentials=True)
     def put(self, args):
         """Change user's settings, that require the password to be sent."""
 
