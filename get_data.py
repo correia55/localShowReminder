@@ -99,7 +99,7 @@ class MEPG:
                 if show_date != db_last_update.date.strftime('%Y-%m-%d'):
                     continue
 
-                show_datetime = '%s %s' % (s['date'], s['timeIni'])
+                show_datetime = '%s %s' % (show_date, s['timeIni'])
 
                 shows_added = True
 
