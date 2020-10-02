@@ -280,8 +280,14 @@ def search_db(search_list, complete_title=False, below_date=None, show_season=No
 
         print('Search pattern: %s' % search_pattern)
 
+        # Operation for search with regex depending on the dbms
+        if 'mysql' in configuration.database_url:
+            operation = 'REGEXP'
+        else:
+            operation = '~*'
+
         query = configuration.session.query(models.Show, models.Channel.name) \
-            .filter(models.Show.search_title.op('~*')(search_pattern))
+            .filter(models.Show.search_title.op(operation)(search_pattern))
 
         if show_season is not None:
             query = query.filter(models.Show.show_season == show_season)
@@ -581,7 +587,9 @@ def register_user(email: str, password: str, language: str) -> bool:
         configuration.session.commit()
 
         return send_verifcation_email(user)
-    except (IntegrityError, InvalidRequestError):
+    except (IntegrityError, InvalidRequestError) as exception:
+        print(exception)
+
         configuration.session.rollback()
         # TODO: Send warning email
 
@@ -734,6 +742,9 @@ def check_login(email: str, password: str):
     :param email: the user's email.
     :param password: the user's password.
     """
+
+    if not email:
+        return False
 
     user = configuration.session.query(models.User).filter(models.User.email == email).first()
 
