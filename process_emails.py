@@ -1,5 +1,6 @@
 import email.mime.text as emt
 import gettext
+import os
 import re
 import smtplib
 
@@ -9,11 +10,15 @@ import jinja2
 import configuration
 import models
 
-pt = gettext.translation('main', localedir='locales', languages=['pt'])
-en = gettext.translation('main', localedir='locales', languages=['en'])
+LOCALES_DIR = os.path.join(configuration.base_dir, 'locales')
+
+pt = gettext.translation('main', localedir=LOCALES_DIR, languages=['pt'])
+en = gettext.translation('main', localedir=LOCALES_DIR, languages=['en'])
+
+TEMPLATES_DIR = os.path.join(configuration.base_dir, 'templates')
 
 extensions = ['jinja2.ext.i18n']
-env = jinja2.Environment(loader=jinja2.FileSystemLoader('templates'), extensions=extensions)
+env = jinja2.Environment(loader=jinja2.FileSystemLoader(TEMPLATES_DIR), extensions=extensions)
 
 current = pt
 env.install_gettext_callables(gettext=current.gettext, ngettext=current.ngettext, newstyle=True)

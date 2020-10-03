@@ -9,6 +9,12 @@ from sqlalchemy.orm import sessionmaker
 
 import models
 
+# region General
+
+base_dir = os.environ.get('BASE_DIR', None)
+
+# endregion
+
 # region Database
 
 # Get the database url saved in the environment variable
@@ -21,9 +27,9 @@ if database_url is None:
 engine = create_engine(database_url, encoding='utf-8')
 Session = sessionmaker(bind=engine)
 
-MIGRATIONS_DIR = './migrations/'
+MIGRATIONS_DIR = os.path.join(base_dir, 'migrations')
 
-config = aleconf.Config(file_='%salembic.ini' % MIGRATIONS_DIR)
+config = aleconf.Config(file_=os.path.join(MIGRATIONS_DIR, 'alembic.ini'))
 config.set_main_option('script_location', MIGRATIONS_DIR)
 config.set_main_option('sqlalchemy.url', database_url)
 
