@@ -58,7 +58,7 @@ if diff_list:
     alecomm.upgrade(config, 'head')
 
 # New Session
-session = Session()
+session = None
 
 # endregion
 

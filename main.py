@@ -84,6 +84,17 @@ def handle_error(error, req, schema, status_code, headers):
 
 # endregion
 
+@app.before_request
+def before_request_func():
+    configuration.session = configuration.Session()
+
+
+@app.after_request
+def after_request_func(response):
+    configuration.session.close()
+
+    return response
+
 
 class LoginEP(fr.Resource):
     decorators = [basic_auth.login_required]
