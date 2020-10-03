@@ -22,4 +22,5 @@ def daily_tasks():
     processing.process_reminders(last_update_date + datetime.timedelta(days=1))
 
 
-daily_tasks()
+if __name__ == '__main__':
+    daily_tasks()
