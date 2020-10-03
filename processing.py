@@ -481,6 +481,9 @@ def get_reminders(user_id):
     :return: a list of reminders for the user who's id is user_id.
     """
 
+    if not user_id:
+        return []
+
     reminders = configuration.session.query(models.DBReminder) \
         .filter(models.DBReminder.user_id == user_id).all()
 
@@ -859,6 +862,9 @@ def change_user_settings(changes: dict, user_id: str):
     :param user_id: the id of the user.
     :return: True if something has been changed.
     """
+
+    if not user_id:
+        return {}
 
     # Get user
     user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
