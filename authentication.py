@@ -134,6 +134,9 @@ def validate_token(auth_token: bytearray, token_type: TokenType) -> (bool, str):
     :return: whether or not the token is valid and a message or the user_id.
     """
 
+    if not auth_token:
+        return False, 'Invalid token. Please log in again.'
+
     try:
         payload = jwt.decode(auth_token, configuration.secret_key)
 
