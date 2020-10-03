@@ -42,7 +42,7 @@ msgid "verify_account"
 msgstr "Verificar Conta"
 
 msgid "accessing_sentence"
-msgstr "ou utilize o link"
+msgstr "ou utilizando o link"
 
 msgid "validation_time_sentence"
 msgstr "Este email só é válido por"
@@ -51,7 +51,7 @@ msgid "hours"
 msgstr "horas"
 
 msgid "expiration_sentence"
-msgstr "Se o deixar expirar, precisará de pedir um novo email depois de fazer login no site"
+msgstr "Se o deixar expirar, precisará de pedir um novo email através do formulário de login no site"
 
 msgid "results_sentence"
 msgstr "São estes os resultados para os lembretes criados"
@@ -75,7 +75,7 @@ msgid "deletion_sentence"
 msgstr "Foi feito um pedido para apagar a conta associada a este email, para confirmar carregue no botão"
 
 msgid "the_application_team"
-msgstr "a equipa do Cinembraria"
+msgstr "a equipa do LembretesTV"
 
 msgid "change_email"
 msgstr "Alteração de Email"

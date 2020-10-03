@@ -75,7 +75,7 @@ msgid "deletion_sentence"
 msgstr "A deletion request was made for the account associated with this email, to confirm press the button"
 
 msgid "the_application_team"
-msgstr "the Cinembraria Team"
+msgstr "the LembretesTV Team"
 
 msgid "change_email"
 msgstr "Change Email"
