@@ -564,7 +564,7 @@ def process_reminders(session, last_date):
 
         if len(db_shows) > 0:
             process_emails.set_language(user.language)
-            process_emails.send_reminders_email(user.email, r, db_shows)
+            process_emails.send_reminders_email(user.email, db_shows)
 
     print('Reminders processed!')
 

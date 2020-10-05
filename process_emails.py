@@ -190,12 +190,11 @@ def send_change_email_new(destination: str, token: str, old_email: str) -> bool:
     return send_email(content, subject, destination)
 
 
-def send_reminders_email(destination: str, reminder: models.DBReminder, results: [models.Show]) -> bool:
+def send_reminders_email(destination: str, results: [models.Show]) -> bool:
     """
     Send an email with the results found for the reminders created.
 
     :param str destination: the destination address.
-    :param DBReminder reminder: the corresponding reminder.
     :param list results: the list of results.
     """
 
@@ -203,8 +202,7 @@ def send_reminders_email(destination: str, reminder: models.DBReminder, results:
 
     content = env.get_template('reminders_email.html').render(application_name=configuration.application_name,
                                                               application_link=configuration.application_link,
-                                                              username=destination, reminder=reminder, results=results,
-                                                              title=subject)
+                                                              username=destination, results=results, title=subject)
 
     return send_email(content, subject, destination)
 

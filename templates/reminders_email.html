@@ -7,6 +7,7 @@
 {% block content %}
     <p>{% trans %}results_sentence{% endtrans %}:</p>
 
+    <div align="center">
     {% for show in results %}
         {% if loop.index > 0 %}
             <p class="smallP"></p>
@@ -22,6 +23,7 @@
             {% trans %}at_date{% endtrans %} {{ show.date_time }}, {% trans %}in_channel{% endtrans %} {{ show.channel}}.
         </p>
     {% endfor %}
+    </div>
 
     <p></p>
 {% endblock %}
