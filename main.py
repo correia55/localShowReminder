@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from enum import Enum
 
 import flask
@@ -53,7 +54,8 @@ def verify_login_credentials(username, password):
     :return: whether or not the credentials are valid.
     """
 
-    return processing.check_login(username, password)
+    with session_scope() as session:
+        return processing.check_login(session, username, password)
 
 
 @token_auth.verify_token
@@ -65,35 +67,25 @@ def verify_access_token(token):
     :return: whether or not the token is valid.
     """
 
-    valid, user_id = authentication.validate_token(token.encode(), authentication.TokenType.ACCESS)
+    with session_scope() as session:
+        valid, user_id = authentication.validate_token(session, token.encode(), authentication.TokenType.ACCESS)
 
-    return valid
-
-
-# TODO: REMOVE THIS SECTION, ONLY BEING USED FOR DEBUGGING PURPOSES
-# region Argument debugging
-from webargs import flaskparser
-
-parser = flaskparser.FlaskParser()
+        return valid
 
 
-@parser.error_handler
-def handle_error(error, req, schema, status_code, headers):
-    return flask.make_response('Unprocessable entity: ' + error, 422)
+@contextmanager
+def session_scope():
+    """Provide a transactional scope around a series of operations."""
+    session = configuration.Session()
 
-
-# endregion
-
-@app.before_request
-def before_request_func():
-    configuration.session = configuration.Session()
-
-
-@app.after_request
-def after_request_func(response):
-    configuration.session.close()
-
-    return response
+    try:
+        yield session
+        session.commit()
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()
 
 
 class LoginEP(fr.Resource):
@@ -105,24 +97,31 @@ class LoginEP(fr.Resource):
     def post(self):
         """Login made by the user, generating an authentication token."""
 
-        auth = flask.request.authorization
-        user = processing.get_user_by_email(auth['username'])
+        with session_scope() as session:
+            auth = flask.request.authorization
+            user = processing.get_user_by_email(session, auth['username'])
 
-        if user is not None:
-            if user.verified:
-                refresh_token = authentication.generate_token(user.id, authentication.TokenType.REFRESH).decode()
-                username = auth['username'][:auth['username'].index('@')] if auth['username'].find('@') != -1 else auth[
-                    'username']
+            if user is not None:
+                if user.verified:
+                    refresh_token = authentication.generate_token(session, user.id,
+                                                                  authentication.TokenType.REFRESH).decode()
 
-                return flask.make_response(flask.jsonify(
-                    {'token': str(refresh_token), 'username': username, **processing.get_settings(user.id)}), 200)
+                    if auth['username'].find('@') != -1:
+                        username = auth['username'][:auth['username'].index('@')]
+                    else:
+                        username = auth['username']
+
+                    return flask.make_response(flask.jsonify({
+                        'token': str(refresh_token),
+                        'username': username, **processing.get_settings(session, user.id)
+                    }), 200)
+                else:
+                    return flask.make_response('Unverified Account', 400)
+
+            # This should never happen
             else:
-                return flask.make_response('Unverified Account', 400)
-
-        # This should never happen
-        else:
-            print('ERROR: The user passed the decorator verification!')
-            return flask.make_response('Unauthorized Access', 403)  # Should be 503
+                print('ERROR: The user passed the decorator verification!')
+                return flask.make_response('Unauthorized Access', 403)  # Should be 503
 
 
 class LogoutEP(fr.Resource):
@@ -138,11 +137,12 @@ class LogoutEP(fr.Resource):
     def post(self, args):
         """Logout of a user's account."""
 
-        refresh_token = args['refresh_token']
+        with session_scope() as session:
+            refresh_token = args['refresh_token']
 
-        processing.logout(refresh_token)
+            processing.logout(session, refresh_token)
 
-        return flask.make_response('', 200)
+            return flask.make_response('', 200)
 
 
 class RecoverPasswordEP(fr.Resource):
@@ -162,10 +162,11 @@ class RecoverPasswordEP(fr.Resource):
         token = args['token']
         password = args['password']
 
-        if processing.recover_password(token, password):
-            return flask.make_response('', 200)
-        else:
-            return flask.make_response('Invalid Token', 400)
+        with session_scope() as session:
+            if processing.recover_password(session, token, password):
+                return flask.make_response('', 200)
+            else:
+                return flask.make_response('Invalid Token', 400)
 
 
 class RemindersEP(fr.Resource):
@@ -177,13 +178,14 @@ class RemindersEP(fr.Resource):
     def get(self):
         """Get the list of reminders of the user."""
 
-        # Get the user id from the token
-        token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
-        user_id = authentication.get_token_field(token.encode(), 'user')
+        with session_scope() as session:
+            # Get the user id from the token
+            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+            user_id = authentication.get_token_field(token.encode(), 'user')
 
-        reminders = processing.get_reminders(user_id)
+            reminders = processing.get_reminders(session, user_id)
 
-        return flask.make_response(flask.jsonify({'reminder_list': processing.list_to_json(reminders)}), 200)
+            return flask.make_response(flask.jsonify({'reminder_list': processing.list_to_json(reminders)}), 200)
 
     register_args = \
         {
@@ -225,27 +227,30 @@ class RemindersEP(fr.Resource):
             elif k == 'show_available_translations':
                 show_available_translations = v
 
-        try:
-            reminder_type = ReminderType[reminder_type]
-        except KeyError:
-            return flask.make_response('Invalid Reminder Type', 400)
+        with session_scope() as session:
+            try:
+                reminder_type = ReminderType[reminder_type]
+            except KeyError:
+                return flask.make_response('Invalid Reminder Type', 400)
 
-        if reminder_type == ReminderType.DB and show_slug is None:
-            return flask.make_response('Missing Show Slug', 400)
+            if reminder_type == ReminderType.DB and show_slug is None:
+                return flask.make_response('Missing Show Slug', 400)
 
-        if not is_movie and (show_season is None or show_episode is None):
-            return flask.make_response('Missing Season Episode', 400)
+            if not is_movie and (show_season is None or show_episode is None):
+                return flask.make_response('Missing Season Episode', 400)
 
-        # Get the user id from the token
-        token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
-        user_id = authentication.get_token_field(token.encode(), 'user')
+            # Get the user id from the token
+            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+            user_id = authentication.get_token_field(token.encode(), 'user')
 
-        if processing.register_reminder(show_name, is_movie, reminder_type, show_slug, show_season, show_episode,
-                                        user_id, show_language, show_available_translations):
-            return flask.make_response(
-                flask.jsonify({'reminder_list': processing.list_to_json(processing.get_reminders(user_id))}), 201)
-        else:
-            return flask.make_response('Reminder Already Exists', 400)
+            if processing.register_reminder(session, show_name, is_movie, reminder_type, show_slug, show_season,
+                                            show_episode, user_id, show_language, show_available_translations):
+                return flask.make_response(
+                    flask.jsonify({
+                        'reminder_list': processing.list_to_json(processing.get_reminders(session, user_id))
+                    }), 201)
+            else:
+                return flask.make_response('Reminder Already Exists', 400)
 
     update_args = \
         {
@@ -262,15 +267,18 @@ class RemindersEP(fr.Resource):
         show_season = args['show_season']
         show_episode = args['show_episode']
 
-        # Get the user id from the token
-        token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
-        user_id = authentication.get_token_field(token.encode(), 'user')
+        with session_scope() as session:
+            # Get the user id from the token
+            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+            user_id = authentication.get_token_field(token.encode(), 'user')
 
-        if processing.update_reminder(reminder_id, show_season, show_episode, user_id):
-            return flask.make_response(
-                flask.jsonify({'reminder_list': processing.list_to_json(processing.get_reminders(user_id))}), 201)
-        else:
-            return flask.make_response('', 404)
+            if processing.update_reminder(session, reminder_id, show_season, show_episode, user_id):
+                return flask.make_response(
+                    flask.jsonify({
+                        'reminder_list': processing.list_to_json(processing.get_reminders(session, user_id))
+                    }), 201)
+            else:
+                return flask.make_response('', 404)
 
     delete_args = \
         {
@@ -283,14 +291,16 @@ class RemindersEP(fr.Resource):
 
         reminder_id = args['reminder_id']
 
-        # Get the user id from the token
-        token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
-        user_id = authentication.get_token_field(token.encode(), 'user')
+        with session_scope() as session:
+            # Get the user id from the token
+            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+            user_id = authentication.get_token_field(token.encode(), 'user')
 
-        processing.remove_reminder(reminder_id, user_id)
+            processing.remove_reminder(session, reminder_id, user_id)
 
-        return flask.make_response(
-            flask.jsonify({'reminder_list': processing.list_to_json(processing.get_reminders(user_id))}), 200)
+            return flask.make_response(flask.jsonify({
+                'reminder_list': processing.list_to_json(processing.get_reminders(session, user_id))
+            }), 200)
 
 
 class SendEmailEP(fr.Resource):
@@ -312,29 +322,30 @@ class SendEmailEP(fr.Resource):
     def post(self, args):
         """Send settings email."""
 
-        token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
-        email_type = args['type']
+        with session_scope() as session:
+            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+            email_type = args['type']
 
-        # Get the user id from the token
-        user_id = authentication.get_token_field(token.encode(), 'user')
+            # Get the user id from the token
+            user_id = authentication.get_token_field(token.encode(), 'user')
 
-        # If it is a user's deletion email request
-        if email_type == SendEmailEP.EmailType.DELETION.name:
-            if processing.send_deletion_email(user_id):
-                return flask.make_response('', 200)
+            # If it is a user's deletion email request
+            if email_type == SendEmailEP.EmailType.DELETION.name:
+                if processing.send_deletion_email(session, user_id):
+                    return flask.make_response('', 200)
+                else:
+                    return flask.make_response('', 400)
+
+            # If it is an email change email request
+            elif email_type == SendEmailEP.EmailType.CHANGE_OLD.name:
+                if processing.send_change_email_old(session, user_id):
+                    return flask.make_response('', 200)
+                else:
+                    return flask.make_response('', 400)
+
+            # If something else is sent
             else:
                 return flask.make_response('', 400)
-
-        # If it is an email change email request
-        elif email_type == SendEmailEP.EmailType.CHANGE_OLD.name:
-            if processing.send_change_email_old(user_id):
-                return flask.make_response('', 200)
-            else:
-                return flask.make_response('', 400)
-
-        # If something else is sent
-        else:
-            return flask.make_response('', 400)
 
 
 class SendChangeEmailEP(fr.Resource):
@@ -354,18 +365,19 @@ class SendChangeEmailEP(fr.Resource):
         change_token = args['change_token']
         new_email = args['new_email']
 
-        success, already_exists = processing.send_change_email_new(change_token, new_email)
+        with session_scope() as session:
+            success, already_exists = processing.send_change_email_new(session, change_token, new_email)
 
-        if success or already_exists:
-            # Even though this means it's a failure
-            # returning a different message from success would result in revealing that there's an associated account
-            if already_exists:
-                # TODO: SEND WARNING EMAIL
-                pass
+            if success or already_exists:
+                # Even though this means it's a failure
+                # returning a different message from success would result in revealing that there's an associated account
+                if already_exists:
+                    # TODO: SEND WARNING EMAIL
+                    pass
 
-            return flask.make_response('', 200)
-        else:
-            return flask.make_response('', 400)
+                return flask.make_response('', 200)
+            else:
+                return flask.make_response('', 400)
 
 
 class SendPasswordRecoveryEmailEP(fr.Resource):
@@ -382,12 +394,14 @@ class SendPasswordRecoveryEmailEP(fr.Resource):
         """Logout of a user's account."""
 
         email = args['email']
-        user = processing.get_user_by_email(email)
 
-        if user is not None:
-            processing.send_password_recovery_email(user.id)
+        with session_scope() as session:
+            user = processing.get_user_by_email(session, email)
 
-        return flask.make_response('', 200)
+            if user is not None:
+                processing.send_password_recovery_email(session, user.id)
+
+            return flask.make_response('', 200)
 
 
 class SendVerificationEmailEP(fr.Resource):
@@ -405,15 +419,16 @@ class SendVerificationEmailEP(fr.Resource):
 
         email = args['email']
 
-        user = processing.get_user_by_email(email)
+        with session_scope() as session:
+            user = processing.get_user_by_email(session, email)
 
-        if user is not None and not user.verified:
-            if processing.send_verifcation_email(user):
-                return flask.make_response('', 200)
+            if user is not None and not user.verified:
+                if processing.send_verification_email(session, user):
+                    return flask.make_response('', 200)
+                else:
+                    return flask.make_response('', 400)
             else:
                 return flask.make_response('', 400)
-        else:
-            return flask.make_response('', 400)
 
 
 class SessionEP(fr.Resource):
@@ -431,12 +446,13 @@ class SessionEP(fr.Resource):
 
         refresh_token = args['refresh_token']
 
-        valid, access_token = authentication.generate_access_token(refresh_token.encode())
+        with session_scope() as session:
+            valid, access_token = authentication.generate_access_token(session, refresh_token.encode())
 
-        if valid:
-            return flask.make_response(flask.jsonify({'token': str(access_token.decode())}), 200)
-        else:
-            return flask.make_response('Invalid Token', 403)  # Should be 503
+            if valid:
+                return flask.make_response(flask.jsonify({'token': str(access_token.decode())}), 200)
+            else:
+                return flask.make_response('Invalid Token', 403)  # Should be 503
 
 
 class ShowsEP(fr.Resource):
@@ -488,25 +504,26 @@ class ShowsSessionsEP(fr.Resource):
 
         search_text: str = args['search_text'].strip()
 
-        if len(search_text) < 2:
-            return flask.make_response({'Search Text Too Small'}, 400)
+        with session_scope() as session:
+            if len(search_text) < 2:
+                return flask.make_response({'Search Text Too Small'}, 400)
 
-        search_adult = False
+            search_adult = False
 
-        # Get the user settings of whether it should look in channels with adult content or not
-        if 'HTTP_AUTHORIZATION' in flask.request.headers.environ:
-            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
-            user_id = authentication.get_token_field(token.encode(), 'user')
+            # Get the user settings of whether it should look in channels with adult content or not
+            if 'HTTP_AUTHORIZATION' in flask.request.headers.environ:
+                token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+                user_id = authentication.get_token_field(token.encode(), 'user')
 
-            user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
-            search_adult = user.show_adult if user is not None else False
+                user = session.query(models.User).filter(models.User.id == user_id).first()
+                search_adult = user.show_adult if user is not None else False
 
-        db_shows = processing.search_db([search_text], complete_title=False, search_adult=search_adult)
+            db_shows = processing.search_db(session, [search_text], complete_title=False, search_adult=search_adult)
 
-        if len(db_shows) != 0:
-            return flask.make_response(flask.jsonify({'show_list': db_shows}), 200)
+            if len(db_shows) != 0:
+                return flask.make_response(flask.jsonify({'show_list': db_shows}), 200)
 
-        return flask.make_response('Not Found', 404)
+            return flask.make_response('Not Found', 404)
 
 
 class UsersEP(fr.Resource):
@@ -536,10 +553,11 @@ class UsersEP(fr.Resource):
             if k == 'language':
                 language = v
 
-        if processing.register_user(email, password, language):
-            return flask.make_response('', 200)
-        else:
-            return flask.make_response('', 400)
+        with session_scope() as session:
+            if processing.register_user(session, email, password, language):
+                return flask.make_response('', 200)
+            else:
+                return flask.make_response('', 400)
 
     update_args = \
         {
@@ -571,43 +589,44 @@ class UsersEP(fr.Resource):
             elif k == 'new_email':
                 new_email = v
 
-        # Update something, that requires email confirmation, on the account
-        if change_token is not None:
-            if processing.change_user_settings_token(change_token):
-                return flask.make_response('', 200)
-            else:
-                return flask.make_response('Invalid Token', 400)
-
-        # Verify the account
-        elif verification_token is not None:
-            verified = processing.verify_user(verification_token)
-
-            if verified:
-                return flask.make_response('', 200)
-            else:
-                return flask.make_response('Invalid Token', 400)
-
-        # Correct email before verification
-        elif current_email is not None and new_email is not None:
-            user = processing.get_user_by_email(current_email)
-
-            # No user was found with that email
-            # or user has already verified its account
-            if user is None or user.verified:
-                return flask.make_response('', 400)
-
-            if processing.change_user_settings({ChangeType.NEW_EMAIL.value: new_email}, user.id):
-                if processing.send_verifcation_email(user):
+        with session_scope() as session:
+            # Update something, that requires email confirmation, on the account
+            if change_token is not None:
+                if processing.change_user_settings_token(session, change_token):
                     return flask.make_response('', 200)
                 else:
-                    return flask.make_response('Invalid email', 400)
+                    return flask.make_response('Invalid Token', 400)
 
+            # Verify the account
+            elif verification_token is not None:
+                verified = processing.verify_user(session, verification_token)
+
+                if verified:
+                    return flask.make_response('', 200)
+                else:
+                    return flask.make_response('Invalid Token', 400)
+
+            # Correct email before verification
+            elif current_email is not None and new_email is not None:
+                user = processing.get_user_by_email(session, current_email)
+
+                # No user was found with that email
+                # or user has already verified its account
+                if user is None or user.verified:
+                    return flask.make_response('', 400)
+
+                if processing.change_user_settings(session, {ChangeType.NEW_EMAIL.value: new_email}, user.id):
+                    if processing.send_verification_email(session, user):
+                        return flask.make_response('', 200)
+                    else:
+                        return flask.make_response('Invalid email', 400)
+
+                else:
+                    return flask.make_response('', 400)
+
+            # No parameters
             else:
-                return flask.make_response('', 400)
-
-        # No parameters
-        else:
-            return flask.make_response('Missing Parameter', 400)
+                return flask.make_response('Missing Parameter', 400)
 
     deletion_args = \
         {
@@ -620,10 +639,11 @@ class UsersEP(fr.Resource):
 
         deletion_token = args['deletion_token']
 
-        if processing.delete_user(deletion_token):
-            return flask.make_response('', 200)
-        else:
-            return flask.make_response('Invalid Token', 400)
+        with session_scope() as session:
+            if processing.delete_user(session, deletion_token):
+                return flask.make_response('', 200)
+            else:
+                return flask.make_response('Invalid Token', 400)
 
 
 class UsersSettingsEP(fr.Resource):
@@ -635,16 +655,17 @@ class UsersSettingsEP(fr.Resource):
     def get(self):
         """Get the user's settings, that don't require anything."""
 
-        # Get the user id from the token
-        token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
-        user_id = authentication.get_token_field(token.encode(), 'user')
+        with session_scope() as session:
+            # Get the user id from the token
+            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+            user_id = authentication.get_token_field(token.encode(), 'user')
 
-        settings = processing.get_settings(user_id)
+            settings = processing.get_settings(session, user_id)
 
-        if settings != {}:
-            return flask.make_response(flask.jsonify(settings), 200)
-        else:
-            return flask.make_response('', 404)
+            if settings != {}:
+                return flask.make_response(flask.jsonify(settings), 200)
+            else:
+                return flask.make_response('', 404)
 
     update_args = \
         {
@@ -668,30 +689,31 @@ class UsersSettingsEP(fr.Resource):
             elif k == 'language':
                 language = v
 
-        # Get the user id from the token
-        token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
-        user_id = authentication.get_token_field(token.encode(), 'user')
+        with session_scope() as session:
+            # Get the user id from the token
+            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+            user_id = authentication.get_token_field(token.encode(), 'user')
 
-        changes = {}
+            changes = {}
 
-        # Update include_adult_channels
-        if include_adult_channels is not None:
-            changes[ChangeType.INCLUDE_ADULT_CHANNELS.value] = include_adult_channels
+            # Update include_adult_channels
+            if include_adult_channels is not None:
+                changes[ChangeType.INCLUDE_ADULT_CHANNELS.value] = include_adult_channels
 
-        # Update language
-        if language is not None and language in models.AVAILABLE_LANGUAGES:
-            changes[ChangeType.LANGUAGE.value] = language
+            # Update language
+            if language is not None and language in models.AVAILABLE_LANGUAGES:
+                changes[ChangeType.LANGUAGE.value] = language
 
-        # If there are changes to be made
-        if changes != {}:
-            if processing.change_user_settings(changes, user_id):
-                return flask.make_response(flask.jsonify(processing.get_settings(user_id)), 200)
+            # If there are changes to be made
+            if changes != {}:
+                if processing.change_user_settings(session, changes, user_id):
+                    return flask.make_response(flask.jsonify(processing.get_settings(session, user_id)), 200)
+                else:
+                    return flask.make_response('', 400)
+
+            # If there are no changes to be made
             else:
-                return flask.make_response('', 400)
-
-        # If there are no changes to be made
-        else:
-            return flask.make_response('Invalid Parameters', 400)
+                return flask.make_response('Invalid Parameters', 400)
 
 
 class UsersBASettingsEP(fr.Resource):
@@ -721,31 +743,32 @@ class UsersBASettingsEP(fr.Resource):
             if k == 'new_password':
                 new_password = v
 
-        # Get the user id from the token
-        token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
-        user_id = authentication.get_token_field(token.encode(), 'user')
+        with session_scope() as session:
+            # Get the user id from the token
+            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+            user_id = authentication.get_token_field(token.encode(), 'user')
 
-        user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
+            user = session.query(models.User).filter(models.User.id == user_id).first()
 
-        # Check if the password is valid
-        valid = verify_login_credentials(user.email, password)
+            # Check if the password is valid
+            valid = verify_login_credentials(user.email, password)
 
-        if not valid:
-            return flask.make_response('Unauthorized Access', 403)  # Should be 503
+            if not valid:
+                return flask.make_response('Unauthorized Access', 403)  # Should be 503
 
-        # Update new_password
-        if new_password is not None:
-            if password == new_password:
-                return flask.make_response('Same Password', 400)
+            # Update new_password
+            if new_password is not None:
+                if password == new_password:
+                    return flask.make_response('Same Password', 400)
 
-            if processing.change_user_settings({ChangeType.NEW_PASSWORD.value: new_password}, user_id):
-                return flask.make_response('', 200)
+                if processing.change_user_settings(session, {ChangeType.NEW_PASSWORD.value: new_password}, user_id):
+                    return flask.make_response('', 200)
+                else:
+                    return flask.make_response('', 400)
+
+            # No parameters
             else:
-                return flask.make_response('', 400)
-
-        # No parameters
-        else:
-            return flask.make_response('Missing Parameter', 400)
+                return flask.make_response('Missing Parameter', 400)
 
 
 # Functions

@@ -20,17 +20,17 @@ def strip_accents(text: str):
     return str(text)
 
 
-def get_names_list_from_trakttitles_list(tracktitle_list: [TraktTitle]):
+def get_names_list_from_trakttitles_list(traktitle_list: [TraktTitle]):
     """
-    Create a list of strings with the names of each Trakttitle in the entry list.
+    Create a list of strings with the names of each TraktTitle in the entry list.
 
-    :param tracktitle_list: the list of TracktTitle.
+    :param traktitle_list: the list of TraktTitle.
     :return: the list of names.
     """
 
     titles = []
 
-    for title in tracktitle_list:
+    for title in traktitle_list:
         titles.append(title.trakt_title)
 
     return titles

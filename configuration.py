@@ -24,7 +24,7 @@ if database_url is None:
     print('Unable to find database url!')
     exit(1)
 
-engine = create_engine(database_url, encoding='utf-8')
+engine = create_engine(database_url, encoding='utf-8', pool_recycle=280)
 Session = sessionmaker(bind=engine)
 
 MIGRATIONS_DIR = os.path.join(base_dir, 'migrations')
@@ -50,15 +50,12 @@ alecomm.upgrade(config, 'head')
 
 # Check for changes in the database
 mc = alemig.MigrationContext.configure(engine.connect())
-diff_list = aleauto.compare_metadata(mc, models.base.metadata)
+diff_list = aleauto.compare_metadata(mc, models.Base.metadata)
 
 # Update the database
 if diff_list:
     alecomm.revision(config, None, autogenerate=True)
     alecomm.upgrade(config, 'head')
-
-# New Session
-session = None
 
 # endregion
 

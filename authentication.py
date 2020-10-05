@@ -1,10 +1,10 @@
+import datetime
 from enum import Enum
 
 import jwt
-import datetime
 
-import models
 import configuration
+import models
 
 
 class TokenType(Enum):
@@ -17,11 +17,12 @@ class TokenType(Enum):
     PASSWORD_RECOVERY = 6
 
 
-def generate_token(user_id: int, token_type: TokenType) -> any:
+def generate_token(session, user_id: int, token_type: TokenType) -> any:
     """
     Source: https://realpython.com/token-based-authentication-with-flask/
     Generate a token of the given type, for the specified user.
 
+    :param session: the db session.
     :param user_id: the id of the user that owns the token.
     :param token_type: the type of the token.
     :return: the generated token.
@@ -55,8 +56,8 @@ def generate_token(user_id: int, token_type: TokenType) -> any:
 
         # If it's an authentication token, save it on the db
         if token_type == TokenType.REFRESH:
-            configuration.session.add(models.Token(token.decode()))
-            configuration.session.commit()
+            session.add(models.Token(token.decode()))
+            session.commit()
 
         return token
 
@@ -65,11 +66,12 @@ def generate_token(user_id: int, token_type: TokenType) -> any:
         return e
 
 
-def generate_change_token(user_id: int, token_type: TokenType, change_dict: dict) -> any:
+def generate_change_token(session, user_id: int, token_type: TokenType, change_dict: dict) -> any:
     """
     Source: https://realpython.com/token-based-authentication-with-flask/
     Generate a change token of the given type, for the specified user.
 
+    :param session: the db session.
     :param user_id: the id of the user that owns the token.
     :param token_type: the type of the token.
     :param change_dict: the dictionary with all of the changes.
@@ -96,8 +98,8 @@ def generate_change_token(user_id: int, token_type: TokenType, change_dict: dict
 
         # If it's an authentication token, save it on the db
         if token_type == TokenType.REFRESH:
-            configuration.session.add(models.Token(token.decode()))
-            configuration.session.commit()
+            session.add(models.Token(token.decode()))
+            session.commit()
 
         return token
 
@@ -106,29 +108,31 @@ def generate_change_token(user_id: int, token_type: TokenType, change_dict: dict
         return e
 
 
-def generate_access_token(auth_token: bytearray) -> (bool, any):
+def generate_access_token(session, auth_token: bytearray) -> (bool, any):
     """
     Generate an access token, when the authentication token is valid.
 
+    :param session: the db session.
     :param auth_token: the authentication token.
     :return: whether the authentication token is valid or not (and the generated access token when valid or an error
     message otherwise).
     """
 
-    valid, user_id = validate_token(auth_token, TokenType.REFRESH)
+    valid, user_id = validate_token(session, auth_token, TokenType.REFRESH)
 
     if valid:
-        return True, generate_token(user_id, TokenType.ACCESS)
+        return True, generate_token(session, user_id, TokenType.ACCESS)
     else:
         return False, None
 
 
-def validate_token(auth_token: bytearray, token_type: TokenType) -> (bool, str):
+def validate_token(session, auth_token: bytes, token_type: TokenType) -> (bool, str):
     """
     Source: https://realpython.com/token-based-authentication-with-flask/
 
     Decode and validate the token.
 
+    :param session: the db session.
     :param auth_token: the authentication token.
     :param token_type: the type of the token.
     :return: whether or not the token is valid and a message or the user_id.
@@ -146,7 +150,7 @@ def validate_token(auth_token: bytearray, token_type: TokenType) -> (bool, str):
         else:
             # When it's an authentication token, it needs to be validated in the db
             if token_type == TokenType.REFRESH:
-                token = configuration.session.query(models.Token).filter(
+                token = session.query(models.Token).filter(
                     models.Token.token == auth_token.decode()).first()
 
                 if token is None:
@@ -159,7 +163,7 @@ def validate_token(auth_token: bytearray, token_type: TokenType) -> (bool, str):
         return False, 'Invalid token. Please log in again.'
 
 
-def get_token_payload(auth_token: bytearray) -> any:
+def get_token_payload(auth_token: bytes) -> any:
     """
     Get the payload of the token.
 
@@ -176,7 +180,7 @@ def get_token_payload(auth_token: bytearray) -> any:
         return None
 
 
-def get_token_field(auth_token: bytearray, field: str) -> any:
+def get_token_field(auth_token: bytes, field: str) -> any:
     """
     Get the value of a field inside a token.
 

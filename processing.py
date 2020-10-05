@@ -42,15 +42,15 @@ def list_to_json(list_of_objects):
     return result
 
 
-def clear_show_list():
+def clear_show_list(session):
     """Delete entries with more than 7 days old, from the DB."""
 
     today_start = datetime.datetime.now()
     today_start.replace(hour=0, minute=0, second=0)
 
-    configuration.session.query(models.Show).filter(
+    session.query(models.Show).filter(
         models.Show.date_time < today_start - datetime.timedelta(7)).delete()
-    configuration.session.commit()
+    session.commit()
 
     print('Shows list cleared!')
 
@@ -229,22 +229,24 @@ def get_titles_trakt(trakt_slug, trakt_name, trakt_show_language, trakt_availabl
     return results
 
 
-def get_titles_db(trakt_slug):
+def get_titles_db(session, trakt_slug):
     """
     Get the various possible titles for the selected title, in both english and portuguese, using the DB.
 
+    :param session: the db session.
     :param trakt_slug: the selected title.
     :return: the various possible titles.
     """
 
-    return configuration.session.query(models.TraktTitle).filter(models.TraktTitle.trakt_id == trakt_slug).all()
+    return session.query(models.TraktTitle).filter(models.TraktTitle.trakt_id == trakt_slug).all()
 
 
-def search_db(search_list, complete_title=False, below_date=None, show_season=None, show_episode=None,
+def search_db(session, search_list, complete_title=False, below_date=None, show_season=None, show_episode=None,
               search_adult=False):
     """
     Get the results of the search in the DB, using all the texts from the search list.
 
+    :param session: the db session.
     :param search_list: the list of texts to search for in the DB.
     :param complete_title: true when we don't want to accept any other words.
     :param below_date: a date below to limit the search.
@@ -286,7 +288,7 @@ def search_db(search_list, complete_title=False, below_date=None, show_season=No
         else:
             operation = '~*'
 
-        query = configuration.session.query(models.Show, models.Channel.name) \
+        query = session.query(models.Show, models.Channel.name) \
             .filter(models.Show.search_title.op(operation)(search_pattern))
 
         if show_season is not None:
@@ -322,15 +324,16 @@ def search_db(search_list, complete_title=False, below_date=None, show_season=No
     return final_results
 
 
-def get_corresponding_id(imdb_id):
+def get_corresponding_id(session, imdb_id):
     """
     Get the DB id corresponding to the imdb id.
 
+    :param session: the db session.
     :param imdb_id: the imdb id.
     :return: the corresponding DB id.
     """
 
-    show_match = configuration.session.query(models.ShowMatch).filter(
+    show_match = session.query(models.ShowMatch).filter(
         models.ShowMatch.imdb_id == imdb_id).first()
 
     if show_match is None:
@@ -339,10 +342,11 @@ def get_corresponding_id(imdb_id):
     return show_match.show_id
 
 
-def search_db_id(show_name, is_movie, below_date=None, show_season=None, show_episode=None):
+def search_db_id(session, show_name, is_movie, below_date=None, show_season=None, show_episode=None):
     """
     Get the results of the search in the DB, using show id (either series_id or pid).
 
+    :param session: the db session.
     :param show_name: the name of the show.
     :param is_movie: true if it is a movie.
     :param below_date: a date below to limit the search.
@@ -352,7 +356,7 @@ def search_db_id(show_name, is_movie, below_date=None, show_season=None, show_ep
     """
 
     if not is_movie:
-        query = configuration.session.query(models.Show).filter(
+        query = session.query(models.Show).filter(
             models.Show.series_id == show_name)
 
         if show_season is not None:
@@ -361,7 +365,7 @@ def search_db_id(show_name, is_movie, below_date=None, show_season=None, show_ep
         if show_episode is not None:
             query = query.filter(models.Show.show_episode == show_episode)
     else:
-        query = configuration.session.query(models.Show).filter(
+        query = session.query(models.Show).filter(
             models.Show.pid == show_name)
 
     if below_date is not None:
@@ -370,10 +374,11 @@ def search_db_id(show_name, is_movie, below_date=None, show_season=None, show_ep
     return query.all()
 
 
-def register_trakt_titles(show_slug, show_name, show_language, show_available_translations, is_movie):
+def register_trakt_titles(session, show_slug, show_name, show_language, show_available_translations, is_movie):
     """
     Register all trakt titles for a show_slug.
 
+    :param session: the db session.
     :param show_slug: the slug that represents this show.
     :param show_name: the movie's original name.
     :param show_language: the main language of the show.
@@ -388,7 +393,7 @@ def register_trakt_titles(show_slug, show_name, show_language, show_available_tr
 
     titles = get_titles_trakt(show_slug, show_name, show_language, show_available_translations, show_type)
 
-    query = configuration.session.query(models.TraktTitle) \
+    query = session.query(models.TraktTitle) \
         .filter(models.TraktTitle.trakt_id == show_slug) \
         .filter(models.TraktTitle.is_movie == is_movie)
 
@@ -398,16 +403,18 @@ def register_trakt_titles(show_slug, show_name, show_language, show_available_tr
 
         # Only add new entries
         if query.filter(models.TraktTitle.trakt_title == t).first() is None:
-            configuration.session.add(models.TraktTitle(show_slug, is_movie, t))
+            session.add(models.TraktTitle(show_slug, is_movie, t))
 
-    configuration.session.commit()
+    session.commit()
 
 
-def register_reminder(show_name: str, is_movie: bool, reminder_type: response_models.ReminderType, show_slug: str,
-                      show_season, show_episode, user_id, show_language: str, show_available_translations: [str]):
+def register_reminder(session, show_name: str, is_movie: bool, reminder_type: response_models.ReminderType,
+                      show_slug: str, show_season, show_episode, user_id, show_language: str,
+                      show_available_translations: [str]):
     """
     Create a reminder for the given data.
 
+    :param session: the db session.
     :param show_name: the name of the show.
     :param is_movie: true if it is a movie.
     :param reminder_type: reminder type.
@@ -419,7 +426,7 @@ def register_reminder(show_name: str, is_movie: bool, reminder_type: response_mo
     :param show_available_translations: the available translations for the show.
     """
 
-    reminder = configuration.session.query(models.DBReminder) \
+    reminder = session.query(models.DBReminder) \
         .filter(models.DBReminder.user_id == user_id) \
         .filter(models.DBReminder.is_movie == is_movie) \
         .filter(models.DBReminder.show_name == show_name).first()
@@ -432,23 +439,24 @@ def register_reminder(show_name: str, is_movie: bool, reminder_type: response_mo
         show_season = None
         show_episode = None
 
-    configuration.session.add(
+    session.add(
         models.DBReminder(show_name, is_movie, reminder_type.value, show_season, show_episode, user_id, show_slug))
 
     # Add all possible titles for that trakt id to the DB
     if response_models.ReminderType.DB == reminder_type:
-        register_trakt_titles(show_slug, show_name, show_language, show_available_translations, is_movie)
+        register_trakt_titles(session, show_slug, show_name, show_language, show_available_translations, is_movie)
 
-    configuration.session.commit()
+    session.commit()
 
     return True
 
 
-def update_reminder(reminder_id: int, show_season: int, show_episode: int, user_id: int):
+def update_reminder(session, reminder_id: int, show_season: int, show_episode: int, user_id: int):
     """
     Update a reminder with the given data.
     This only matters when the show is not a movie, so we can update the season and/or episode.
 
+    :param session: the db session.
     :param reminder_id: the id of the corresponding id.
     :param show_season: show season for the reminder.
     :param show_episode: show episode for the reminder.
@@ -456,7 +464,7 @@ def update_reminder(reminder_id: int, show_season: int, show_episode: int, user_
     """
 
     # Somehow using the is False does not work
-    reminder = configuration.session.query(models.DBReminder) \
+    reminder = session.query(models.DBReminder) \
         .filter(models.DBReminder.user_id == user_id) \
         .filter(models.DBReminder.is_movie == False) \
         .filter(models.DBReminder.id == reminder_id).first()
@@ -468,15 +476,16 @@ def update_reminder(reminder_id: int, show_season: int, show_episode: int, user_
     reminder.show_season = show_season
     reminder.show_episode = show_episode
 
-    configuration.session.commit()
+    session.commit()
 
     return True
 
 
-def get_reminders(user_id):
+def get_reminders(session, user_id):
     """
     Get a list of reminders for the user who's id is user_id.
 
+    :param session: the db session.
     :param user_id: the id of the user.
     :return: a list of reminders for the user who's id is user_id.
     """
@@ -484,7 +493,7 @@ def get_reminders(user_id):
     if not user_id:
         return []
 
-    reminders = configuration.session.query(models.DBReminder) \
+    reminders = session.query(models.DBReminder) \
         .filter(models.DBReminder.user_id == user_id).all()
 
     # Add the possible titles to the reminders sent
@@ -494,7 +503,7 @@ def get_reminders(user_id):
         reminder_type = response_models.ReminderType(r.reminder_type)
 
         if response_models.ReminderType.DB == reminder_type:
-            db_titles = get_titles_db(r.show_slug)
+            db_titles = get_titles_db(session, r.show_slug)
 
             titles = []
 
@@ -508,47 +517,50 @@ def get_reminders(user_id):
     return final_reminders
 
 
-def remove_reminder(reminder_id, user_id):
+def remove_reminder(session, reminder_id, user_id):
     """
     Delete the reminder with the corresponding id.
 
+    :param session: the db session.
     :param reminder_id: the id of the reminder.
+    :param user_id: the id of the user.
     """
 
-    reminder = configuration.session.query(models.DBReminder) \
+    reminder = session.query(models.DBReminder) \
         .filter(models.DBReminder.id == reminder_id) \
         .filter(models.DBReminder.user_id == user_id) \
         .first()
 
     if reminder is not None:
-        configuration.session.delete(reminder)
-        configuration.session.commit()
+        session.delete(reminder)
+        session.commit()
 
 
-def process_reminders(last_date):
+def process_reminders(session, last_date):
     """
     Process the reminders that exist in the DB.
 
+    :param session: the db session.
     :param last_date: the date of the last update.
     """
 
-    reminders = configuration.session.query(models.DBReminder).all()
+    reminders = session.query(models.DBReminder).all()
 
     for r in reminders:
-        user = configuration.session.query(models.User).filter(models.User.id == r.user_id).first()
+        user = session.query(models.User).filter(models.User.id == r.user_id).first()
         search_adult = user.show_adult if user is not None else False
 
         if r.reminder_type == response_models.ReminderType.LISTINGS.value:
-            db_shows = search_db([r.show_name], True, last_date, r.show_season, r.show_episode, search_adult)
+            db_shows = search_db(session, [r.show_name], True, last_date, r.show_season, r.show_episode, search_adult)
         else:
-            db_id = get_corresponding_id(r.show_name)
+            db_id = get_corresponding_id(session, r.show_name)
 
             if db_id is not None:
                 db_shows = search_db_id(db_id, r.is_movie, last_date, r.show_season, r.show_episode)
             else:
-                titles = auxiliary.get_names_list_from_trakttitles_list(get_titles_db(r.show_slug))
+                titles = auxiliary.get_names_list_from_trakttitles_list(get_titles_db(session, r.show_slug))
 
-                db_shows = search_db(titles, True, last_date, r.show_season, r.show_episode, search_adult)
+                db_shows = search_db(session, titles, True, last_date, r.show_season, r.show_episode, search_adult)
 
         if len(db_shows) > 0:
             process_emails.set_language(user.language)
@@ -557,10 +569,15 @@ def process_reminders(last_date):
     print('Reminders processed!')
 
 
-def get_last_update():
-    """Get the date of the last update."""
+def get_last_update(session):
+    """
+    Get the date of the last update.
 
-    last_update = configuration.session.query(models.LastUpdate).first()
+    :param session: the db session.
+    :return: the date of the last update.
+    """
+
+    last_update = session.query(models.LastUpdate).first()
 
     if last_update is None:
         return datetime.datetime.now() - datetime.timedelta(days=10)
@@ -568,10 +585,11 @@ def get_last_update():
     return last_update.date
 
 
-def register_user(email: str, password: str, language: str) -> bool:
+def register_user(session, email: str, password: str, language: str) -> bool:
     """
     Register a new user.
 
+    :param session: the db session.
     :param email: the user's email.
     :param password: the user's password.
     :param language: the user's language of choice.
@@ -586,35 +604,37 @@ def register_user(email: str, password: str, language: str) -> bool:
         if language is not None and language in models.AVAILABLE_LANGUAGES:
             user.language = language
 
-        configuration.session.add(user)
-        configuration.session.commit()
+        session.add(user)
+        session.commit()
 
-        return send_verifcation_email(user)
+        return send_verification_email(session, user)
     except (IntegrityError, InvalidRequestError) as exception:
         print(exception)
 
-        configuration.session.rollback()
+        session.rollback()
         # TODO: Send warning email
 
         return False
 
 
-def verify_user(verification_token: str):
+def verify_user(session, verification_token: str):
     """
     Verify a user's account.
 
+    :param session: the db session.
     :param verification_token: the verification token.
     :return: whether the verification was success or not.
     """
 
     # Validate verification token
-    valid, user_id = authentication.validate_token(verification_token.encode(), authentication.TokenType.VERIFICATION)
+    valid, user_id = authentication.validate_token(session, verification_token.encode(),
+                                                   authentication.TokenType.VERIFICATION)
 
     if not valid:
         return False
 
     # Get user
-    user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
+    user = session.query(models.User).filter(models.User.id == user_id).first()
 
     # Check if the user was found
     if user is None:
@@ -623,66 +643,71 @@ def verify_user(verification_token: str):
     # Set user's account to verified
     user.verified = True
 
-    configuration.session.commit()
+    session.commit()
 
     return True
 
 
-def send_verifcation_email(user: models.User):
+def send_verification_email(session, user: models.User):
     """
     Send a verification email.
 
+    :param session: the db session.
     :param user: the user.
     """
 
-    verification_token = authentication.generate_token(user.id, authentication.TokenType.VERIFICATION).decode()
+    verification_token = authentication.generate_token(session, user.id, authentication.TokenType.VERIFICATION).decode()
 
     process_emails.set_language(user.language)
     return process_emails.send_verification_email(user.email, verification_token)
 
 
-def send_deletion_email(user_id: str) -> bool:
+def send_deletion_email(session, user_id: str) -> bool:
     """
     Send a verification email.
 
+    :param session: the db session.
     :param user_id: the user id.
     """
 
     # Get user
-    user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
+    user = session.query(models.User).filter(models.User.id == user_id).first()
 
     if user is None:
         return False
 
-    deletion_token = authentication.generate_token(user.id, authentication.TokenType.DELETION).decode()
+    deletion_token = authentication.generate_token(session, user.id, authentication.TokenType.DELETION).decode()
 
     process_emails.set_language(user.language)
     return process_emails.send_deletion_email(user.email, deletion_token)
 
 
-def send_change_email_old(user_id: str) -> bool:
+def send_change_email_old(session, user_id: str) -> bool:
     """
     Send a change email email to the old email.
 
+    :param session: the db session.
     :param user_id: the user id.
     """
 
     # Get user
-    user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
+    user = session.query(models.User).filter(models.User.id == user_id).first()
 
     if user is None:
         return False
 
-    change_email_old_token = authentication.generate_token(user.id, authentication.TokenType.CHANGE_EMAIL_OLD).decode()
+    change_email_old_token = authentication.generate_token(session, user.id,
+                                                           authentication.TokenType.CHANGE_EMAIL_OLD).decode()
 
     process_emails.set_language(user.language)
     return process_emails.send_change_email_old(user.email, change_email_old_token)
 
 
-def send_change_email_new(change_token_old: str, new_email: str) -> (bool, bool):
+def send_change_email_new(session, change_token_old: str, new_email: str) -> (bool, bool):
     """
     Send a 'Change Email' email to the new email address.
 
+    :param session: the db session.
     :param change_token_old: the change token from the old email address.
     :param new_email: the new email.
     :return: a pair of booleans: the first is the success of the operation and the second is if the motif of the failure
@@ -690,7 +715,8 @@ def send_change_email_new(change_token_old: str, new_email: str) -> (bool, bool)
     """
 
     # Validate the change token from the old email address
-    valid, user_id = authentication.validate_token(change_token_old.encode(), authentication.TokenType.CHANGE_EMAIL_OLD)
+    valid, user_id = authentication.validate_token(session, change_token_old.encode(),
+                                                   authentication.TokenType.CHANGE_EMAIL_OLD)
 
     if not valid:
         return False, False
@@ -699,49 +725,52 @@ def send_change_email_new(change_token_old: str, new_email: str) -> (bool, bool)
     user_id = authentication.get_token_field(change_token_old.encode(), 'user')
 
     # Get user
-    user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
+    user = session.query(models.User).filter(models.User.id == user_id).first()
 
     if user is None:
         return False, False
 
     # Check if the new email is valid
-    new_email_user = configuration.session.query(models.User).filter(models.User.email == new_email).first()
+    new_email_user = session.query(models.User).filter(models.User.email == new_email).first()
 
     if new_email_user is not None:
         return False, True
 
     changes = {ChangeType.NEW_EMAIL.value: new_email}
-    change_email_new_token = authentication.generate_change_token(user.id, authentication.TokenType.CHANGE_EMAIL_NEW,
+    change_email_new_token = authentication.generate_change_token(session, user.id,
+                                                                  authentication.TokenType.CHANGE_EMAIL_NEW,
                                                                   changes).decode()
 
     process_emails.set_language(user.language)
     return process_emails.send_change_email_new(new_email, change_email_new_token, user.email), True
 
 
-def send_password_recovery_email(user_id: str) -> bool:
+def send_password_recovery_email(session, user_id: str) -> bool:
     """
     Send a recover password email.
 
+    :param session: the db session.
     :param user_id: the user id.
     """
 
     # Get user
-    user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
+    user = session.query(models.User).filter(models.User.id == user_id).first()
 
     if user is None:
         return False
 
-    password_recovery_token = authentication.generate_token(user.id,
+    password_recovery_token = authentication.generate_token(session, user.id,
                                                             authentication.TokenType.PASSWORD_RECOVERY).decode()
 
     process_emails.set_language(user.language)
     return process_emails.send_password_recovery_email(user.email, password_recovery_token)
 
 
-def check_login(email: str, password: str):
+def check_login(session, email: str, password: str):
     """
     Verify with the user's credentials.
 
+    :param session: the db session.
     :param email: the user's email.
     :param password: the user's password.
     """
@@ -749,7 +778,7 @@ def check_login(email: str, password: str):
     if not email:
         return False
 
-    user = configuration.session.query(models.User).filter(models.User.email == email).first()
+    user = session.query(models.User).filter(models.User.email == email).first()
 
     if user is None:
         user_password = None
@@ -764,31 +793,33 @@ def check_login(email: str, password: str):
     return valid
 
 
-def get_user_by_email(email: str):
+def get_user_by_email(session, email: str):
     """
     Get the user corresponding to an email.
 
+    :param session: the db session.
     :param email: the user's email.
     """
 
-    user = configuration.session.query(models.User).filter(
+    user = session.query(models.User).filter(
         models.User.email == email).first()
 
     return user
 
 
-def logout(refresh_token: str):
+def logout(session, refresh_token: str):
     """
     Logout, by eliminating a token from the DB.
 
+    :param session: the db session.
     :param refresh_token: the refresh token.
     """
 
-    token = configuration.session.query(models.Token).filter(models.Token.token == refresh_token).first()
+    token = session.query(models.Token).filter(models.Token.token == refresh_token).first()
 
     if token is not None:
-        configuration.session.delete(token)
-        configuration.session.commit()
+        session.delete(token)
+        session.commit()
 
 
 def make_searchable_title(title):
@@ -806,44 +837,47 @@ def make_searchable_title(title):
     return '_' + '_'.join(words) + '_'
 
 
-def delete_user(deletion_token: str):
+def delete_user(session, deletion_token: str):
     """
     Delete a user's account.
 
+    :param session: the db session.
     :param deletion_token: the deletion token.
     :return: whether the deletion was success or not.
     """
 
     # Validate deletion token
-    valid, user_id = authentication.validate_token(deletion_token.encode(), authentication.TokenType.DELETION)
+    valid, user_id = authentication.validate_token(session, deletion_token.encode(), authentication.TokenType.DELETION)
 
     if not valid:
         return False
 
     # Get user
-    user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
+    user = session.query(models.User).filter(models.User.id == user_id).first()
 
     # Check if the user was found
     if user is None:
         return False
 
     # Delete user
-    configuration.session.delete(user)
-    configuration.session.commit()
+    session.delete(user)
+    session.commit()
 
     return True
 
 
-def change_user_settings_token(change_token: str):
+def change_user_settings_token(session, change_token: str):
     """
     Change settings from a user's account.
 
+    :param session: the db session.
     :param change_token: the change token.
     :return: whether the deletion was success or not.
     """
 
     # Validate change token
-    valid, user_id = authentication.validate_token(change_token.encode(), authentication.TokenType.CHANGE_EMAIL_NEW)
+    valid, user_id = authentication.validate_token(session, change_token.encode(),
+                                                   authentication.TokenType.CHANGE_EMAIL_NEW)
 
     if not valid:
         return False
@@ -851,13 +885,14 @@ def change_user_settings_token(change_token: str):
     # Check for changes
     payload = authentication.get_token_payload(change_token)
 
-    return change_user_settings(payload, user_id)
+    return change_user_settings(session, payload, user_id)
 
 
-def change_user_settings(changes: dict, user_id: str):
+def change_user_settings(session, changes: dict, user_id: str):
     """
     Change the settings that are present in the dictionary.
 
+    :param session: the db session.
     :param changes: the dictionary with the changes to be applied.
     :param user_id: the id of the user.
     :return: True if something has been changed.
@@ -867,7 +902,7 @@ def change_user_settings(changes: dict, user_id: str):
         return {}
 
     # Get user
-    user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
+    user = session.query(models.User).filter(models.User.id == user_id).first()
 
     # Check if the user was found
     if user is None:
@@ -897,54 +932,49 @@ def change_user_settings(changes: dict, user_id: str):
 
     try:
         # Commit the changes
-        configuration.session.commit()
-    except Exception:
-        configuration.session.rollback()
+        session.commit()
+    except:
+        session.rollback()
         # TODO: Send warning email
 
     return True
 
 
-def recover_password(recover_token: str, new_password: str):
+def recover_password(session, recover_token: str, new_password: str):
     """
     Change the password of the user's account.
 
+    :param session: the db session.
     :param recover_token: the recover token.
     :param new_password: the new password.
     :return: whether the deletion was success or not.
     """
 
     # Validate change token
-    valid, user_id = authentication.validate_token(recover_token.encode(), authentication.TokenType.PASSWORD_RECOVERY)
+    valid, user_id = authentication.validate_token(session, recover_token.encode(),
+                                                   authentication.TokenType.PASSWORD_RECOVERY)
 
     if not valid:
         return False
 
     # Change the password
-    return change_user_settings({ChangeType.NEW_PASSWORD.value: new_password}, user_id)
+    return change_user_settings(session, {ChangeType.NEW_PASSWORD.value: new_password}, user_id)
 
 
-def get_settings(user_id: int):
+def get_settings(session, user_id: int):
     """
     Get a list of settings for the user who's id is user_id.
 
+    :param session: the db session.
     :param user_id: the id of the user.
     :return: a list of settings for the user who's id is user_id.
     """
 
     # Get user
-    user = configuration.session.query(models.User).filter(models.User.id == user_id).first()
+    user = session.query(models.User).filter(models.User.id == user_id).first()
 
     # Check if the user was found
     if user is None:
         return {}
 
     return {'include_adult_channels': user.show_adult, 'language': user.language}
-
-
-def main():
-    process_reminders(datetime.date.today() - datetime.timedelta(5))
-
-
-if __name__ == '__main__':
-    main()

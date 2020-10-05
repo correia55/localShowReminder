@@ -4,7 +4,7 @@ from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, Date, DateT
 from sqlalchemy.ext.declarative import declarative_base
 
 # Base class for DB Classes
-base = declarative_base()
+Base = declarative_base()
 
 
 class AvailableLanguage(Enum):
@@ -15,7 +15,7 @@ class AvailableLanguage(Enum):
 AVAILABLE_LANGUAGES = [item.value for item in AvailableLanguage]
 
 
-class LastUpdate(base):
+class LastUpdate(Base):
     """Used to know the last date of the data collected."""
 
     __tablename__ = 'LastUpdate'
@@ -27,7 +27,7 @@ class LastUpdate(base):
         self.date = date
 
 
-class Channel(base):
+class Channel(Base):
     __tablename__ = 'Channel'
 
     id = Column(Integer, primary_key=True)
@@ -44,7 +44,7 @@ class Channel(base):
         return 'id: %d; acronym: %s; name: %s; adult: %r' % (self.id, self.acronym, self.name, self.adult)
 
 
-class Show(base):
+class Show(Base):
     __tablename__ = 'Show'
 
     id = Column(Integer, primary_key=True)
@@ -91,7 +91,7 @@ class Show(base):
                 'date_time': self.date_time}
 
 
-class ShowMatch(base):
+class ShowMatch(Base):
     __tablename__ = 'ShowMatch'
 
     id = Column(Integer, primary_key=True)
@@ -105,7 +105,7 @@ class ShowMatch(base):
         self.verified = verified
 
 
-class DBReminder(base):
+class DBReminder(Base):
     __tablename__ = 'DBReminder'
 
     id = Column(Integer, primary_key=True)
@@ -132,7 +132,7 @@ class DBReminder(base):
         self.show_slug = show_slug
 
 
-class TraktTitle(base):
+class TraktTitle(Base):
     __tablename__ = 'TraktTitle'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -146,7 +146,7 @@ class TraktTitle(base):
         self.trakt_title = trakt_title
 
 
-class User(base):
+class User(Base):
     __tablename__ = 'User'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -164,7 +164,7 @@ class User(base):
         self.language = AvailableLanguage.PT.value
 
 
-class Token(base):
+class Token(Base):
     __tablename__ = 'Token'
 
     id = Column(Integer, primary_key=True, autoincrement=True)

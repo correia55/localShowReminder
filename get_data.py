@@ -13,10 +13,11 @@ import processing
 
 class MEPG:
     @staticmethod
-    def update_channel_list(ignore_hd=True):
+    def update_channel_list(session, ignore_hd=True):
         """
         Make a request for the channel list and add them to the db.
 
+        :param session: the db session.
         :param ignore_hd: true when we're supposed to ignore HD channels.
         """
 
@@ -40,15 +41,16 @@ class MEPG:
 
         # Add unique channels to list
         for n, channel in channels.items():
-            configuration.session.add(channel)
+            session.add(channel)
 
-        configuration.session.commit()
+        session.commit()
 
     @staticmethod
-    def update_show_list_day(db_channels: [models.Channel], db_last_update):
+    def update_show_list_day(session, db_channels: [models.Channel], db_last_update):
         """
         Make the request for the shows of a set of channels on a given day, and add them to the database.
 
+        :param session: the db session.
         :param db_channels: list of channels.
         :param db_last_update: a LastUpdate object with the date for the search.
         """
@@ -89,7 +91,7 @@ class MEPG:
 
         for c in response_json['d']['channels']:
             channel_shows = c['programs']
-            channel_id = configuration.session.query(models.Channel).filter(
+            channel_id = session.query(models.Channel).filter(
                 models.Channel.acronym == c['sigla']).first().id
 
             for s in channel_shows:
@@ -135,9 +137,9 @@ class MEPG:
                                    '', show_datetime, 0, channel_id,
                                    processing.make_searchable_title(show_title.strip()))
 
-                configuration.session.add(show)
+                session.add(show)
 
-        configuration.session.commit()
+        session.commit()
 
         if shows_added:
             print('Shows added!')
@@ -145,26 +147,30 @@ class MEPG:
             print('No shows were added!')
 
     @staticmethod
-    def update_show_list():
-        """Make a request for the show list and update the DB."""
+    def update_show_list(session):
+        """
+        Make a request for the show list and update the DB.
+
+        :param session: the db session.
+        """
 
         # Get list of all channels from the db
-        db_channels = configuration.session.query(models.Channel).all()
+        db_channels = session.query(models.Channel).all()
 
         # If the list of channels in the db is empty
         if not db_channels:
-            MEPG.update_channel_list()
+            MEPG.update_channel_list(session)
 
-            db_channels = configuration.session.query(models.Channel).all()
+            db_channels = session.query(models.Channel).all()
 
         # Get the date of the last update
-        db_last_update = configuration.session.query(models.LastUpdate).first()
+        db_last_update = session.query(models.LastUpdate).first()
 
         # If this is the first update set yesterday's date as the last update
         if db_last_update is None:
             db_last_update = models.LastUpdate(datetime.date.today() - datetime.timedelta(1))
 
-            configuration.session.add(db_last_update)
+            session.add(db_last_update)
 
         # Make sure the variable's date is at least as recent as today
         # so that it does not make requests for older dates that are no longer relevant
@@ -184,11 +190,11 @@ class MEPG:
                 current.append(db_channels[i])
 
                 if i % max_channels_request == 0 and i > 0:
-                    MEPG.update_show_list_day(current, db_last_update)
+                    MEPG.update_show_list_day(session, current, db_last_update)
 
                     current = []
 
             if len(current) != 0:
-                MEPG.update_show_list_day(current, db_last_update)
+                MEPG.update_show_list_day(session, current, db_last_update)
 
         print('Shows list updated!')
