@@ -1,14 +1,62 @@
 import datetime
+import os
 import re
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
-
+import csv
 import requests
 
 import configuration
 import models
 import processing
+
+
+def update_channel_list(session):
+    """
+    Parse the file with the channel data and update the DB.
+
+    :param session: the db session.
+    """
+
+    db_channels = session.query(models.Channel).all()
+
+    # Delete channels without shows
+    for channel in db_channels:
+        if session.query(models.Show).filter(models.Show.channel_id == channel.id).count() == 0:
+            session.delete(channel)
+
+    session.commit()
+
+    with open(os.path.join(configuration.base_dir, 'data', 'channels.csv'), newline='') as csvfile:
+        content = csv.reader(csvfile, delimiter=';')
+
+        # Skip the headers
+        next(content, None)
+
+        for row in content:
+            channel_name = row[0]
+            channel_adult = row[1] == 'True'
+            channel_acronym = row[2]
+            channel_search_epg = row[3] == 'True'
+
+            channels = session.query(models.Channel).filter(models.Channel.name == channel_name).all()
+
+            # If channel already exists
+            if len(channels) > 0:
+                channels[0].adult = channel_adult
+                channels[0].acronym = channel_acronym
+                channels[0].search_epg = channel_search_epg
+
+            # If it is a new channel
+            else:
+                channel = models.Channel(channel_acronym, channel_name)
+                channel.adult = channel_adult
+                channel.search_epg = channel_search_epg
+
+                session.add(channel)
+
+    session.commit()
 
 
 class MEPG:
@@ -155,13 +203,7 @@ class MEPG:
         """
 
         # Get list of all channels from the db
-        db_channels = session.query(models.Channel).all()
-
-        # If the list of channels in the db is empty
-        if not db_channels:
-            MEPG.update_channel_list(session)
-
-            db_channels = session.query(models.Channel).all()
+        db_channels = session.query(models.Channel).filter(models.Channel.search_epg == True).all()
 
         # Get the date of the last update
         db_last_update = session.query(models.LastUpdate).first()

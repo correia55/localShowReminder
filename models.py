@@ -34,14 +34,17 @@ class Channel(Base):
     acronym = Column(String(255), unique=True)
     name = Column(String(255), unique=True)
     adult = Column(Boolean)
+    search_epg = Column(Boolean)
 
     def __init__(self, acronym, name):
         self.acronym = acronym
         self.name = name
         self.adult = False
+        self.search_epg = True
 
     def __str__(self):
-        return 'id: %d; acronym: %s; name: %s; adult: %r' % (self.id, self.acronym, self.name, self.adult)
+        return 'id: %d; acronym: %s; name: %s; adult: %r; search_epg: %r' % (self.id, self.acronym, self.name,
+                                                                      self.adult, self.search_epg)
 
 
 class Show(Base):

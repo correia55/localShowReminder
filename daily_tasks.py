@@ -15,6 +15,9 @@ def daily_tasks(session):
     # Delete old shows from the DB
     processing.clear_show_list(session)
 
+    # Update the list of channels
+    get_data.update_channel_list(session)
+
     # Get the date of the last update
     last_update_date = processing.get_last_update(session)
 
