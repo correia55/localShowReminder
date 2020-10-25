@@ -1,10 +1,11 @@
+import csv
 import datetime
 import os
 import re
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
-import csv
+
 import requests
 
 import configuration

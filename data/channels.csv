@@ -18,10 +18,10 @@ Cartoon Network;False;CART;True
 PFC;False;PFC;True
 Real Madrid;False;RMTV;False
 Panda;False;PANDA;True
-TVCine Top;False;TVCTOP;False
-TVCine Edition;False;TVCED;False
-TVCine Emotion;False;TVCEM;False
-TVCine Action;False;TVCA;False
+TVC Top;False;TVCTOP;False
+TVC Edition;False;TVCED;False
+TVC Emotion;False;TVCEM;False
+TVC Action;False;TVCA;False
 Hollywood;False;HOLLW;True
 AXN;False;AXN;True
 FOX;False;FOX;True

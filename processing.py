@@ -292,10 +292,10 @@ def search_db(session, search_list, complete_title=False, below_date=None, show_
             .filter(models.Show.search_title.op(operation)(search_pattern))
 
         if show_season is not None:
-            query = query.filter(models.Show.show_season == show_season)
+            query = query.filter(models.Show.season == show_season)
 
         if show_episode is not None:
-            query = query.filter(models.Show.show_episode == show_episode)
+            query = query.filter(models.Show.episode == show_episode)
 
         if not search_adult:
             # Can't use "is" here, it needs to be "=="
@@ -360,10 +360,10 @@ def search_db_id(session, show_name, is_movie, below_date=None, show_season=None
             models.Show.series_id == show_name)
 
         if show_season is not None:
-            query = query.filter(models.Show.show_season == show_season)
+            query = query.filter(models.Show.season == show_season)
 
         if show_episode is not None:
-            query = query.filter(models.Show.show_episode == show_episode)
+            query = query.filter(models.Show.episode == show_episode)
     else:
         query = session.query(models.Show).filter(
             models.Show.pid == show_name)
@@ -473,8 +473,8 @@ def update_reminder(session, reminder_id: int, show_season: int, show_episode: i
     if reminder is None:
         return False
 
-    reminder.show_season = show_season
-    reminder.show_episode = show_episode
+    reminder.season = show_season
+    reminder.episode = show_episode
 
     session.commit()
 
@@ -551,19 +551,19 @@ def process_reminders(session, last_date):
         search_adult = user.show_adult if user is not None else False
 
         if r.reminder_type == response_models.ReminderType.LISTINGS.value:
-            db_shows = search_db(session, [r.show_name], True, last_date, r.show_season, r.show_episode, search_adult)
+            db_shows = search_db(session, [r.show_name], True, last_date, r.season, r.episode, search_adult)
         else:
             db_id = get_corresponding_id(session, r.show_name)
 
             if db_id is not None:
-                db_shows = search_db_id(db_id, r.is_movie, last_date, r.show_season, r.show_episode)
+                db_shows = search_db_id(db_id, r.is_movie, last_date, r.season, r.episode)
             else:
                 titles = auxiliary.get_names_list_from_trakttitles_list(get_titles_db(session, r.show_slug))
 
-                db_shows = search_db(session, titles, True, last_date, r.show_season, r.show_episode, search_adult)
+                db_shows = search_db(session, titles, True, last_date, r.season, r.episode, search_adult)
 
         if len(db_shows) > 0:
-            process_emails.set_language(user.language)
+            process_emails.set_language(user.languages)
             process_emails.send_reminders_email(user.email, db_shows)
 
     print('Reminders processed!')
@@ -678,7 +678,7 @@ def send_deletion_email(session, user_id: str) -> bool:
 
     deletion_token = authentication.generate_token(session, user.id, authentication.TokenType.DELETION).decode()
 
-    process_emails.set_language(user.language)
+    process_emails.set_language(user.languages)
     return process_emails.send_deletion_email(user.email, deletion_token)
 
 
@@ -699,7 +699,7 @@ def send_change_email_old(session, user_id: str) -> bool:
     change_email_old_token = authentication.generate_token(session, user.id,
                                                            authentication.TokenType.CHANGE_EMAIL_OLD).decode()
 
-    process_emails.set_language(user.language)
+    process_emails.set_language(user.languages)
     return process_emails.send_change_email_old(user.email, change_email_old_token)
 
 
@@ -741,7 +741,7 @@ def send_change_email_new(session, change_token_old: str, new_email: str) -> (bo
                                                                   authentication.TokenType.CHANGE_EMAIL_NEW,
                                                                   changes).decode()
 
-    process_emails.set_language(user.language)
+    process_emails.set_language(user.languages)
     return process_emails.send_change_email_new(new_email, change_email_new_token, user.email), True
 
 
@@ -762,7 +762,7 @@ def send_password_recovery_email(session, user_id: str) -> bool:
     password_recovery_token = authentication.generate_token(session, user.id,
                                                             authentication.TokenType.PASSWORD_RECOVERY).decode()
 
-    process_emails.set_language(user.language)
+    process_emails.set_language(user.languages)
     return process_emails.send_password_recovery_email(user.email, password_recovery_token)
 
 
@@ -925,7 +925,7 @@ def change_user_settings(session, changes: dict, user_id: str):
 
     if ChangeType.LANGUAGE.value in changes:
         something_changed = True
-        user.language = changes[ChangeType.LANGUAGE.value]
+        user.languages = changes[ChangeType.LANGUAGE.value]
 
     if not something_changed:
         return False
@@ -977,4 +977,4 @@ def get_settings(session, user_id: int):
     if user is None:
         return {}
 
-    return {'include_adult_channels': user.show_adult, 'language': user.language}
+    return {'include_adult_channels': user.show_adult, 'language': user.languages}

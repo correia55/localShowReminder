@@ -50,37 +50,66 @@ class Channel(Base):
 class Show(Base):
     __tablename__ = 'Show'
 
+    # Technical
     id = Column(Integer, primary_key=True)
     pid = Column(Integer)
     series_id = Column(String(255))
-    show_title = Column(String(255))
-    show_season = Column(Integer)
-    show_episode = Column(Integer)
-    show_details = Column(String(255))
-    date_time = Column(DateTime)
-    duration = Column(Integer)
     search_title = Column(String(255))
 
+    # Foreign key
     channel_id = Column(Integer, ForeignKey('Channel.id'))
 
-    def __init__(self, pid, series_id, show_title, show_season, show_episode, show_details, date_time, duration,
-                 channel_id, search_title):
+    # Identifies to this show session
+    title = Column(String(255))
+    season = Column(Integer)
+    episode = Column(Integer)
+    date_time = Column(DateTime)
+
+    # Common to the show
+    original_title = Column(String(255))
+    duration = Column(Integer)
+    synopsis = Column(String(500))
+    year = Column(String(255))
+    show_type = Column(String(255))  # Comedy, thriller, ...
+    director = Column(String(255))
+    cast = Column(String(255))
+    languages = Column(String(255))
+    countries = Column(String(255))
+    age_classification = Column(String(255))
+    episode_title = Column(String(255))
+
+    def __init__(self, pid, series_id, title, season, episode, synopsis, date_time, duration,
+                 channel_id, search_title, original_title=None, year=None, show_type=None, director=None, cast=None,
+                 languages=None, countries=None, age_classification=None, episode_title=None):
         self.pid = pid
         self.series_id = series_id
-        self.show_title = show_title
-        self.show_season = show_season
-        self.show_episode = show_episode
-        self.show_details = show_details
-        self.date_time = date_time
-        self.duration = duration
-        self.channel_id = channel_id
         self.search_title = search_title
+        self.channel_id = channel_id
+
+        self.title = title
+        self.season = season
+        self.episode = episode
+        self.date_time = date_time
+
+        self.synopsis = synopsis
+        self.duration = duration
+
+        # Optional fields
+        self.original_title = original_title
+        self.year = year
+        self.show_type = show_type
+        self.director = director
+        self.cast = cast
+        self.languages = languages
+        self.countries = countries
+        self.age_classification = age_classification
+        self.episode_title = episode_title
 
     def __str__(self):
-        return 'id: %d; pid: %d; series_id: %s; show_title: %s; show_season: %d; show_episode: %d; show_details: %s; ' \
+        return 'id: %d; pid: %d; series_id: %s; title: %s; season: %d; episode: %d; synopsis: %s; ' \
                'date_time: %s; duration: %d; channel_id: %d; search_title: %s' % \
-               (self.id, self.pid, self.series_id, self.show_title, self.show_season, self.show_episode,
-                self.show_details, str(self.date_time), self.duration, self.channel_id, self.search_title)
+               (self.id, self.pid, self.series_id, self.title, self.season, self.episode,
+                self.synopsis, str(self.date_time), self.duration, self.channel_id, self.search_title)
 
     def to_dict(self):
         """
@@ -89,8 +118,8 @@ class Show(Base):
         :return: the corresponding dictionary.
         """
 
-        return {'id': self.id, 'pid': self.pid, 'series_id': self.series_id, 'show_title': self.show_title,
-                'show_season': self.show_season, 'show_episode': self.show_episode, 'show_details': self.show_details,
+        return {'id': self.id, 'pid': self.pid, 'series_id': self.series_id, 'show_title': self.title,
+                'show_season': self.season, 'show_episode': self.episode, 'show_details': self.synopsis,
                 'date_time': self.date_time}
 
 

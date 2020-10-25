@@ -27,3 +27,4 @@ webargs==5.3.2
 Werkzeug==0.15.4
 dnspython==1.16.0
 Jinja2==2.10.1
+openpyxl==3.0.5
