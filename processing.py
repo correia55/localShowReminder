@@ -473,8 +473,8 @@ def update_reminder(session, reminder_id: int, show_season: int, show_episode: i
     if reminder is None:
         return False
 
-    reminder.season = show_season
-    reminder.episode = show_episode
+    reminder.show_season = show_season
+    reminder.show_episode = show_episode
 
     session.commit()
 
@@ -551,16 +551,16 @@ def process_reminders(session, last_date):
         search_adult = user.show_adult if user is not None else False
 
         if r.reminder_type == response_models.ReminderType.LISTINGS.value:
-            db_shows = search_db(session, [r.show_name], True, last_date, r.season, r.episode, search_adult)
+            db_shows = search_db(session, [r.show_name], True, last_date, r.show_season, r.show_episode, search_adult)
         else:
             db_id = get_corresponding_id(session, r.show_name)
 
             if db_id is not None:
-                db_shows = search_db_id(db_id, r.is_movie, last_date, r.season, r.episode)
+                db_shows = search_db_id(db_id, r.is_movie, last_date, r.show_season, r.show_episode)
             else:
                 titles = auxiliary.get_names_list_from_trakttitles_list(get_titles_db(session, r.show_slug))
 
-                db_shows = search_db(session, titles, True, last_date, r.season, r.episode, search_adult)
+                db_shows = search_db(session, titles, True, last_date, r.show_season, r.show_episode, search_adult)
 
         if len(db_shows) > 0:
             process_emails.set_language(user.language)
