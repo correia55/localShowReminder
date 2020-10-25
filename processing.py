@@ -563,7 +563,7 @@ def process_reminders(session, last_date):
                 db_shows = search_db(session, titles, True, last_date, r.season, r.episode, search_adult)
 
         if len(db_shows) > 0:
-            process_emails.set_language(user.languages)
+            process_emails.set_language(user.language)
             process_emails.send_reminders_email(user.email, db_shows)
 
     print('Reminders processed!')
@@ -678,7 +678,7 @@ def send_deletion_email(session, user_id: str) -> bool:
 
     deletion_token = authentication.generate_token(session, user.id, authentication.TokenType.DELETION).decode()
 
-    process_emails.set_language(user.languages)
+    process_emails.set_language(user.language)
     return process_emails.send_deletion_email(user.email, deletion_token)
 
 
@@ -699,7 +699,7 @@ def send_change_email_old(session, user_id: str) -> bool:
     change_email_old_token = authentication.generate_token(session, user.id,
                                                            authentication.TokenType.CHANGE_EMAIL_OLD).decode()
 
-    process_emails.set_language(user.languages)
+    process_emails.set_language(user.language)
     return process_emails.send_change_email_old(user.email, change_email_old_token)
 
 
@@ -741,7 +741,7 @@ def send_change_email_new(session, change_token_old: str, new_email: str) -> (bo
                                                                   authentication.TokenType.CHANGE_EMAIL_NEW,
                                                                   changes).decode()
 
-    process_emails.set_language(user.languages)
+    process_emails.set_language(user.language)
     return process_emails.send_change_email_new(new_email, change_email_new_token, user.email), True
 
 
@@ -762,7 +762,7 @@ def send_password_recovery_email(session, user_id: str) -> bool:
     password_recovery_token = authentication.generate_token(session, user.id,
                                                             authentication.TokenType.PASSWORD_RECOVERY).decode()
 
-    process_emails.set_language(user.languages)
+    process_emails.set_language(user.language)
     return process_emails.send_password_recovery_email(user.email, password_recovery_token)
 
 
@@ -925,7 +925,7 @@ def change_user_settings(session, changes: dict, user_id: str):
 
     if ChangeType.LANGUAGE.value in changes:
         something_changed = True
-        user.languages = changes[ChangeType.LANGUAGE.value]
+        user.language = changes[ChangeType.LANGUAGE.value]
 
     if not something_changed:
         return False
@@ -977,4 +977,4 @@ def get_settings(session, user_id: int):
     if user is None:
         return {}
 
-    return {'include_adult_channels': user.show_adult, 'language': user.languages}
+    return {'include_adult_channels': user.show_adult, 'language': user.language}
