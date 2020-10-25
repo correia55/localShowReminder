@@ -70,4 +70,11 @@ if __name__ == '__main__':
 
     session = configuration.Session()
 
-    update_show_list(session, channel_set, filename)
+    try:
+        update_show_list(session, channel_set, filename)
+        session.commit()
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()
