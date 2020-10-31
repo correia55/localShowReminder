@@ -1,3 +1,5 @@
+import datetime
+
 import openpyxl
 
 import configuration
@@ -6,9 +8,13 @@ import processing
 
 
 class TVCine:
+    channels = ['TVCine Top', 'TVCine Edition', 'TVCine Emotion', 'TVCine Action']
+
     @staticmethod
     def update_show_list(session, filename: str):
         wb = openpyxl.load_workbook(filename)
+
+        deleted = False
 
         # Skip row 1, with the headers
         for row in wb.active.iter_rows(min_row=2, max_col=15):
@@ -33,8 +39,14 @@ class TVCine:
             title = row[13].value
             episode_title = row[14].value
 
+            # Delete all shows that already exist for this month
+            if not deleted:
+                deleted = True
+                delete_channels_monthly_data(session, date, TVCine.channels)
+
             date_time = date.replace(hour=time.hour, minute=time.minute)
 
+            channel_name = 'TVCine ' + channel_name.strip().split()[1]
             channel_id = session.query(models.Channel).filter(models.Channel.name == channel_name).first().id
 
             search_title = processing.make_searchable_title(str(title).strip())
@@ -48,6 +60,29 @@ class TVCine:
             session.add(show)
 
         session.commit()
+
+
+def delete_channels_monthly_data(session, date, channels):
+    """
+    Delete all the shows in a given month, in a set of channels.
+
+    :param session: the DB session.
+    :param date: a date in the month of interest.
+    :param channels: the set of channels.
+    """
+
+    start_of_month = date.replace(day=1)
+    end_of_month = start_of_month.replace(month=start_of_month.month + 1) - datetime.timedelta(seconds=1)
+
+    for channel in channels:
+        channel_id = session.query(models.Channel).filter(models.Channel.name == channel).first().id
+        shows = session.query(models.Show) \
+            .filter(models.Show.channel_id == channel_id) \
+            .filter(models.Show.date_time > start_of_month) \
+            .filter(models.Show.date_time < end_of_month)
+        shows.delete()
+
+    session.commit()
 
 
 def update_show_list(session, channel_set: int, filename: str) -> ():
