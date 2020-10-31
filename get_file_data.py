@@ -2,9 +2,9 @@ import datetime
 
 import openpyxl
 
+import auxiliary
 import configuration
 import models
-import processing
 
 
 class TVCine:
@@ -49,7 +49,7 @@ class TVCine:
             channel_name = 'TVCine ' + channel_name.strip().split()[1]
             channel_id = session.query(models.Channel).filter(models.Channel.name == channel_name).first().id
 
-            search_title = processing.make_searchable_title(str(title).strip())
+            search_title = auxiliary.make_searchable_title(str(title).strip())
 
             # Insert the instance
             show = models.Show(None, None, title, None, None, synopsis, date_time, duration, channel_id, search_title,

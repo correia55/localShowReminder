@@ -8,9 +8,9 @@ import xml.etree.ElementTree as ET
 
 import requests
 
+import auxiliary
 import configuration
 import models
-import processing
 
 
 def update_channel_list(session):
@@ -184,7 +184,7 @@ class MEPG:
                 # Add the show to the db
                 show = models.Show(pid, series_id, show_title.strip(), show_season, show_episode,
                                    '', show_datetime, 0, channel_id,
-                                   processing.make_searchable_title(show_title.strip()))
+                                   auxiliary.make_searchable_title(show_title.strip()))
 
                 session.add(show)
 

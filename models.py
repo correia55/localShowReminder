@@ -106,9 +106,9 @@ class Show(Base):
         self.episode_title = episode_title
 
     def __str__(self):
-        return 'id: %d; pid: %d; series_id: %s; title: %s; season: %d; episode: %d; synopsis: %s; ' \
+        return 'id: %d; pid: %s; series_id: %s; title: %s; season: %s; episode: %s; synopsis: %s; ' \
                'date_time: %s; duration: %d; channel_id: %d; search_title: %s' % \
-               (self.id, self.pid, self.series_id, self.title, self.season, self.episode,
+               (self.id, str(self.pid), self.series_id, self.title, str(self.season), str(self.episode),
                 self.synopsis, str(self.date_time), self.duration, self.channel_id, self.search_title)
 
     def to_dict(self):

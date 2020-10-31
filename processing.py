@@ -1,6 +1,5 @@
 import datetime
 import json
-import re
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -261,10 +260,8 @@ def search_db(session, search_list, complete_title=False, below_date=None, show_
     for search_text in search_list:
         print('Original search text: %s' % search_text)
 
-        unaccented_text = auxiliary.strip_accents(search_text)
-
         # Split the search text into a list of words
-        search_words = re.compile('[^0-9A-Za-z]+').split(unaccented_text)
+        search_words = auxiliary.get_words(search_text)
 
         print('List of words obtained from the search text: %s' % str(search_words))
 
@@ -820,21 +817,6 @@ def logout(session, refresh_token: str):
     if token is not None:
         session.delete(token)
         session.commit()
-
-
-def make_searchable_title(title):
-    """
-    Remove accents from the title and join words with _ (underscore).
-
-    :param title: the original title.
-    :return: the resulting title.
-    """
-
-    unaccented_title = auxiliary.strip_accents(title)
-
-    words = re.compile('[^0-9A-Za-z]+').split(unaccented_title)
-
-    return '_' + '_'.join(words) + '_'
 
 
 def delete_user(session, deletion_token: str):
