@@ -1,4 +1,5 @@
 import datetime
+import re
 
 import openpyxl
 
@@ -46,16 +47,30 @@ class TVCine:
 
             date_time = date.replace(hour=time.hour, minute=time.minute)
 
+            # Check if it matches the regex of a series
+            series = re.search('(.+) T([0-9]+),[ ]+([0-9]+)', str(title).strip())
+
+            # If it is a series, extract it's season and episode
+            if series:
+                title = series.group(1)
+
+                season = int(series.group(2))
+                episode = int(series.group(3))
+            else:
+                title = str(title)
+
+                season = None
+                episode = None
+
             channel_name = 'TVCine ' + channel_name.strip().split()[1]
             channel_id = session.query(models.Channel).filter(models.Channel.name == channel_name).first().id
 
-            search_title = auxiliary.make_searchable_title(str(title).strip())
+            search_title = auxiliary.make_searchable_title(title.strip())
 
             # Insert the instance
-            show = models.Show(None, None, title, None, None, synopsis, date_time, duration, channel_id, search_title,
-                               original_title, year, show_type, director, cast, languages, countries,
-                               age_classification,
-                               episode_title)
+            show = models.Show(None, None, title, season, episode, synopsis, date_time, duration, channel_id,
+                               search_title, original_title, year, show_type, director, cast, languages, countries,
+                               age_classification, episode_title)
 
             session.add(show)
 
@@ -72,7 +87,11 @@ def delete_channels_monthly_data(session, date, channels):
     """
 
     start_of_month = date.replace(day=1)
-    end_of_month = start_of_month.replace(month=start_of_month.month + 1) - datetime.timedelta(seconds=1)
+
+    if start_of_month.month != 12:
+        end_of_month = start_of_month.replace(month=start_of_month.month + 1) - datetime.timedelta(seconds=1)
+    else:
+        end_of_month = start_of_month.replace(year=start_of_month.year, month=1) - datetime.timedelta(seconds=1)
 
     for channel in channels:
         channel_id = session.query(models.Channel).filter(models.Channel.name == channel).first().id
