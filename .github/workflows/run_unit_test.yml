@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v2
 
       # Runs a single command using the runners shell
-      - name: Unit Testing With Python
+      - name: Python Unit Test
         # You may pin to the exact commit or the version.
-        # uses: PrajjawalBanati/Python-actions@a6d7420add2bf83557fec5ddf443f24f27e661fc
-        uses: PrajjawalBanati/Python-actions@0.0.1
+        # uses: onichandame/python-test-action@6a1d618300de7ea0b753e50819e093a7e5a5f60b
+        uses: onichandame/python-test-action@0.0.0
