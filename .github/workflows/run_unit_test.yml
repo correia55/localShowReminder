@@ -31,6 +31,9 @@ jobs:
           
       - name: Install Pytest
         run: pip install pytest
+        
+      - name: Create a conftest (for pytest to be able to import modules)
+        run: touch conftest.py
     
       - name: Run tests with pytest
         run: pytest 
