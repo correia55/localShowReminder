@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Install libpq
-          run:apt-get install libpq-dev
+        run: apt-get install libpq-dev
 
       - name: Python Unit Test
         # You may pin to the exact commit or the version.
