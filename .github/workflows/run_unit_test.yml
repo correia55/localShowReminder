@@ -21,13 +21,10 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-      
-      # Set the python version
-      - uses: actions/setup-python@v2
-        with:
-          python-version: '3.6'
 
-      # Runs a single command using the runners shell
+      - name: Install libpq
+          run:apt-get install libpq-dev
+
       - name: Python Unit Test
         # You may pin to the exact commit or the version.
         # uses: onichandame/python-test-action@6a1d618300de7ea0b753e50819e093a7e5a5f60b
