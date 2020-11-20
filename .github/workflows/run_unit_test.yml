@@ -34,4 +34,4 @@ jobs:
         run: touch conftest.py
     
       - name: Run tests with pytest
-        run: pytest --continue-on-collection-errors
+        run: pytest

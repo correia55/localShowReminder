@@ -6,7 +6,9 @@ import sqlalchemy.orm
 
 # To prevent the error from the import of configuration
 if os.environ.get('DATABASE_URL', None) is None:
-    exit(0)
+    import pytest
+
+    pytest.skip("Skipping DB tests", allow_module_level=True)
 
 import configuration
 import db_calls
