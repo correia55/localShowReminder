@@ -1,7 +1,12 @@
 import datetime
+import os
 import unittest
 
 import sqlalchemy.orm
+
+# To prevent the error from the import of configuration
+if os.environ.get('DATABASE_URL', None) is None:
+    exit(0)
 
 import configuration
 import db_calls
@@ -45,7 +50,6 @@ class TestDBCalls(unittest.TestCase):
         self.session.commit()
         self.session.close()
 
-    @unittest.skipIf(configuration.database_url is None, 'Missing url to DB')
     def test_get_alarms_01(self) -> None:
         """ Test the function get_alarms without results. """
 
@@ -66,7 +70,6 @@ class TestDBCalls(unittest.TestCase):
         self.session.delete(user)
         self.session.commit()
 
-    @unittest.skipIf(configuration.database_url is None, 'Missing url to DB')
     def test_get_alarms_02(self) -> None:
         """ Test the function get_alarms with results. """
 
