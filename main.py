@@ -11,6 +11,7 @@ from flask_cors import CORS
 
 import authentication
 import configuration
+import db_calls
 import models
 import processing
 from processing import ChangeType
@@ -167,6 +168,100 @@ class RecoverPasswordEP(fr.Resource):
                 return flask.make_response('', 200)
             else:
                 return flask.make_response('Invalid Token', 400)
+
+
+class AlarmsEP(fr.Resource):
+    decorators = [token_auth.login_required]
+
+    def __init__(self):
+        super(AlarmsEP, self).__init__()
+
+    def get(self):
+        """Get the list of alarms of the user."""
+
+        with session_scope() as session:
+            # Get the user id from the token
+            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+            user_id = authentication.get_token_field(token.encode(), 'user')
+
+            alarms = processing.get_alarms(session, user_id)
+
+            return flask.make_response(flask.jsonify({'alarm_list': processing.list_to_json(alarms)}), 200)
+
+    register_args = \
+        {
+            'show_session_id': webargs.fields.Int(required=True),
+            'anticipation_minutes': webargs.fields.Int(required=True)
+        }
+
+    @fp.use_args(register_args)
+    def post(self, args):
+        """Register an alarm."""
+
+        show_session_id = args['show_session_id']
+        anticipation_minutes = args['anticipation_minutes']
+
+        with session_scope() as session:
+            # Get the user id from the token
+            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+            user_id = authentication.get_token_field(token.encode(), 'user')
+
+            if db_calls.register_alarm(session, show_session_id, anticipation_minutes, user_id) is not None:
+                return flask.make_response(
+                    flask.jsonify({
+                        'alarm_list': processing.list_to_json(processing.get_alarms(session, user_id))
+                    }), 201)
+            else:
+                return flask.make_response('Alarm Already Exists', 400)
+
+    update_args = \
+        {
+            'alarm_id': webargs.fields.Int(required=True),
+            'anticipation_minutes': webargs.fields.Int(required=True)
+        }
+
+    @fp.use_args(update_args)
+    def put(self, args):
+        """Update an alarm."""
+
+        alarm_id = args['alarm_id']
+        anticipation_minutes = args['anticipation_minutes']
+
+        with session_scope() as session:
+            # Get the user id from the token
+            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+            user_id = authentication.get_token_field(token.encode(), 'user')
+
+            if db_calls.update_alarm(session, alarm_id, anticipation_minutes, user_id):
+                return flask.make_response(
+                    flask.jsonify({
+                        'alarm_list': processing.list_to_json(processing.get_alarms(session, user_id))
+                    }), 201)
+            else:
+                return flask.make_response('', 404)
+
+    delete_args = \
+        {
+            'alarm_id': webargs.fields.Int(required=True)
+        }
+
+    @fp.use_args(delete_args)
+    def delete(self, args):
+        """Delete an alarm."""
+
+        alarm_id = args['alarm_id']
+
+        with session_scope() as session:
+            # Get the user id from the token
+            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+            user_id = authentication.get_token_field(token.encode(), 'user')
+
+            if db_calls.delete_alarm(session, alarm_id, user_id):
+                return flask.make_response(flask.jsonify({
+                    'alarm_list': processing.list_to_json(processing.get_alarms(session, user_id))
+                }), 200)
+            else:
+                return flask.make_response('', 404)
 
 
 class RemindersEP(fr.Resource):
@@ -781,6 +876,7 @@ api.add_resource(SendPasswordRecoveryEmailEP, '/send-password-recovery-email', e
 api.add_resource(SendVerificationEmailEP, '/send-verification-email', endpoint='send_verification_email')
 
 # Resources
+api.add_resource(AlarmsEP, '/alarms', endpoint='alarms')
 api.add_resource(RemindersEP, '/reminders', endpoint='reminders')
 api.add_resource(SessionEP, '/session', endpoint='session')
 api.add_resource(ShowsEP, '/shows', endpoint='shows')

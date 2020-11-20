@@ -6,15 +6,15 @@ import urllib.request
 from enum import Enum
 
 import flask_bcrypt as fb
-from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 import authentication
 import auxiliary
 import configuration
+import db_calls
 import models
 import process_emails
 import response_models
-from response_models import ShowReminder
+from db_calls import get_titles_db
 
 
 class ComparisonType(Enum):
@@ -226,18 +226,6 @@ def get_titles_trakt(trakt_slug, trakt_name, trakt_show_language, trakt_availabl
             results.add(t['title'])
 
     return results
-
-
-def get_titles_db(session, trakt_slug):
-    """
-    Get the various possible titles for the selected title, in both english and portuguese, using the DB.
-
-    :param session: the db session.
-    :param trakt_slug: the selected title.
-    :return: the various possible titles.
-    """
-
-    return session.query(models.TraktTitle).filter(models.TraktTitle.trakt_id == trakt_slug).all()
 
 
 def search_db(session, search_list, complete_title=False, below_date=None, show_season=None, show_episode=None,
@@ -509,7 +497,7 @@ def get_reminders(session, user_id):
         else:
             titles = [r.show_name]
 
-        final_reminders.append(ShowReminder(r, titles))
+        final_reminders.append(response_models.ShowReminder(r, titles))
 
     return final_reminders
 
@@ -594,23 +582,12 @@ def register_user(session, email: str, password: str, language: str) -> bool:
 
     password = fb.generate_password_hash(password, configuration.bcrypt_rounds).decode()
 
-    try:
-        user = models.User(email, password)
+    user = db_calls.register_user(session, email, password, language)
 
-        # Set the language for the user
-        if language is not None and language in models.AVAILABLE_LANGUAGES:
-            user.language = language
-
-        session.add(user)
-        session.commit()
-
+    if user is not None:
         return send_verification_email(session, user)
-    except (IntegrityError, InvalidRequestError) as exception:
-        print(exception)
-
-        session.rollback()
+    else:
         # TODO: Send warning email
-
         return False
 
 
@@ -960,3 +937,25 @@ def get_settings(session, user_id: int):
         return {}
 
     return {'include_adult_channels': user.show_adult, 'language': user.language}
+
+
+def get_alarms(session, user_id: int) -> [response_models.Alarm]:
+    """
+    Get a list of alarms for the user who's id is user_id.
+
+    :param session: the db session.
+    :param user_id: the id of the user.
+    :return: a list of alarms for the user who's id is user_id.
+    """
+
+    if not user_id:
+        return []
+
+    alarms = db_calls.get_alarms(session, user_id)
+
+    final_alarms = []
+
+    for a in alarms:
+        final_alarms.append(response_models.Alarm(session, a))
+
+    return final_alarms

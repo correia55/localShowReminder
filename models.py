@@ -1,5 +1,7 @@
+import datetime
 from enum import Enum
 
+import sqlalchemy
 from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, Date, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -78,7 +80,7 @@ class Show(Base):
     age_classification = Column(String(255))
     episode_title = Column(String(255))
 
-    def __init__(self, pid, series_id, title, season, episode, synopsis, date_time, duration,
+    def __init__(self, pid: int, series_id: int, title, season, episode, synopsis, date_time, duration,
                  channel_id, search_title, original_title=None, year=None, show_type=None, director=None, cast=None,
                  languages=None, countries=None, age_classification=None, episode_title=None):
         self.pid = pid
@@ -162,6 +164,30 @@ class DBReminder(Base):
         self.show_episode = show_episode
         self.user_id = user_id
         self.show_slug = show_slug
+
+
+class Alarm(Base):
+    __tablename__ = 'Alarm'
+    __table_args__ = (
+        sqlalchemy.UniqueConstraint("show_id", "user_id"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    anticipation_minutes = Column(Integer, nullable=False)
+
+    show_id = Column(Integer, ForeignKey('Show.id'))
+    user_id = Column(Integer, ForeignKey('User.id'))
+
+    def __init__(self, anticipation_minutes: int, show_id: int, user_id: int):
+        self.anticipation_minutes = anticipation_minutes
+        self.show_id = show_id
+        self.user_id = user_id
+
+    def __eq__(self, o: object) -> bool:
+        return self.anticipation_minutes == o.anticipation_minutes \
+               and self.show_id == o.show_id \
+               and self.user_id == o.user_id
 
 
 class TraktTitle(Base):

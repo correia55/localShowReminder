@@ -1,6 +1,9 @@
+import datetime
+import sqlalchemy.orm
 from enum import Enum
 
-from models import DBReminder
+import db_calls
+import models
 
 
 class ReminderType(Enum):
@@ -17,7 +20,7 @@ class ShowReminder:
     show_episode: int
     show_titles: [str]
 
-    def __init__(self, reminder: DBReminder, titles: [str]):
+    def __init__(self, reminder: models.DBReminder, titles: [str]):
         """
         Create an instance using a DB reminder and a list of titles.
 
@@ -44,3 +47,34 @@ class ShowReminder:
                 'reminder_type': self.reminder_type.name,
                 'show_season': self.show_season, 'show_episode': self.show_episode,
                 'show_titles': self.show_titles}
+
+
+class Alarm:
+    id: int
+    title: str
+    date_time: datetime.datetime
+    anticipation_minutes: int
+
+    def __init__(self, session: sqlalchemy.orm.Session, alarm: models.Alarm):
+        """
+        Create an instance using a DB Alarm.
+
+        :param alarm: the DB alarm.
+        """
+
+        alarm_session = db_calls.get_show_session(session, alarm.show_id)
+
+        self.id = alarm.id
+        self.title = alarm_session.title
+        self.date_time = alarm_session.date_time
+        self.anticipation_minutes = alarm.anticipation_minutes
+
+    def to_dict(self):
+        """
+        Create a dictionary with all the information being sent in the responses to the API.
+
+        :return: the corresponding dictionary.
+        """
+
+        return {'id': self.id, 'title': self.title, 'date_time': self.date_time,
+                'anticipation_minutes': self.anticipation_minutes}
