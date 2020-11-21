@@ -34,7 +34,7 @@ class TestDBCalls(unittest.TestCase):
             for s in sessions:
                 if user is not None:
                     # Delete all alarms associated with a session
-                    alarms = db_calls.get_alarms(self.session, user.id)
+                    alarms = db_calls.get_alarms_user(self.session, user.id)
 
                     for a in alarms:
                         self.session.delete(a)
@@ -63,7 +63,7 @@ class TestDBCalls(unittest.TestCase):
         self.assertIsNotNone(user)
 
         # Call the function
-        actual_result = db_calls.get_alarms(self.session, user.id)
+        actual_result = db_calls.get_alarms_user(self.session, user.id)
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -94,7 +94,7 @@ class TestDBCalls(unittest.TestCase):
         expected_result = [models.Alarm(10, show_session.id, user.id)]
 
         # Call the function
-        actual_result = db_calls.get_alarms(self.session, user.id)
+        actual_result = db_calls.get_alarms_user(self.session, user.id)
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)

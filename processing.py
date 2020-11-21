@@ -4,8 +4,10 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from enum import Enum
+from typing import List
 
 import flask_bcrypt as fb
+import sqlalchemy.orm
 
 import authentication
 import auxiliary
@@ -939,7 +941,7 @@ def get_settings(session, user_id: int):
     return {'include_adult_channels': user.show_adult, 'language': user.language}
 
 
-def get_alarms(session, user_id: int) -> [response_models.Alarm]:
+def get_alarms(session, user_id: int) -> List[response_models.Alarm]:
     """
     Get a list of alarms for the user who's id is user_id.
 
@@ -951,7 +953,7 @@ def get_alarms(session, user_id: int) -> [response_models.Alarm]:
     if not user_id:
         return []
 
-    alarms = db_calls.get_alarms(session, user_id)
+    alarms = db_calls.get_alarms_user(session, user_id)
 
     final_alarms = []
 
@@ -959,3 +961,35 @@ def get_alarms(session, user_id: int) -> [response_models.Alarm]:
         final_alarms.append(response_models.Alarm(session, a))
 
     return final_alarms
+
+
+def process_alarms(session: sqlalchemy.orm.Session) -> None:
+    """
+    Process the alarms that exist in the DB, sending an email when the session is within the desired time frame.
+
+    :param session: the db session.
+    """
+
+    alarms_sessions = db_calls.get_sessions_alarms(session)
+
+    for a_s in alarms_sessions:
+        alarm: models.Alarm = a_s.Alarm
+        show_session: models.Show = a_s.Show
+
+        anticipation_hours = alarm.anticipation_minutes / 60
+
+        # If it is time to fire the alarm
+        if datetime.datetime.utcnow() + datetime.timedelta(hours=anticipation_hours) > show_session.date_time:
+            user = db_calls.get_user_id(session, alarm.user_id)
+            channel = db_calls.get_channel_id(session, show_session.channel_id)
+
+            # Add the channel to the session
+            show_session.channel = channel.name
+
+            process_emails.set_language(user.language)
+            process_emails.send_reminders_email(user.email, [show_session])
+
+            session.delete(alarm)
+            session.commit()
+
+    print('Alarms processed!')

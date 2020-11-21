@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional
+from typing import Optional, List
 
 import sqlalchemy.orm
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
@@ -28,7 +28,21 @@ def register_channel(session, acronym: str, name: str) -> Optional[models.Channe
         return None
 
 
-def get_channel_name(session: sqlalchemy.orm.Session, name: str) -> models.Channel:
+def get_channel_id(session: sqlalchemy.orm.Session, id: int) -> Optional[models.Channel]:
+    """
+    Get the channel with a given id.
+
+    :param session: the db session.
+    :param id: the id of the channel.
+    :return: the channel.
+    """
+
+    return session.query(models.Channel) \
+        .filter(models.Channel.id == id) \
+        .first()
+
+
+def get_channel_name(session: sqlalchemy.orm.Session, name: str) -> Optional[models.Channel]:
     """
     Get the channel with a given name.
 
@@ -69,7 +83,21 @@ def register_user(session, email: str, password: str, language: str = None) -> O
         return None
 
 
-def get_user_email(session: sqlalchemy.orm.Session, email: str) -> models.User:
+def get_user_id(session: sqlalchemy.orm.Session, id: int) -> Optional[models.User]:
+    """
+    Get the user with a given id.
+
+    :param session: the db session.
+    :param id: the id of the user.
+    :return: the user.
+    """
+
+    return session.query(models.User) \
+        .filter(models.User.id == id) \
+        .first()
+
+
+def get_user_email(session: sqlalchemy.orm.Session, email: str) -> Optional[models.User]:
     """
     Get the user with a given email.
 
@@ -106,7 +134,32 @@ def register_alarm(session: sqlalchemy.orm.Session, show_session_id: int, antici
         return None
 
 
-def get_alarms(session, user_id: int) -> [models.Alarm]:
+def get_alarms(session: sqlalchemy.orm.Session) -> List[models.Alarm]:
+    """
+    Get all alarms.
+
+    :param session: the db session.
+    :return: all alarms.
+    """
+
+    return session.query(models.Alarm) \
+        .all()
+
+
+def get_sessions_alarms(session: sqlalchemy.orm.Session) -> List:
+    """
+    Get all alarms and the corresponding sessions.
+
+    :param session: the db session.
+    :return: all alarms and the corresponding sessions.
+    """
+
+    return session.query(models.Alarm, models.Show) \
+        .filter(models.Alarm.show_id == models.Show.id) \
+        .all()
+
+
+def get_alarms_user(session: sqlalchemy.orm.Session, user_id: int) -> List[models.Alarm]:
     """
     Get a list of alarms for the user who's id is user_id.
 
@@ -172,7 +225,7 @@ def delete_alarm(session: sqlalchemy.orm.Session, alarm_id: int, user_id: int) -
     return True
 
 
-def get_titles_db(session, trakt_slug):
+def get_titles_db(session: sqlalchemy.orm.Session, trakt_slug: str) -> List[models.TraktTitle]:
     """
     Get the various possible titles for the selected title, in both english and portuguese, using the DB.
 
@@ -231,7 +284,7 @@ def register_show_session(session: sqlalchemy.orm.Session, title: str, season: i
         return None
 
 
-def get_show_sessions_channel(session: sqlalchemy.orm.Session, channel_id: int):
+def get_show_sessions_channel(session: sqlalchemy.orm.Session, channel_id: int) -> List[models.Show]:
     """
     Get a list of sessions of a given channel.
 
@@ -245,7 +298,7 @@ def get_show_sessions_channel(session: sqlalchemy.orm.Session, channel_id: int):
         .all()
 
 
-def get_show_session(session: sqlalchemy.orm.Session, show_id: int) -> models.Show:
+def get_show_session(session: sqlalchemy.orm.Session, show_id: int) -> Optional[models.Show]:
     """
     Get the show session with a given id.
 

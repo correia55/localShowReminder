@@ -3,6 +3,7 @@ import gettext
 import os
 import re
 import smtplib
+from typing import List
 
 import dns.resolver as dnsr
 import jinja2
@@ -190,7 +191,7 @@ def send_change_email_new(destination: str, token: str, old_email: str) -> bool:
     return send_email(content, subject, destination)
 
 
-def send_reminders_email(destination: str, results: [models.Show]) -> bool:
+def send_reminders_email(destination: str, results: List[models.Show]) -> bool:
     """
     Send an email with the results found for the reminders created.
 

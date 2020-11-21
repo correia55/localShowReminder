@@ -212,7 +212,7 @@ class AlarmsEP(fr.Resource):
                         'alarm_list': processing.list_to_json(processing.get_alarms(session, user_id))
                     }), 201)
             else:
-                return flask.make_response('Alarm Already Exists', 400)
+                return flask.make_response('Invalid Alarm', 400)
 
     update_args = \
         {
