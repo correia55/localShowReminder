@@ -271,8 +271,8 @@ def register_show_session(session: sqlalchemy.orm.Session, title: str, season: i
     :return: the created show session.
     """
 
-    show_session = models.Show(pid, series_id, title, season, episode, synopsis, date_time, duration, channel_id,
-                               search_title, original_title, year, show_type, director, cast, languages, countries,
+    show_session = models.Show(title, season, episode, synopsis, date_time, duration, channel_id, search_title,
+                               original_title, year, show_type, director, cast, languages, countries,
                                age_classification, episode_title)
     session.add(show_session)
 

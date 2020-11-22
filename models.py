@@ -54,8 +54,6 @@ class Show(Base):
 
     # Technical
     id = Column(Integer, primary_key=True)
-    pid = Column(Integer)
-    series_id = Column(String(255))
     search_title = Column(String(255))
 
     # Foreign key
@@ -80,11 +78,9 @@ class Show(Base):
     age_classification = Column(String(255))
     episode_title = Column(String(255))
 
-    def __init__(self, pid: int, series_id: int, title, season, episode, synopsis, date_time, duration,
-                 channel_id, search_title, original_title=None, year=None, show_type=None, director=None, cast=None,
-                 languages=None, countries=None, age_classification=None, episode_title=None):
-        self.pid = pid
-        self.series_id = series_id
+    def __init__(self, title, season, episode, synopsis, date_time, duration, channel_id, search_title,
+                 original_title=None, year=None, show_type=None, director=None, cast=None, languages=None,
+                 countries=None, age_classification=None, episode_title=None):
         self.search_title = search_title
         self.channel_id = channel_id
 
@@ -108,9 +104,9 @@ class Show(Base):
         self.episode_title = episode_title
 
     def __str__(self):
-        return 'id: %d; pid: %s; series_id: %s; title: %s; season: %s; episode: %s; synopsis: %s; ' \
+        return 'id: %d; title: %s; season: %s; episode: %s; synopsis: %s; ' \
                'date_time: %s; duration: %d; channel_id: %d; search_title: %s' % \
-               (self.id, str(self.pid), self.series_id, self.title, str(self.season), str(self.episode),
+               (self.id, self.title, str(self.season), str(self.episode),
                 self.synopsis, str(self.date_time), self.duration, self.channel_id, self.search_title)
 
     def to_dict(self):
@@ -120,9 +116,8 @@ class Show(Base):
         :return: the corresponding dictionary.
         """
 
-        return {'id': self.id, 'pid': self.pid, 'series_id': self.series_id, 'show_title': self.title,
-                'show_season': self.season, 'show_episode': self.episode, 'show_details': self.synopsis,
-                'date_time': self.date_time}
+        return {'id': self.id, 'title': self.title, 'season': self.season, 'episode': self.episode,
+                'synopsis': self.synopsis, 'date_time': self.date_time}
 
 
 class ShowMatch(Base):

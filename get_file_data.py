@@ -68,8 +68,8 @@ class TVCine:
             search_title = auxiliary.make_searchable_title(title.strip())
 
             # Insert the instance
-            show = models.Show(None, None, title, season, episode, synopsis, date_time, duration, channel_id,
-                               search_title, original_title, year, show_type, director, cast, languages, countries,
+            show = models.Show(title, season, episode, synopsis, date_time, duration, channel_id, search_title,
+                               original_title, year, show_type, director, cast, languages, countries,
                                age_classification, episode_title)
 
             session.add(show)

@@ -182,8 +182,7 @@ class MEPG:
                 pid = s['uniqueId']
 
                 # Add the show to the db
-                show = models.Show(pid, series_id, show_title.strip(), show_season, show_episode,
-                                   '', show_datetime, 0, channel_id,
+                show = models.Show(show_title.strip(), show_season, show_episode, '', show_datetime, 0, channel_id,
                                    auxiliary.make_searchable_title(show_title.strip()))
 
                 session.add(show)
