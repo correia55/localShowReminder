@@ -1,10 +1,6 @@
 import datetime
-import json
-import urllib.error
-import urllib.parse
-import urllib.request
 from enum import Enum
-from typing import List
+from typing import List, Collection
 
 import flask_bcrypt as fb
 import sqlalchemy.orm
@@ -16,7 +12,7 @@ import db_calls
 import models
 import process_emails
 import response_models
-from db_calls import get_titles_db
+import trakt_calls
 
 
 class ComparisonType(Enum):
@@ -56,71 +52,6 @@ def clear_show_list(session):
     print('Shows list cleared!')
 
 
-def search_show_information_by_type(search_text: str, show_type: str, language: str):
-    """
-    Uses trakt and omdb to search for shows, of a given type, using a given search text.
-
-    :param search_text: the search text introduced by the user.
-    :param show_type: 'show' for tv shows and 'movie' for movies.
-    :param language: the language of interest.
-    :return: the list of results.
-    """
-
-    results = []
-
-    # Make the request
-    shows_request = urllib.request.Request(
-        'https://api.trakt.tv/search/%s?extended=full&query=%s' % (show_type, urllib.parse.quote(search_text)))
-    shows_request.add_header('trakt-api-key', configuration.trakt_key)
-
-    shows_json = urllib.request.urlopen(shows_request).read()
-
-    # Parse the list of shows from the request
-    shows = json.loads(shows_json)
-
-    is_movie = show_type == 'movie'
-
-    for s in shows:
-        imdb_id = s[show_type]['ids']['imdb']
-
-        show_dict = {'is_movie': is_movie, 'show_title': s[show_type]['title'], 'show_year': s[show_type]['year'],
-                     'show_image': 'N/A', 'show_slug': s[show_type]['ids']['slug'],
-                     'show_overview': s[show_type]['overview'], 'language': s[show_type]['language'],
-                     'available_translations': s[show_type]['available_translations']}
-
-        # Get the translation of the overview
-        if language != s[show_type]['language']:
-            available_translations = s[show_type]['available_translations']
-
-            if language in available_translations:
-                translated_overview = get_translated_overview(s[show_type]['ids']['slug'], show_type, language)
-
-                if translated_overview is not None:
-                    show_dict['show_overview'] = translated_overview
-
-        # Check if we can get the poster
-        if imdb_id is None or configuration.omdb_key is None:
-            results.append(show_dict)
-            continue
-
-        show_json = urllib.request.urlopen(
-            'http://www.omdbapi.com/?apikey=%s&i=%s' % (configuration.omdb_key, s[show_type]['ids']['imdb'])).read()
-
-        # Parse the show from the request
-        show = json.loads(show_json)
-
-        # When the omdb can't find the information
-        if show['Response'] == 'False':
-            results.append(show_dict)
-            continue
-
-        show_dict['show_image'] = show['Poster']
-
-        results.append(show_dict)
-
-    return results
-
-
 def search_show_information(search_text: str, is_movie: bool, language: str):
     """
     Uses trakt and omdb to search for shows using a given search text.
@@ -135,97 +66,10 @@ def search_show_information(search_text: str, is_movie: bool, language: str):
     results = []
 
     if is_movie is None or not is_movie:
-        results += search_show_information_by_type(search_text, 'show', language)
+        results += trakt_calls.search_show_information_by_type(search_text, 'show', language)
 
     if is_movie is None or is_movie:
-        results += search_show_information_by_type(search_text, 'movie', language)
-
-    return results
-
-
-def get_translated_overview(trakt_slug: str, show_type: str, language: str):
-    """
-    Get the translated overview of a show.
-
-    :param trakt_slug: the selected title.
-    :param show_type: 'show' for tv shows and 'movie' for movies.
-    :param language: the language of the translation.
-    :return: the translated overview.
-    """
-
-    translations_request = urllib.request.Request(
-        'https://api.trakt.tv/%ss/%s/translations/%s' % (show_type, trakt_slug, language))
-    translations_request.add_header('trakt-api-key', configuration.trakt_key)
-
-    try:
-        translations_json = urllib.request.urlopen(translations_request).read()
-    except urllib.error.HTTPError:
-        print('Slug was not found!')
-        return None
-
-    # Parse the list of translations from the request
-    translations = json.loads(translations_json)
-
-    for t in translations:
-        if t['overview'] != '':
-            return t['overview']
-
-    return None
-
-
-def get_titles_trakt(trakt_slug, trakt_name, trakt_show_language, trakt_available_translations, show_type):
-    """
-    Get the various possible titles for the selected title, in both english and portuguese, using the trakt API.
-
-    :param trakt_slug: the selected title.
-    :param trakt_name: the name of the show.
-    :param trakt_show_language: the main language of the show.
-    :param trakt_available_translations: the available translations for the show.
-    :param show_type: 'show' for tv shows and 'movie' for movies.
-    :return: the various possible titles.
-    """
-
-    # If there are no translations, return the original name
-    if 'en' not in trakt_available_translations and 'pt' not in trakt_available_translations:
-        return [trakt_name]
-
-    translations_request = urllib.request.Request('https://api.trakt.tv/%ss/%s/translations' % (show_type, trakt_slug))
-    translations_request.add_header('trakt-api-key', configuration.trakt_key)
-
-    try:
-        translations_json = urllib.request.urlopen(translations_request).read()
-    except urllib.error.HTTPError:
-        print('Slug was not found!')
-        return []
-
-    # Parse the list of translations from the request
-    translations = json.loads(translations_json)
-
-    results = set()
-    results.add(trakt_name)
-
-    for t in translations:
-        if t['title'] is None:
-            continue
-
-        if t['language'] == 'en' or t['language'] == 'pt' or t['language'] == trakt_show_language:
-            results.add(t['title'])
-
-    aliases_request = urllib.request.Request('https://api.trakt.tv/%ss/%s/aliases' % (show_type, trakt_slug))
-    aliases_request.add_header('trakt-api-key', configuration.trakt_key)
-
-    try:
-        aliases_json = urllib.request.urlopen(aliases_request).read()
-    except urllib.error.HTTPError:
-        print('Slug was not found!')
-        return []
-
-    # Parse the list of aliases from the request
-    aliases = json.loads(aliases_json)
-
-    for t in aliases:
-        if t['country'] == 'us' or t['country'] == 'pt':
-            results.add(t['title'])
+        results += trakt_calls.search_show_information_by_type(search_text, 'movie', language)
 
     return results
 
@@ -311,24 +155,6 @@ def search_db(session, search_list, complete_title=False, below_date=None, show_
     return final_results
 
 
-def get_corresponding_id(session, imdb_id):
-    """
-    Get the DB id corresponding to the imdb id.
-
-    :param session: the db session.
-    :param imdb_id: the imdb id.
-    :return: the corresponding DB id.
-    """
-
-    show_match = session.query(models.ShowMatch).filter(
-        models.ShowMatch.imdb_id == imdb_id).first()
-
-    if show_match is None:
-        return None
-
-    return show_match.show_id
-
-
 def search_db_id(session, show_name, is_movie, below_date=None, show_season=None, show_episode=None):
     """
     Get the results of the search in the DB, using show id (either series_id or pid).
@@ -361,81 +187,50 @@ def search_db_id(session, show_name, is_movie, below_date=None, show_season=None
     return query.all()
 
 
-def register_trakt_titles(session, show_slug, show_name, show_language, show_available_translations, is_movie):
+def get_trakt_titles(session: sqlalchemy.orm.Session, trakt_id: int, is_movie: bool) -> Collection[str]:
     """
-    Register all trakt titles for a show_slug.
+    Get all trakt titles for a trakt id.
+    And update the DB with the results.
 
     :param session: the db session.
-    :param show_slug: the slug that represents this show.
-    :param show_name: the movie's original name.
-    :param show_language: the main language of the show.
-    :param show_available_translations: the available translations for the show.
+    :param trakt_id: the trakt id of the show.
     :param is_movie: true if it is a movie.
+    :return: the list of titles a show can have.
     """
 
-    if is_movie:
-        show_type = 'movie'
-    else:
-        show_type = 'show'
+    trakt_titles = db_calls.get_trakt_titles(session, trakt_id)
 
-    titles = get_titles_trakt(show_slug, show_name, show_language, show_available_translations, show_type)
+    # Titles in the DB are still valid
+    if trakt_titles is not None \
+            and trakt_titles.insertion_datetime + datetime.timedelta(
+        days=configuration.titles_validity_days) > datetime.datetime.now():
+        return trakt_titles.titles.split('|')
 
-    query = session.query(models.TraktTitle) \
-        .filter(models.TraktTitle.trakt_id == show_slug) \
-        .filter(models.TraktTitle.is_movie == is_movie)
+    # Collect all titles for a show
+    titles = trakt_calls.collect_titles_trakt(trakt_id, is_movie)
+
+    # Create the titles string stored in the DB
+    titles_str = ''
 
     for t in titles:
         if t is None:
             continue
 
-        # Only add new entries
-        if query.filter(models.TraktTitle.trakt_title == t).first() is None:
-            session.add(models.TraktTitle(show_slug, is_movie, t))
+        if titles_str != '':
+            titles_str += '|' + t
+        else:
+            titles_str = t
 
-    session.commit()
+    # Create a new entry
+    if trakt_titles is None:
+        trakt_titles = db_calls.register_trakt_titles(session, trakt_id, titles_str)
+        session.add(trakt_titles)
+    # Update the current entry
+    else:
+        trakt_titles.titles = titles_str
+        session.commit()
 
-
-def register_reminder(session, show_name: str, is_movie: bool, reminder_type: response_models.ReminderType,
-                      show_slug: str, show_season, show_episode, user_id, show_language: str,
-                      show_available_translations: [str]):
-    """
-    Create a reminder for the given data.
-
-    :param session: the db session.
-    :param show_name: the name of the show.
-    :param is_movie: true if it is a movie.
-    :param reminder_type: reminder type.
-    :param show_slug: show slug for the reminder.
-    :param show_season: show season for the reminder.
-    :param show_episode: show episode for the reminder.
-    :param user_id: the owner of the reminder.
-    :param show_language: the main language of the show.
-    :param show_available_translations: the available translations for the show.
-    """
-
-    reminder = session.query(models.DBReminder) \
-        .filter(models.DBReminder.user_id == user_id) \
-        .filter(models.DBReminder.is_movie == is_movie) \
-        .filter(models.DBReminder.show_name == show_name).first()
-
-    # End processing if the reminder already exists
-    if reminder is not None:
-        return False
-
-    if is_movie:
-        show_season = None
-        show_episode = None
-
-    session.add(
-        models.DBReminder(show_name, is_movie, reminder_type.value, show_season, show_episode, user_id, show_slug))
-
-    # Add all possible titles for that trakt id to the DB
-    if response_models.ReminderType.DB == reminder_type:
-        register_trakt_titles(session, show_slug, show_name, show_language, show_available_translations, is_movie)
-
-    session.commit()
-
-    return True
+    return titles
 
 
 def update_reminder(session, reminder_id: int, show_season: int, show_episode: int, user_id: int):
@@ -451,10 +246,10 @@ def update_reminder(session, reminder_id: int, show_season: int, show_episode: i
     """
 
     # Somehow using the is False does not work
-    reminder = session.query(models.DBReminder) \
-        .filter(models.DBReminder.user_id == user_id) \
-        .filter(models.DBReminder.is_movie == False) \
-        .filter(models.DBReminder.id == reminder_id).first()
+    reminder = session.query(models.Reminder) \
+        .filter(models.Reminder.user_id == user_id) \
+        .filter(models.Reminder.is_movie == False) \
+        .filter(models.Reminder.id == reminder_id).first()
 
     # End processing if the reminder does not exist
     if reminder is None:
@@ -480,8 +275,8 @@ def get_reminders(session, user_id):
     if not user_id:
         return []
 
-    reminders = session.query(models.DBReminder) \
-        .filter(models.DBReminder.user_id == user_id).all()
+    reminders = session.query(models.Reminder) \
+        .filter(models.Reminder.user_id == user_id).all()
 
     # Add the possible titles to the reminders sent
     final_reminders = []
@@ -490,16 +285,16 @@ def get_reminders(session, user_id):
         reminder_type = response_models.ReminderType(r.reminder_type)
 
         if response_models.ReminderType.DB == reminder_type:
-            db_titles = get_titles_db(session, r.show_slug)
+            db_titles = db_calls.get_trakt_titles(session, r.show_slug)
 
             titles = []
 
-            for t in db_titles:
+            for t in db_titles.titles.split('|'):
                 titles.append(t.trakt_title)
         else:
             titles = [r.show_name]
 
-        final_reminders.append(response_models.ShowReminder(r, titles))
+        final_reminders.append(response_models.Reminder(r, titles))
 
     return final_reminders
 
@@ -513,9 +308,9 @@ def remove_reminder(session, reminder_id, user_id):
     :param user_id: the id of the user.
     """
 
-    reminder = session.query(models.DBReminder) \
-        .filter(models.DBReminder.id == reminder_id) \
-        .filter(models.DBReminder.user_id == user_id) \
+    reminder = session.query(models.Reminder) \
+        .filter(models.Reminder.id == reminder_id) \
+        .filter(models.Reminder.user_id == user_id) \
         .first()
 
     if reminder is not None:
@@ -531,7 +326,7 @@ def process_reminders(session, last_date):
     :param last_date: the date of the last update.
     """
 
-    reminders = session.query(models.DBReminder).all()
+    reminders = db_calls.get_reminders(session)
 
     for r in reminders:
         user = session.query(models.User).filter(models.User.id == r.user_id).first()
@@ -540,14 +335,8 @@ def process_reminders(session, last_date):
         if r.reminder_type == response_models.ReminderType.LISTINGS.value:
             db_shows = search_db(session, [r.show_name], True, last_date, r.show_season, r.show_episode, search_adult)
         else:
-            db_id = get_corresponding_id(session, r.show_name)
-
-            if db_id is not None:
-                db_shows = search_db_id(db_id, r.is_movie, last_date, r.show_season, r.show_episode)
-            else:
-                titles = auxiliary.get_names_list_from_trakttitles_list(get_titles_db(session, r.show_slug))
-
-                db_shows = search_db(session, titles, True, last_date, r.show_season, r.show_episode, search_adult)
+            titles = get_trakt_titles(session, r.trakt_id, r.is_movie)
+            db_shows = search_db(session, titles, True, last_date, r.show_season, r.show_episode, search_adult)
 
         if len(db_shows) > 0:
             process_emails.set_language(user.language)

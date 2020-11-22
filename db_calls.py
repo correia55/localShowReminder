@@ -5,6 +5,8 @@ import sqlalchemy.orm
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 import models
+import response_models
+from configuration import AVAILABLE_LANGUAGES, AvailableLanguage
 
 
 def register_channel(session, acronym: str, name: str) -> Optional[models.Channel]:
@@ -67,12 +69,11 @@ def register_user(session, email: str, password: str, language: str = None) -> O
     :return: the created user.
     """
 
-    user = models.User(email, password)
-
     # Set the language for the user
-    if language is not None and language in models.AVAILABLE_LANGUAGES:
-        user.language = language
+    if language is None or language not in AVAILABLE_LANGUAGES:
+        language = AvailableLanguage.PT.value
 
+    user = models.User(email, password, language)
     session.add(user)
 
     try:
@@ -109,6 +110,58 @@ def get_user_email(session: sqlalchemy.orm.Session, email: str) -> Optional[mode
     return session.query(models.User) \
         .filter(models.User.email == email) \
         .first()
+
+
+def register_reminder(session: sqlalchemy.orm.Session, show_name: str, trakt_id: int, is_movie: bool,
+                      reminder_type: response_models.ReminderType, show_season, show_episode, user_id) \
+        -> Optional[models.Reminder]:
+    """
+    Create a reminder for the given data.
+
+    :param session: the db session.
+    :param show_name: the name of the show.
+    :param trakt_id: the trakt id of the show.
+    :param is_movie: true if it is a movie.
+    :param reminder_type: reminder type.
+    :param show_season: show season for the reminder.
+    :param show_episode: show episode for the reminder.
+    :param user_id: the owner of the reminder.
+    """
+
+    reminder = session.query(models.Reminder) \
+        .filter(models.Reminder.user_id == user_id) \
+        .filter(models.Reminder.is_movie == is_movie) \
+        .filter(models.Reminder.show_name == show_name).first()
+
+    # End processing if the reminder already exists
+    if reminder is not None:
+        return None
+
+    if is_movie:
+        show_season = None
+        show_episode = None
+
+    reminder = models.Reminder(show_name, trakt_id, is_movie, reminder_type.value, show_season, show_episode, user_id)
+    session.add(reminder)
+
+    try:
+        session.commit()
+        return reminder
+    except (IntegrityError, InvalidRequestError):
+        session.rollback()
+        return None
+
+
+def get_reminders(session: sqlalchemy.orm.Session) -> List[models.Reminder]:
+    """
+    Get all reminders.
+
+    :param session: the db session.
+    :return: all reminders.
+    """
+
+    return session.query(models.Reminder) \
+        .all()
 
 
 def register_alarm(session: sqlalchemy.orm.Session, show_session_id: int, anticipation_minutes: int,
@@ -225,26 +278,47 @@ def delete_alarm(session: sqlalchemy.orm.Session, alarm_id: int, user_id: int) -
     return True
 
 
-def get_titles_db(session: sqlalchemy.orm.Session, trakt_slug: str) -> List[models.TraktTitle]:
+def register_trakt_titles(session: sqlalchemy.orm.Session, trakt_id: int, titles_str: str) -> Optional[
+    models.TraktTitles]:
+    """
+    Register an entry of TraktTitles.
+
+    :param session: the db session.
+    :param trakt_id: the trakt id of the show.
+    :param titles_str: the string with the list of titles for the show.
+    :return: the created TraktTitles.
+    """
+
+    trakt_titles = models.TraktTitles(trakt_id, titles_str)
+    session.add(trakt_titles)
+
+    try:
+        session.commit()
+        return trakt_titles
+    except (IntegrityError, InvalidRequestError):
+        session.rollback()
+        return None
+
+
+def get_trakt_titles(session: sqlalchemy.orm.Session, trakt_id: int) -> models.TraktTitles:
     """
     Get the various possible titles for the selected title, in both english and portuguese, using the DB.
 
     :param session: the db session.
-    :param trakt_slug: the selected title.
+    :param trakt_id: the trakt id of the show.
     :return: the various possible titles.
     """
 
-    return session.query(models.TraktTitle) \
-        .filter(models.TraktTitle.trakt_id == trakt_slug) \
-        .all()
+    return session.query(models.TraktTitles) \
+        .filter(models.TraktTitles.trakt_id == trakt_id) \
+        .first()
 
 
 def register_show_session(session: sqlalchemy.orm.Session, title: str, season: int, episode: int, synopsis: str,
                           date_time: datetime.datetime, duration: int, channel_id: int, search_title: str,
-                          pid: int = None, series_id: int = None, original_title: str = None, year: int = None,
-                          show_type: str = None, director: str = None, cast: str = None, languages: str = None,
-                          countries: str = None, age_classification: str = None,
-                          episode_title: str = None) -> Optional[models.Show]:
+                          original_title: str = None, year: int = None, show_type: str = None, director: str = None,
+                          cast: str = None, languages: str = None, countries: str = None,
+                          age_classification: str = None, episode_title: str = None) -> Optional[models.ShowSession]:
     """
     Register a show session.
 

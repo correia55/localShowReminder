@@ -1,8 +1,6 @@
 import re
 import unicodedata
 
-from models import TraktTitle
-
 
 def strip_accents(text: str):
     """
@@ -54,19 +52,3 @@ def make_searchable_title(title):
     """
 
     return '_' + '_'.join(get_words(title)) + '_'
-
-
-def get_names_list_from_trakttitles_list(traktitle_list: [TraktTitle]):
-    """
-    Create a list of strings with the names of each TraktTitle in the entry list.
-
-    :param traktitle_list: the list of TraktTitle.
-    :return: the list of names.
-    """
-
-    titles = []
-
-    for title in traktitle_list:
-        titles.append(title.trakt_title)
-
-    return titles

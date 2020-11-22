@@ -1,4 +1,6 @@
 import datetime
+from typing import List
+
 import sqlalchemy.orm
 from enum import Enum
 
@@ -11,7 +13,7 @@ class ReminderType(Enum):
     DB = 1
 
 
-class ShowReminder:
+class Reminder:
     id: int
     show_name: str
     is_movie: bool
@@ -20,7 +22,7 @@ class ShowReminder:
     show_episode: int
     show_titles: [str]
 
-    def __init__(self, reminder: models.DBReminder, titles: [str]):
+    def __init__(self, reminder: models.Reminder, titles: List[str]):
         """
         Create an instance using a DB reminder and a list of titles.
 

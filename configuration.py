@@ -1,4 +1,5 @@
 import os
+from enum import Enum
 
 import alembic.autogenerate as aleauto
 import alembic.command as alecomm
@@ -82,6 +83,15 @@ if trakt_key is None:
     print('Unable to find trakt key!')
     exit(1)
 
+# Titles validity, in days
+titles_validity_days = os.environ.get('TITLES_VALIDITY', None)
+
+if titles_validity_days is None:
+    print('Unable to find TITLES_VALIDITY key!')
+
+    # Set 30 days as the default value
+    titles_validity_days = 30
+
 # Get the api key for omdb
 omdb_key = os.environ.get('OMDB_KEY', None)
 
@@ -128,5 +138,13 @@ email_password = os.environ.get('EMAIL_PASSWORD', None)
 
 application_name = os.environ.get('APPLICATION_NAME', None)
 application_link = os.environ.get('APPLICATION_LINK', None)
+
+
+class AvailableLanguage(Enum):
+    PT = 'pt'
+    EN = 'en'
+
+
+AVAILABLE_LANGUAGES = [item.value for item in AvailableLanguage]
 
 # endregion

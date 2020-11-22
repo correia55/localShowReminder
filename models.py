@@ -1,5 +1,4 @@
 import datetime
-from enum import Enum
 
 import sqlalchemy
 from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, Date, DateTime
@@ -9,30 +8,58 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 
-class AvailableLanguage(Enum):
-    PT = 'pt'
-    EN = 'en'
+class ShowData(Base):
+    """Used to store all the date associated with a show."""
+
+    __tablename__ = 'ShowData'
+
+    # Technical
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    imdb_id = Column(String(255))
+    search_title = Column(String(255))
+
+    # Identifies to this show session
+    original_title = Column(String(255))
+    portuguese_title = Column(String(255))
+    number_seasons = Column(Integer)
+    duration = Column(Integer)
+    synopsis = Column(String(500))
+    year = Column(String(255))
+    category = Column(String(255))  # Movie, series, documentary, news, ...
+    show_type = Column(String(255))  # Comedy, thriller, ...
+    director = Column(String(255))
+    cast = Column(String(255))
+    audio_languages = Column(String(255))
+    subtitle_languages = Column(String(255))
+    countries = Column(String(255))
+    age_classification = Column(String(255))
+
+    def __init__(self, search_title, portuguese_title):
+        self.search_title = search_title
+        self.portuguese_title = portuguese_title
 
 
-AVAILABLE_LANGUAGES = [item.value for item in AvailableLanguage]
+class TraktTitles(Base):
+    """Used to store all of the titles associated with a trakt id, for caching purposes."""
 
+    __tablename__ = 'TraktTitles'
 
-class LastUpdate(Base):
-    """Used to know the last date of the data collected."""
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    trakt_id = Column(String(255), unique=True)
+    titles = Column(String(1000), nullable=False) # Titles separated by a vertical var (|)
+    insertion_datetime = Column(DateTime, default=datetime.datetime.now())
 
-    __tablename__ = 'LastUpdate'
-
-    id = Column(Integer, primary_key=True)
-    date = Column(Date)
-
-    def __init__(self, date):
-        self.date = date
+    def __init__(self, trakt_id, titles):
+        self.trakt_id = trakt_id
+        self.titles = titles
 
 
 class Channel(Base):
+    """Used to store all of the information associated with a TV channel."""
+
     __tablename__ = 'Channel'
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     acronym = Column(String(255), unique=True)
     name = Column(String(255), unique=True)
     adult = Column(Boolean)
@@ -53,7 +80,7 @@ class Show(Base):
     __tablename__ = 'Show'
 
     # Technical
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     search_title = Column(String(255))
 
     # Foreign key
@@ -120,27 +147,41 @@ class Show(Base):
                 'synopsis': self.synopsis, 'date_time': self.date_time}
 
 
-class ShowMatch(Base):
-    __tablename__ = 'ShowMatch'
 
-    id = Column(Integer, primary_key=True)
-    imdb_id = Column(String(255))
-    show_id = Column(String(255))  # Corresponds to the show's series_id or pid, if the series_id is null
+class User(Base):
+    """Used to store the user's information."""
+
+    __tablename__ = 'User'
+
+    # Technical
+    id = Column(Integer, primary_key=True, autoincrement=True)
     verified = Column(Boolean)
 
-    def __init__(self, imdb_id, show_id, verified=False):
-        self.imdb_id = imdb_id
-        self.show_id = show_id
-        self.verified = verified
+    # Necessary
+    email = Column(String(255), unique=True, nullable=False)
+    password = Column(String(255), nullable=False)
+
+    # Preferences
+    show_adult = Column(Boolean)
+    language = Column(String(5))
+
+    def __init__(self, email, password, language):
+        self.verified = False
+
+        self.email = email
+        self.password = password
+
+        self.show_adult = False
+        self.language = language
 
 
-class DBReminder(Base):
-    __tablename__ = 'DBReminder'
+class Reminder(Base):
+    __tablename__ = 'Reminder'
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
 
     show_name = Column(String(255), nullable=False)
-    show_slug = Column(String(255), nullable=True)
+    trakt_id = Column(Integer, nullable=True)
 
     is_movie = Column(Boolean, nullable=False)
     reminder_type = Column(Integer, nullable=False)
@@ -150,15 +191,18 @@ class DBReminder(Base):
 
     user_id = Column(Integer, ForeignKey('User.id'))
 
-    def __init__(self, show_name: str, is_movie: bool, reminder_type: int, show_season: int, show_episode: int,
-                 user_id: int, show_slug: str):
+    def __init__(self, show_name: str, trakt_id: int, is_movie: bool, reminder_type: int, show_season: int,
+                 show_episode: int, user_id: int):
         self.show_name = show_name
+        self.trakt_id = trakt_id
+
         self.is_movie = is_movie
         self.reminder_type = reminder_type
+
         self.show_season = show_season
         self.show_episode = show_episode
+
         self.user_id = user_id
-        self.show_slug = show_slug
 
 
 class Alarm(Base):
@@ -185,39 +229,9 @@ class Alarm(Base):
                and self.user_id == o.user_id
 
 
-class TraktTitle(Base):
-    __tablename__ = 'TraktTitle'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    trakt_id = Column(String(255), nullable=False)
-    is_movie = Column(Boolean, nullable=False)
-    trakt_title = Column(String(255), nullable=False)
-
-    def __init__(self, trakt_id, is_movie, trakt_title):
-        self.trakt_id = trakt_id
-        self.is_movie = is_movie
-        self.trakt_title = trakt_title
-
-
-class User(Base):
-    __tablename__ = 'User'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    email = Column(String(255), unique=True, nullable=False)
-    password = Column(String(255), nullable=False)
-    show_adult = Column(Boolean)
-    verified = Column(Boolean)
-    language = Column(String(5))
-
-    def __init__(self, email, password):
-        self.email = email
-        self.password = password
-        self.show_adult = False
-        self.verified = False
-        self.language = AvailableLanguage.PT.value
-
-
 class Token(Base):
+    """Used to store user's valid refresh tokens."""
+
     __tablename__ = 'Token'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -225,3 +239,15 @@ class Token(Base):
 
     def __init__(self, token):
         self.token = token
+
+
+class LastUpdate(Base):
+    """Used to know the last date of the data collected."""
+
+    __tablename__ = 'LastUpdate'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    date = Column(Date)
+
+    def __init__(self, date):
+        self.date = date

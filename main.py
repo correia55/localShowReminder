@@ -287,11 +287,9 @@ class RemindersEP(fr.Resource):
             'show_name': webargs.fields.Str(required=True),
             'is_movie': webargs.fields.Bool(required=True),
             'type': webargs.fields.Str(required=True),
+            'trakt_id': webargs.fields.Int(),
             'show_season': webargs.fields.Int(),
-            'show_slug': webargs.fields.Str(),
-            'show_episode': webargs.fields.Int(),
-            'show_language': webargs.fields.Str(),
-            'show_available_translations': webargs.fields.List(webargs.fields.Str())
+            'show_episode': webargs.fields.Int()
         }
 
     @fp.use_args(register_args)
@@ -301,11 +299,9 @@ class RemindersEP(fr.Resource):
         show_name = args['show_name']
         is_movie = args['is_movie']
         reminder_type = args['type']
-        show_slug = None
+        trakt_id = None
         show_season = None
         show_episode = None
-        show_language = None
-        show_available_translations = None
 
         for k, v in args.items():
             if v is None:
@@ -315,12 +311,8 @@ class RemindersEP(fr.Resource):
                 show_season = v
             elif k == 'show_episode':
                 show_episode = v
-            elif k == 'show_slug':
-                show_slug = v
-            elif k == 'show_language':
-                show_language = v
-            elif k == 'show_available_translations':
-                show_available_translations = v
+            elif k == 'trakt_id':
+                trakt_id = v
 
         with session_scope() as session:
             try:
@@ -328,8 +320,8 @@ class RemindersEP(fr.Resource):
             except KeyError:
                 return flask.make_response('Invalid Reminder Type', 400)
 
-            if reminder_type == ReminderType.DB and show_slug is None:
-                return flask.make_response('Missing Show Slug', 400)
+            if reminder_type == ReminderType.DB and trakt_id is None:
+                return flask.make_response('Missing Trakt Id', 400)
 
             if not is_movie and (show_season is None or show_episode is None):
                 return flask.make_response('Missing Season Episode', 400)
@@ -338,8 +330,8 @@ class RemindersEP(fr.Resource):
             token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
             user_id = authentication.get_token_field(token.encode(), 'user')
 
-            if processing.register_reminder(session, show_name, is_movie, reminder_type, show_slug, show_season,
-                                            show_episode, user_id, show_language, show_available_translations):
+            if db_calls.register_reminder(session, show_name, trakt_id, is_movie, reminder_type, show_season,
+                                          show_episode, user_id) is not None:
                 return flask.make_response(
                     flask.jsonify({
                         'reminder_list': processing.list_to_json(processing.get_reminders(session, user_id))
@@ -796,7 +788,7 @@ class UsersSettingsEP(fr.Resource):
                 changes[ChangeType.INCLUDE_ADULT_CHANNELS.value] = include_adult_channels
 
             # Update language
-            if language is not None and language in models.AVAILABLE_LANGUAGES:
+            if language is not None and language in configuration.AVAILABLE_LANGUAGES:
                 changes[ChangeType.LANGUAGE.value] = language
 
             # If there are changes to be made
