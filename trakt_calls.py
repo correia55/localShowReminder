@@ -7,25 +7,43 @@ from typing import Optional, List, Set
 import configuration
 
 
-class TraktShow(object):
-    """The class that will represent the data in the response from a search to trakt."""
+class SimpleTraktShow(object):
+    """The class that will represent the data in the response from a search to trakt, using text."""
 
     id: int
+    imdb_id: str
     slug: str
     is_movie: bool
     title: str
-    language: str
-    country: str
-    available_translations: List[str]
+    year: int
 
     def __init__(self, show_json_object, show_type: str):
         show = show_json_object[show_type]
         ids = show['ids']
 
         self.id = ids['trakt']
+        self.imdb_id = ids['imdb']
         self.slug = ids['slug']
+
         self.is_movie = show_type == 'movie'
         self.title = show['title']
+        self.year = show['year']
+
+
+class TraktShow(SimpleTraktShow):
+    """The class that will represent the data in the response from a search to trakt, using a trakt id."""
+
+    overview: str
+    language: str
+    country: str
+    available_translations: List[str]
+
+    def __init__(self, show_json_object, show_type: str):
+        super().__init__(show_json_object, show_type)
+
+        show = show_json_object[show_type]
+
+        self.overview = show['overview']
         self.language = show['language']
         self.country = show['country']
         self.available_translations = show['available_translations']
@@ -55,7 +73,7 @@ class TraktAlias(object):
         self.country = show_json_object['country']
 
 
-def search_trakt_id(trakt_id: int, is_movie: bool) -> Optional[TraktShow]:
+def search_show_by_trakt_id(trakt_id: int, is_movie: bool) -> Optional[TraktShow]:
     """
     Get a show's information, from trakt.
 
@@ -90,6 +108,45 @@ def search_trakt_id(trakt_id: int, is_movie: bool) -> Optional[TraktShow]:
             return TraktShow(entry, show_type)
 
     return None
+
+
+def search_shows_by_text(search_text: str, is_movie: bool) -> List[TraktShow]:
+    """
+    Search shows by text, using trakt.
+
+    :param search_text: the search text.
+    :param is_movie: if the show is a movie.
+    :return: the list of TraktShow.
+    """
+
+    if is_movie:
+        show_type = 'movie'
+    else:
+        show_type = 'show'
+
+    search_request = urllib.request.Request('https://api.trakt.tv/search/%s?extended=full&query=%s'
+                                            % (show_type, urllib.parse.quote(search_text)))
+    search_request.add_header('trakt-api-key', configuration.trakt_key)
+
+    try:
+        search_json = urllib.request.urlopen(search_request).read()
+    except urllib.error.HTTPError:
+        return []
+
+    # Parse the list of translations from the request
+    search_json_object = json.loads(search_json)
+
+    # Create a TraktShow for each entry
+    trakt_shows = []
+
+    for entry in search_json_object:
+        if entry['type'] != show_type:
+            continue
+
+        else:
+            trakt_shows.append(TraktShow(entry, show_type))
+
+    return trakt_shows
 
 
 def get_show_translations(trakt_slug: str, is_movie: bool) -> List[TraktTranslation]:
@@ -170,125 +227,31 @@ def collect_titles_trakt(trakt_id: int, is_movie: bool) -> Set[str]:
     """
 
     # Get the show's information from trakt
-    trakt_show = search_trakt_id(trakt_id, is_movie)
+    trakt_show = search_show_by_trakt_id(trakt_id, is_movie)
 
     # If no result is found
     if trakt_show is None:
         return set()
 
-    titles = set(trakt_show.title)
+    titles = set()
+    titles.add(trakt_show.title)
 
     # If the show has no translations of interest
-    if 'en' not in trakt_show.available_translations and 'pt' not in  trakt_show.available_translations:
+    if 'en' not in trakt_show.available_translations and 'pt' not in trakt_show.available_translations:
         return set(trakt_show.title)
 
     # Add the titles in the translations
     trakt_translation_list = get_show_translations(trakt_show.slug, trakt_show.is_movie)
 
     for t in trakt_translation_list:
-        if t.language == 'en' or t.language == 'pt':
+        if (t.language == 'en' or t.language == 'pt') and t.title is not None:
             titles.add(t.title)
 
     # Add the titles in the aliases
     trak_alias_list = get_show_aliases(trakt_show.slug, trakt_show.is_movie)
 
     for a in trak_alias_list:
-        if a.country == 'us' or a.country == 'pt' or a.country == trakt_show.country:
+        if (a.country == 'us' or a.country == 'pt' or a.country == trakt_show.country) and a.title is not None:
             titles.add(a.title)
 
     return titles
-
-
-def search_show_information_by_type(search_text: str, show_type: str, language: str):
-    """
-    Uses trakt and omdb to search for shows, of a given type, using a given search text.
-
-    :param search_text: the search text introduced by the user.
-    :param show_type: 'show' for tv shows and 'movie' for movies.
-    :param language: the language of interest.
-    :return: the list of results.
-    """
-
-    results = []
-
-    # Make the request
-    shows_request = urllib.request.Request(
-        'https://api.trakt.tv/search/%s?extended=full&query=%s' % (show_type, urllib.parse.quote(search_text)))
-    shows_request.add_header('trakt-api-key', configuration.trakt_key)
-
-    shows_json = urllib.request.urlopen(shows_request).read()
-
-    # Parse the list of shows from the request
-    shows = json.loads(shows_json)
-
-    is_movie = show_type == 'movie'
-
-    for s in shows:
-        imdb_id = s[show_type]['ids']['imdb']
-
-        show_dict = {'is_movie': is_movie, 'show_title': s[show_type]['title'], 'show_year': s[show_type]['year'],
-                     'show_image': 'N/A', 'show_slug': s[show_type]['ids']['slug'],
-                     'show_overview': s[show_type]['overview'], 'language': s[show_type]['language'],
-                     'available_translations': s[show_type]['available_translations']}
-
-        # Get the translation of the overview
-        if language != s[show_type]['language']:
-            available_translations = s[show_type]['available_translations']
-
-            if language in available_translations:
-                translated_overview = get_translated_overview(s[show_type]['ids']['slug'], show_type, language)
-
-                if translated_overview is not None:
-                    show_dict['show_overview'] = translated_overview
-
-        # Check if we can get the poster
-        if imdb_id is None or configuration.omdb_key is None:
-            results.append(show_dict)
-            continue
-
-        show_json = urllib.request.urlopen(
-            'http://www.omdbapi.com/?apikey=%s&i=%s' % (configuration.omdb_key, imdb_id)).read()
-
-        # Parse the show from the request
-        show = json.loads(show_json)
-
-        # When the omdb can't find the information
-        if show['Response'] == 'False':
-            results.append(show_dict)
-            continue
-
-        show_dict['show_image'] = show['Poster']
-
-        results.append(show_dict)
-
-    return results
-
-
-def get_translated_overview(trakt_slug: str, show_type: str, language: str):
-    """
-    Get the translated overview of a show.
-
-    :param trakt_slug: the selected title.
-    :param show_type: 'show' for tv shows and 'movie' for movies.
-    :param language: the language of the translation.
-    :return: the translated overview.
-    """
-
-    translations_request = urllib.request.Request(
-        'https://api.trakt.tv/%ss/%s/translations/%s' % (show_type, trakt_slug, language))
-    translations_request.add_header('trakt-api-key', configuration.trakt_key)
-
-    try:
-        translations_json = urllib.request.urlopen(translations_request).read()
-    except urllib.error.HTTPError:
-        print('Slug was not found!')
-        return None
-
-    # Parse the list of translations from the request
-    translations = json.loads(translations_json)
-
-    for t in translations:
-        if t['overview'] != '':
-            return t['overview']
-
-    return None

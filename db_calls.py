@@ -4,6 +4,7 @@ from typing import Optional, List
 import sqlalchemy.orm
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
+import auxiliary
 import models
 import response_models
 from configuration import AVAILABLE_LANGUAGES, AvailableLanguage
@@ -199,19 +200,6 @@ def get_alarms(session: sqlalchemy.orm.Session) -> List[models.Alarm]:
         .all()
 
 
-def get_sessions_alarms(session: sqlalchemy.orm.Session) -> List:
-    """
-    Get all alarms and the corresponding sessions.
-
-    :param session: the db session.
-    :return: all alarms and the corresponding sessions.
-    """
-
-    return session.query(models.Alarm, models.Show) \
-        .filter(models.Alarm.show_id == models.Show.id) \
-        .all()
-
-
 def get_alarms_user(session: sqlalchemy.orm.Session, user_id: int) -> List[models.Alarm]:
     """
     Get a list of alarms for the user who's id is user_id.
@@ -223,6 +211,19 @@ def get_alarms_user(session: sqlalchemy.orm.Session, user_id: int) -> List[model
 
     return session.query(models.Alarm) \
         .filter(models.Alarm.user_id == user_id) \
+        .all()
+
+
+def get_sessions_alarms(session: sqlalchemy.orm.Session) -> List:
+    """
+    Get all alarms and the corresponding sessions.
+
+    :param session: the db session.
+    :return: all alarms and the corresponding sessions.
+    """
+
+    return session.query(models.Alarm, models.ShowSession) \
+        .filter(models.Alarm.show_id == models.ShowSession.id) \
         .all()
 
 
@@ -314,51 +315,37 @@ def get_trakt_titles(session: sqlalchemy.orm.Session, trakt_id: int) -> models.T
         .first()
 
 
-def register_show_session(session: sqlalchemy.orm.Session, title: str, season: int, episode: int, synopsis: str,
-                          date_time: datetime.datetime, duration: int, channel_id: int, search_title: str,
-                          original_title: str = None, year: int = None, show_type: str = None, director: str = None,
-                          cast: str = None, languages: str = None, countries: str = None,
-                          age_classification: str = None, episode_title: str = None) -> Optional[models.ShowSession]:
+def register_show_session(session: sqlalchemy.orm.Session, season: int, episode: int, date_time: datetime.datetime,
+                          channel_id: int, show_id: int, commit: bool = True) -> Optional[models.ShowSession]:
     """
     Register a show session.
 
+    :param commit:
     :param session: the db session.
-    :param title: the title of the show.
     :param season: the season of the show session.
     :param episode: the episode of the show session.
-    :param synopsis: the synopsis of the show.
     :param date_time: the date and time of the show session.
-    :param duration: the duration of the episode.
     :param channel_id: the id of the channel where the show session will take place.
-    :param search_title: the title used for searches (technical).
-    :param pid: the id of the program.
-    :param series_id: the id of the series.
-    :param original_title: the original title of the show.
-    :param year: the year of the show.
-    :param show_type: the type of show.
-    :param director: the director of the show.
-    :param cast: the cast of the show.
-    :param languages: the languages of the show.
-    :param countries: the countries of the show.
-    :param age_classification: the age classification of the show.
-    :param episode_title: the title of the episode of the show session.
+    :param show_id: the id of the corresponding show data (technical).
+    :param commit: True it the data should be committed right away.
     :return: the created show session.
     """
 
-    show_session = models.Show(title, season, episode, synopsis, date_time, duration, channel_id, search_title,
-                               original_title, year, show_type, director, cast, languages, countries,
-                               age_classification, episode_title)
+    show_session = models.ShowSession(season, episode, date_time, channel_id, show_id)
     session.add(show_session)
 
-    try:
-        session.commit()
+    if commit:
+        try:
+            session.commit()
+            return show_session
+        except (IntegrityError, InvalidRequestError):
+            session.rollback()
+            return None
+    else:
         return show_session
-    except (IntegrityError, InvalidRequestError):
-        session.rollback()
-        return None
 
 
-def get_show_sessions_channel(session: sqlalchemy.orm.Session, channel_id: int) -> List[models.Show]:
+def get_show_sessions_channel(session: sqlalchemy.orm.Session, channel_id: int) -> List[models.ShowSession]:
     """
     Get a list of sessions of a given channel.
 
@@ -367,12 +354,12 @@ def get_show_sessions_channel(session: sqlalchemy.orm.Session, channel_id: int) 
     :return: a list of sessions of a given channel.
     """
 
-    return session.query(models.Show) \
-        .filter(models.Show.channel_id == channel_id) \
+    return session.query(models.ShowSession) \
+        .filter(models.ShowSession.channel_id == channel_id) \
         .all()
 
 
-def get_show_session(session: sqlalchemy.orm.Session, show_id: int) -> Optional[models.Show]:
+def get_show_session(session: sqlalchemy.orm.Session, show_id: int) -> Optional[models.ShowSession]:
     """
     Get the show session with a given id.
 
@@ -381,6 +368,116 @@ def get_show_session(session: sqlalchemy.orm.Session, show_id: int) -> Optional[
     :return: the show session with a given id.
     """
 
-    return session.query(models.Show) \
-        .filter(models.Show.id == show_id) \
+    return session.query(models.ShowSession) \
+        .filter(models.ShowSession.id == show_id) \
         .first()
+
+
+def search_show_data(session: sqlalchemy.orm.Session, original_title: str, year: int) -> Optional[models.ShowData]:
+    """
+    Search for the show data with the same original title and year.
+
+    :param session: the db session.
+    :param original_title: the original title of the show.
+    :param year: the year of the show's release.
+    :return: the show data with that data.
+    """
+
+    return session.query(models.ShowData) \
+        .filter(models.ShowData.original_title == original_title) \
+        .filter(models.ShowData.year == year) \
+        .first()
+
+
+def register_show_data(session: sqlalchemy.orm.Session, original_title: str, portuguese_title: str, duration: int,
+                       synopsis: str, year: int, show_type: str, director: str, cast: str, audio_languages: str,
+                       countries: str, age_classification: str) -> Optional[models.ShowData]:
+    """
+    Register an entry of ShowData.
+
+    :param session: the db session.
+    :param original_title: the original title.
+    :param portuguese_title: the portuguese title.
+    :param duration: the duration.
+    :param synopsis: the synopsis.
+    :param year: the year of the show.
+    :param show_type: the type of show (Comedy, thriller, ...).
+    :param director: the director of the show.
+    :param cast: the cast of the show.
+    :param audio_languages: the languages of the audio.
+    :param countries: the countries.
+    :param age_classification: the age classification.
+    :return: the created show data.
+    """
+
+    search_title = auxiliary.make_searchable_title(portuguese_title.strip())
+
+    show_data = models.ShowData(search_title, portuguese_title.strip())
+    show_data.original_title = original_title
+    show_data.duration = duration
+    show_data.synopsis = synopsis
+    show_data.year = year
+    show_data.show_type = show_type
+    show_data.director = director
+    show_data.cast = cast
+    show_data.audio_languages = audio_languages
+    show_data.countries = countries
+    show_data.age_classification = age_classification
+
+    session.add(show_data)
+
+    try:
+        session.commit()
+        return show_data
+    except (IntegrityError, InvalidRequestError):
+        session.rollback()
+        return None
+
+
+def insert_if_missing_show_data(session: sqlalchemy.orm.Session, original_title: str, portuguese_title: str,
+                                duration: int, synopsis: str, year: int, show_type: str, director: str, cast: str,
+                                audio_languages: str, countries: str, age_classification: str) \
+        -> Optional[models.ShowData]:
+    """
+    Check, and return, if there's a matching entry of ShowData and, if not add it.
+
+    :param session: the db session.
+    :param original_title: the original title.
+    :param portuguese_title: the portuguese title.
+    :param duration: the duration.
+    :param synopsis: the synopsis.
+    :param year: the year of the show.
+    :param show_type: the type of show (Comedy, thriller, ...).
+    :param director: the director of the show.
+    :param cast: the cast of the show.
+    :param audio_languages: the languages of the audio.
+    :param countries: the countries.
+    :param age_classification: the age classification.
+    :return: the corresponding show data.
+    """
+
+    # Check if there's already an entry with this information
+    show_data = search_show_data(session, original_title, year)
+
+    if show_data is not None:
+        return show_data
+
+    # If not, then add it
+    return register_show_data(session, original_title, portuguese_title, duration, synopsis, year, show_type, director,
+                              cast, audio_languages, countries, age_classification)
+
+
+def commit(session: sqlalchemy.orm.Session) -> bool:
+    """
+    Commit the session.
+
+    :param session: the db session.
+    :return: True if it succeeded.
+    """
+
+    try:
+        session.commit()
+        return True
+    except (IntegrityError, InvalidRequestError):
+        session.rollback()
+        return False

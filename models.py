@@ -15,7 +15,7 @@ class ShowData(Base):
 
     # Technical
     id = Column(Integer, primary_key=True, autoincrement=True)
-    imdb_id = Column(String(255))
+    imdb_id = Column(String(255), unique=True)
     search_title = Column(String(255))
 
     # Identifies to this show session
@@ -24,7 +24,7 @@ class ShowData(Base):
     number_seasons = Column(Integer)
     duration = Column(Integer)
     synopsis = Column(String(500))
-    year = Column(String(255))
+    year = Column(Integer)
     category = Column(String(255))  # Movie, series, documentary, news, ...
     show_type = Column(String(255))  # Comedy, thriller, ...
     director = Column(String(255))
@@ -34,7 +34,7 @@ class ShowData(Base):
     countries = Column(String(255))
     age_classification = Column(String(255))
 
-    def __init__(self, search_title, portuguese_title):
+    def __init__(self, search_title: str, portuguese_title: str):
         self.search_title = search_title
         self.portuguese_title = portuguese_title
 
@@ -45,8 +45,8 @@ class TraktTitles(Base):
     __tablename__ = 'TraktTitles'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    trakt_id = Column(String(255), unique=True)
-    titles = Column(String(1000), nullable=False) # Titles separated by a vertical var (|)
+    trakt_id = Column(Integer, unique=True)
+    titles = Column(String(1000), nullable=False)  # Titles separated by a vertical var (|)
     insertion_datetime = Column(DateTime, default=datetime.datetime.now())
 
     def __init__(self, trakt_id, titles):
@@ -72,69 +72,36 @@ class Channel(Base):
         self.search_epg = True
 
     def __str__(self):
-        return 'id: %d; acronym: %s; name: %s; adult: %r; search_epg: %r' % (self.id, self.acronym, self.name,
-                                                                      self.adult, self.search_epg)
+        return 'id: %d; acronym: %s; name: %s; adult: %r; search_epg: %r' \
+               % (self.id, self.acronym, self.name, self.adult, self.search_epg)
 
 
-class Show(Base):
-    __tablename__ = 'Show'
+class ShowSession(Base):
+    __tablename__ = 'ShowSession'
 
     # Technical
     id = Column(Integer, primary_key=True, autoincrement=True)
-    search_title = Column(String(255))
 
     # Foreign key
+    show_id = Column(Integer, ForeignKey('ShowData.id'))
     channel_id = Column(Integer, ForeignKey('Channel.id'))
 
     # Identifies to this show session
-    title = Column(String(255))
     season = Column(Integer)
     episode = Column(Integer)
     date_time = Column(DateTime)
 
-    # Common to the show
-    original_title = Column(String(255))
-    duration = Column(Integer)
-    synopsis = Column(String(500))
-    year = Column(String(255))
-    show_type = Column(String(255))  # Comedy, thriller, ...
-    director = Column(String(255))
-    cast = Column(String(255))
-    languages = Column(String(255))
-    countries = Column(String(255))
-    age_classification = Column(String(255))
-    episode_title = Column(String(255))
-
-    def __init__(self, title, season, episode, synopsis, date_time, duration, channel_id, search_title,
-                 original_title=None, year=None, show_type=None, director=None, cast=None, languages=None,
-                 countries=None, age_classification=None, episode_title=None):
-        self.search_title = search_title
+    def __init__(self, season, episode, date_time, channel_id, show_id):
         self.channel_id = channel_id
+        self.show_id = show_id
 
-        self.title = title
         self.season = season
         self.episode = episode
         self.date_time = date_time
 
-        self.synopsis = synopsis
-        self.duration = duration
-
-        # Optional fields
-        self.original_title = original_title
-        self.year = year
-        self.show_type = show_type
-        self.director = director
-        self.cast = cast
-        self.languages = languages
-        self.countries = countries
-        self.age_classification = age_classification
-        self.episode_title = episode_title
-
     def __str__(self):
-        return 'id: %d; title: %s; season: %s; episode: %s; synopsis: %s; ' \
-               'date_time: %s; duration: %d; channel_id: %d; search_title: %s' % \
-               (self.id, self.title, str(self.season), str(self.episode),
-                self.synopsis, str(self.date_time), self.duration, self.channel_id, self.search_title)
+        return 'id: %d; show_id: %d; season: %s; episode: %s; date_time: %s; channel_id: %d' % \
+               (self.id, self.show_id, str(self.season), str(self.episode), str(self.date_time), self.channel_id)
 
     def to_dict(self):
         """
@@ -143,9 +110,46 @@ class Show(Base):
         :return: the corresponding dictionary.
         """
 
-        return {'id': self.id, 'title': self.title, 'season': self.season, 'episode': self.episode,
-                'synopsis': self.synopsis, 'date_time': self.date_time}
+        return {'id': self.id, 'season': self.season, 'episode': self.episode, 'date_time': self.date_time}
 
+
+class StreamingService(Base):
+    __tablename__ = 'StreamingService'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(255), unique=True)
+
+    def __init__(self, name):
+        self.name = name
+
+    def __str__(self):
+        return 'id: %d; name: %s;' % (self.id, self.name)
+
+
+class StreamingServiceShow(Base):
+    __tablename__ = 'StreamingServiceShow'
+
+    # Technical
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    update_timestamp = Column(DateTime, default=datetime.datetime.now())
+    search_title = Column(String(255))
+
+    # Most important data
+    title = Column(String(255))
+    seasons_available = Column(String)
+    synopsis = Column(String(500))
+
+    # Foreign keys
+    show_data_id = Column(Integer, ForeignKey('ShowData.id'))
+    streaming_service_id = Column(Integer, ForeignKey('StreamingService.id'))
+
+    def __init__(self, search_title, title, seasons_available, synopsis, show_data_id, streaming_service_id):
+        self.search_title = search_title
+        self.title = title
+        self.seasons_available = seasons_available
+        self.synopsis = synopsis
+        self.show_data_id = show_data_id
+        self.streaming_service_id = streaming_service_id
 
 
 class User(Base):
@@ -208,24 +212,24 @@ class Reminder(Base):
 class Alarm(Base):
     __tablename__ = 'Alarm'
     __table_args__ = (
-        sqlalchemy.UniqueConstraint("show_id", "user_id"),
+        sqlalchemy.UniqueConstraint("session_id", "user_id"),
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
     anticipation_minutes = Column(Integer, nullable=False)
 
-    show_id = Column(Integer, ForeignKey('Show.id'))
+    session_id = Column(Integer, ForeignKey('ShowSession.id'))
     user_id = Column(Integer, ForeignKey('User.id'))
 
-    def __init__(self, anticipation_minutes: int, show_id: int, user_id: int):
+    def __init__(self, anticipation_minutes: int, session_id: int, user_id: int):
         self.anticipation_minutes = anticipation_minutes
-        self.show_id = show_id
+        self.session_id = session_id
         self.user_id = user_id
 
     def __eq__(self, o: object) -> bool:
         return self.anticipation_minutes == o.anticipation_minutes \
-               and self.show_id == o.show_id \
+               and self.session_id == o.session_id \
                and self.user_id == o.user_id
 
 

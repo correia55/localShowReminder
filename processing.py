@@ -10,9 +10,11 @@ import auxiliary
 import configuration
 import db_calls
 import models
+import omdb_calls
 import process_emails
 import response_models
 import trakt_calls
+from trakt_calls import search_shows_by_text, get_show_translations
 
 
 class ComparisonType(Enum):
@@ -45,8 +47,8 @@ def clear_show_list(session):
     today_start = datetime.datetime.now()
     today_start.replace(hour=0, minute=0, second=0)
 
-    session.query(models.Show).filter(
-        models.Show.date_time < today_start - datetime.timedelta(7)).delete()
+    session.query(models.ShowSession).filter(
+        models.ShowSession.date_time < today_start - datetime.timedelta(7)).delete()
     session.commit()
 
     print('Shows list cleared!')
@@ -63,13 +65,52 @@ def search_show_information(search_text: str, is_movie: bool, language: str):
     :return: the list of results.
     """
 
+    if is_movie is not None:
+        return search_show_information_by_type(search_text, is_movie, language)
+    else:
+        results = search_show_information_by_type(search_text, False, language)
+        results += search_show_information_by_type(search_text, True, language)
+
+    return results
+
+
+def search_show_information_by_type(search_text: str, is_movie: bool, language: str):
+    """
+    Uses trakt and omdb to search for shows, of a given type, using a given search text.
+
+    :param search_text: the search text introduced by the user.
+    :param is_movie: if the show is a movie.
+    :param language: the language of interest.
+    :return: the list of results.
+    """
+
     results = []
 
-    if is_movie is None or not is_movie:
-        results += trakt_calls.search_show_information_by_type(search_text, 'show', language)
+    # Search Trakt using the text
+    trakt_shows = search_shows_by_text(search_text, is_movie)
 
-    if is_movie is None or is_movie:
-        results += trakt_calls.search_show_information_by_type(search_text, 'movie', language)
+    for s in trakt_shows:
+        show_dict = {'is_movie': is_movie, 'show_title': s.title, 'show_year': s.year, 'show_image': 'N/A',
+                     'trakt_id': s.id, 'show_overview': s.overview, 'language': s.language}
+
+        # Get the translation of the overview
+        if language != s.language:
+            if language in s.available_translations:
+                trakt_translations = get_show_translations(s.slug, is_movie)
+
+                for transl in trakt_translations:
+                    if transl.language == language:
+                        show_dict['show_overview'] = transl.overview
+                        break
+
+        # Get the poster from Omdb
+        omdb_show = omdb_calls.search_show_by_imdb_id(s.imdb_id)
+
+        if omdb_show is None:
+            results.append(show_dict)
+        else:
+            show_dict['show_image'] = omdb_show.poster
+            results.append(show_dict)
 
     return results
 
@@ -119,30 +160,34 @@ def search_db(session, search_list, complete_title=False, below_date=None, show_
         else:
             operation = '~*'
 
-        query = session.query(models.Show, models.Channel.name) \
-            .filter(models.Show.search_title.op(operation)(search_pattern))
+        query = session.query(models.ShowSession, models.Channel.name, models.ShowData.portuguese_title) \
+            .filter(models.ShowData.search_title.op(operation)(search_pattern))
 
         if show_season is not None:
-            query = query.filter(models.Show.season == show_season)
+            query = query.filter(models.ShowSession.season == show_season)
 
         if show_episode is not None:
-            query = query.filter(models.Show.episode == show_episode)
+            query = query.filter(models.ShowSession.episode == show_episode)
 
         if not search_adult:
             # Can't use "is" here, it needs to be "=="
             query = query.filter(models.Channel.adult == False)
 
         if below_date is not None:
-            query = query.filter(models.Show.date_time > below_date)
+            query = query.filter(models.ShowSession.date_time > below_date)
 
-        # Filter the channels
+        # Join channels
         query = query.join(models.Channel)
+
+        # Join show data
+        query = query.join(models.ShowData)
 
         db_shows = query.all()
 
         for s in db_shows:
             show = s[0].to_dict()
             show['channel'] = s[1]
+            show['title'] = s[2]
 
             results[show['id']] = show
 
@@ -169,20 +214,20 @@ def search_db_id(session, show_name, is_movie, below_date=None, show_season=None
     """
 
     if not is_movie:
-        query = session.query(models.Show).filter(
-            models.Show.series_id == show_name)
+        query = session.query(models.ShowSession).filter(
+            models.ShowSession.series_id == show_name)
 
         if show_season is not None:
-            query = query.filter(models.Show.season == show_season)
+            query = query.filter(models.ShowSession.season == show_season)
 
         if show_episode is not None:
-            query = query.filter(models.Show.episode == show_episode)
+            query = query.filter(models.ShowSession.episode == show_episode)
     else:
-        query = session.query(models.Show).filter(
-            models.Show.pid == show_name)
+        query = session.query(models.ShowSession).filter(
+            models.ShowSession.pid == show_name)
 
     if below_date is not None:
-        query = query.filter(models.Show.date_time > below_date)
+        query = query.filter(models.ShowSession.date_time > below_date)
 
     return query.all()
 
@@ -213,9 +258,6 @@ def get_trakt_titles(session: sqlalchemy.orm.Session, trakt_id: int, is_movie: b
     titles_str = ''
 
     for t in titles:
-        if t is None:
-            continue
-
         if titles_str != '':
             titles_str += '|' + t
         else:
@@ -285,12 +327,13 @@ def get_reminders(session, user_id):
         reminder_type = response_models.ReminderType(r.reminder_type)
 
         if response_models.ReminderType.DB == reminder_type:
-            db_titles = db_calls.get_trakt_titles(session, r.show_slug)
+            db_titles = db_calls.get_trakt_titles(session, r.trakt_id)
 
             titles = []
 
-            for t in db_titles.titles.split('|'):
-                titles.append(t.trakt_title)
+            if db_titles is not None:
+                for t in db_titles.titles.split('|'):
+                    titles.append(t)
         else:
             titles = [r.show_name]
 
@@ -763,7 +806,7 @@ def process_alarms(session: sqlalchemy.orm.Session) -> None:
 
     for a_s in alarms_sessions:
         alarm: models.Alarm = a_s.Alarm
-        show_session: models.Show = a_s.Show
+        show_session: models.ShowSession = a_s.ShowSession
 
         anticipation_hours = alarm.anticipation_minutes / 60
 

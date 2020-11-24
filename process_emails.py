@@ -191,7 +191,7 @@ def send_change_email_new(destination: str, token: str, old_email: str) -> bool:
     return send_email(content, subject, destination)
 
 
-def send_reminders_email(destination: str, results: List[models.Show]) -> bool:
+def send_reminders_email(destination: str, results: List[models.ShowSession]) -> bool:
     """
     Send an email with the results found for the reminders created.
 

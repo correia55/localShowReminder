@@ -26,7 +26,7 @@ class FlaskApp(flask.Flask):
 basic_auth = fh.HTTPBasicAuth()
 token_auth = fh.HTTPTokenAuth()
 app = FlaskApp(__name__)
-CORS(app, supports_credentials=True, resources={r'*': {'origins': configuration.application_link}})
+CORS(app, supports_credentials=True, resources={r'*': {'origins': '*'}})
 api = fr.Api(app)
 
 # Limit the number of requests that can be made in a certain time period
@@ -266,6 +266,8 @@ class AlarmsEP(fr.Resource):
 
 class RemindersEP(fr.Resource):
     decorators = [token_auth.login_required]
+
+    # TODO: TEST THE REMINDERS
 
     def __init__(self):
         super(RemindersEP, self).__init__()

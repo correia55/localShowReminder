@@ -83,8 +83,7 @@ class TestDBCalls(unittest.TestCase):
         self.assertIsNotNone(channel)
 
         show_session = db_calls.register_show_session(self.session, 'test_title', 1, 1, 'synopsis',
-                                                      datetime.datetime.utcnow(), 1,
-                                                      channel.id, 'title')
+                                                      datetime.datetime.utcnow())
         self.assertIsNotNone(show_session)
 
         alarm = db_calls.register_alarm(self.session, show_session.id, 10, user.id)

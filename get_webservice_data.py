@@ -2,9 +2,6 @@ import csv
 import datetime
 import os
 import re
-import urllib.parse
-import urllib.request
-import xml.etree.ElementTree as ET
 
 import requests
 
@@ -24,7 +21,7 @@ def update_channel_list(session):
 
     # Delete channels without shows
     for channel in db_channels:
-        if session.query(models.Show).filter(models.Show.channel_id == channel.id).count() == 0:
+        if session.query(models.ShowSession).filter(models.ShowSession.channel_id == channel.id).count() == 0:
             session.delete(channel)
 
     session.commit()
@@ -61,39 +58,6 @@ def update_channel_list(session):
 
 
 class MEPG:
-    @staticmethod
-    def update_channel_list(session, ignore_hd=True):
-        """
-        Make a request for the channel list and add them to the db.
-
-        :param session: the db session.
-        :param ignore_hd: true when we're supposed to ignore HD channels.
-        """
-
-        # Request the list of channels
-        channels_xml = urllib.request.urlopen(configuration.channels_url).read().decode()
-
-        # Parse the list of channels from the request
-        root = ET.fromstring(channels_xml)[0]
-
-        # Create a dictionary without duplicate channels
-        channels = {}
-
-        for c in root:
-            name = c[0].text
-
-            if not ignore_hd or 'HD' not in name:
-                channel = models.Channel(c[1].text, name.strip())
-
-                if name not in channels:
-                    channels[name] = channel
-
-        # Add unique channels to list
-        for n, channel in channels.items():
-            session.add(channel)
-
-        session.commit()
-
     @staticmethod
     def update_show_list_day(session, db_channels: [models.Channel], db_last_update):
         """
@@ -182,8 +146,9 @@ class MEPG:
                 pid = s['uniqueId']
 
                 # Add the show to the db
-                show = models.Show(show_title.strip(), show_season, show_episode, '', show_datetime, 0, channel_id,
-                                   auxiliary.make_searchable_title(show_title.strip()))
+                show = models.ShowSession(show_title.strip(), show_season, show_episode, '', show_datetime, 0,
+                                          channel_id,
+                                          auxiliary.make_searchable_title(show_title.strip()))
 
                 session.add(show)
 
