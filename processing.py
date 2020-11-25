@@ -1,6 +1,6 @@
 import datetime
 from enum import Enum
-from typing import List, Collection
+from typing import List
 
 import flask_bcrypt as fb
 import sqlalchemy.orm
@@ -233,7 +233,7 @@ def search_db_id(session, show_name, is_movie, below_date=None, show_season=None
     return query.all()
 
 
-def get_trakt_titles(session: sqlalchemy.orm.Session, trakt_id: int, is_movie: bool) -> Collection[str]:
+def get_trakt_titles(session: sqlalchemy.orm.Session, trakt_id: int, is_movie: bool) -> List[str]:
     """
     Get all trakt titles for a trakt id.
     And update the DB with the results.
@@ -328,13 +328,7 @@ def get_reminders(session, user_id):
         reminder_type = response_models.ReminderType(r.reminder_type)
 
         if response_models.ReminderType.DB == reminder_type:
-            db_titles = db_calls.get_trakt_titles(session, r.trakt_id)
-
-            titles = []
-
-            if db_titles is not None:
-                for t in db_titles.titles.split('|'):
-                    titles.append(t)
+            titles = get_trakt_titles(session, r.trakt_id, r.is_movie)
         else:
             titles = [r.show_name]
 

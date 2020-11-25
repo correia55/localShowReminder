@@ -217,7 +217,7 @@ def get_show_aliases(trakt_slug: str, is_movie: bool) -> List[TraktAlias]:
     return aliases
 
 
-def collect_titles_trakt(trakt_id: int, is_movie: bool) -> Set[str]:
+def collect_titles_trakt(trakt_id: int, is_movie: bool) -> List[str]:
     """
     Get all trakt titles for a trakt id.
 
@@ -231,14 +231,14 @@ def collect_titles_trakt(trakt_id: int, is_movie: bool) -> Set[str]:
 
     # If no result is found
     if trakt_show is None:
-        return set()
+        return []
 
     titles = set()
     titles.add(trakt_show.title)
 
     # If the show has no translations of interest
     if 'en' not in trakt_show.available_translations and 'pt' not in trakt_show.available_translations:
-        return set(trakt_show.title)
+        return [trakt_show.title]
 
     # Add the titles in the translations
     trakt_translation_list = get_show_translations(trakt_show.slug, trakt_show.is_movie)
@@ -254,4 +254,4 @@ def collect_titles_trakt(trakt_id: int, is_movie: bool) -> Set[str]:
         if (a.country == 'us' or a.country == 'pt' or a.country == trakt_show.country) and a.title is not None:
             titles.add(a.title)
 
-    return titles
+    return list(titles)
