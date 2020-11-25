@@ -52,7 +52,7 @@ class TraktTitles(Base):
     titles = Column(String(1000), nullable=False)  # Titles separated by a vertical var (|)
     insertion_datetime = Column(DateTime, default=datetime.datetime.now())
 
-    def __init__(self, trakt_id, titles):
+    def __init__(self, trakt_id: int, titles: str):
         self.trakt_id = trakt_id
         self.titles = titles
 
@@ -122,7 +122,7 @@ class StreamingService(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255), unique=True)
 
-    def __init__(self, name):
+    def __init__(self, name: str):
         self.name = name
 
     def __str__(self):
@@ -146,7 +146,8 @@ class StreamingServiceShow(Base):
     show_data_id = Column(Integer, ForeignKey('ShowData.id'))
     streaming_service_id = Column(Integer, ForeignKey('StreamingService.id'))
 
-    def __init__(self, search_title, title, seasons_available, synopsis, show_data_id, streaming_service_id):
+    def __init__(self, search_title: str, title: str, seasons_available: str, synopsis: str, show_data_id: int,
+                 streaming_service_id: int):
         self.search_title = search_title
         self.title = title
         self.seasons_available = seasons_available
@@ -172,7 +173,7 @@ class User(Base):
     show_adult = Column(Boolean)
     language = Column(String(5))
 
-    def __init__(self, email, password, language):
+    def __init__(self, email: str, password: str, language: str):
         self.verified = False
 
         self.email = email
@@ -244,7 +245,7 @@ class Token(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     token = Column(String(400), unique=True, nullable=False)
 
-    def __init__(self, token):
+    def __init__(self, token: str):
         self.token = token
 
 
@@ -256,5 +257,5 @@ class LastUpdate(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     date = Column(Date)
 
-    def __init__(self, date):
+    def __init__(self, date: datetime.date):
         self.date = date

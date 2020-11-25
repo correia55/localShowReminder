@@ -12,7 +12,7 @@ class OmdbShow(object):
     poster: str
 
     def __init__(self, show_json_object):
-        self.id = show_json_object['Poster']
+        self.poster = show_json_object['Poster']
 
 
 def search_show_by_imdb_id(imdb_id: str) -> Optional[OmdbShow]:
