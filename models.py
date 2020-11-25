@@ -12,6 +12,9 @@ class ShowData(Base):
     """Used to store all the date associated with a show."""
 
     __tablename__ = 'ShowData'
+    __table_args__ = (
+        sqlalchemy.UniqueConstraint("search_title", "imdb_id"),
+    )
 
     # Technical
     id = Column(Integer, primary_key=True, autoincrement=True)

@@ -75,7 +75,7 @@ class TVCine:
             channel_id = session.query(models.Channel).filter(models.Channel.name == channel_name).first().id
 
             # Insert the ShowData, if necessary
-            show_data = db_calls.insert_if_missing_show_data(session, original_title, title, duration, synopsis, year,
+            show_data = db_calls.insert_if_missing_show_data(session, title, original_title, duration, synopsis, year,
                                                              show_type, director, cast, languages, countries,
                                                              age_classification)
 

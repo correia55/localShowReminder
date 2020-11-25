@@ -5,8 +5,8 @@ import re
 
 import requests
 
-import auxiliary
 import configuration
+import db_calls
 import models
 
 
@@ -59,13 +59,13 @@ def update_channel_list(session):
 
 class MEPG:
     @staticmethod
-    def update_show_list_day(session, db_channels: [models.Channel], db_last_update):
+    def update_show_list_day(session, db_channels: [models.Channel], last_update_date: datetime.date):
         """
         Make the request for the shows of a set of channels on a given day, and add them to the database.
 
         :param session: the db session.
         :param db_channels: list of channels.
-        :param db_last_update: a LastUpdate object with the date for the search.
+        :param last_update_date: the date of the last update.
         """
 
         # Create the shows' info request url
@@ -92,8 +92,8 @@ class MEPG:
     "dateEnd": "%sT00:00:00.000Z",
     "accountID": ""
 }
-        ''' % (channels, db_last_update.date.strftime('%Y-%m-%d'),
-               (db_last_update.date + datetime.timedelta(days=1)).strftime('%Y-%m-%d'))
+        ''' % (channels, last_update_date.strftime('%Y-%m-%d'),
+               (last_update_date + datetime.timedelta(days=1)).strftime('%Y-%m-%d'))
 
         print(payload)
 
@@ -111,19 +111,17 @@ class MEPG:
                 show_date = datetime.datetime.strptime(s['date'], '%d-%m-%Y').strftime('%Y-%m-%d')
 
                 # Skip if it's referent to a show from a different day
-                if show_date != db_last_update.date.strftime('%Y-%m-%d'):
+                if show_date != last_update_date.strftime('%Y-%m-%d'):
                     continue
 
                 show_datetime = '%s %s' % (show_date, s['timeIni'])
 
-                shows_added = True
-
-                program_title = s['name']
+                program_title = str(s['name'])
                 series = re.search('(.+) T([0-9]+) - Ep\. ([0-9]+)', program_title)
 
                 # If it is an episode of a series with season and episode
                 if series:
-                    show_title = series.group(1)
+                    show_title = str(series.group(1))
 
                     show_season = int(series.group(2))
                     show_episode = int(series.group(3))
@@ -132,7 +130,7 @@ class MEPG:
 
                     # If it is an episode of a series but only has episode
                     if series:
-                        show_title = series.group(1)
+                        show_title = str(series.group(1))
 
                         show_season = 1
                         show_episode = int(series.group(2))
@@ -142,15 +140,20 @@ class MEPG:
                         show_season = None
                         show_episode = None
 
-                series_id = None
-                pid = s['uniqueId']
-
                 # Add the show to the db
-                show = models.ShowSession(show_title.strip(), show_season, show_episode, '', show_datetime, 0,
-                                          channel_id,
-                                          auxiliary.make_searchable_title(show_title.strip()))
+                show_data = db_calls.insert_if_missing_show_data(session, show_title.strip())
 
-                session.add(show)
+                if show_data is None:
+                    print('ERROR: The registration of the show %s failed!' % show_title)
+                    continue
+
+                shows_added = True
+
+                # Parse the datetime
+                show_datetime = datetime.datetime.strptime(show_datetime, '%Y-%m-%d %H:%M')
+
+                db_calls.register_show_session(session, show_season, show_episode, show_datetime, channel_id,
+                                               show_data.id, commit=False)
 
         session.commit()
 
@@ -197,11 +200,11 @@ class MEPG:
                 current.append(db_channels[i])
 
                 if i % max_channels_request == 0 and i > 0:
-                    MEPG.update_show_list_day(session, current, db_last_update)
+                    MEPG.update_show_list_day(session, current, db_last_update.date.date())
 
                     current = []
 
             if len(current) != 0:
-                MEPG.update_show_list_day(session, current, db_last_update)
+                MEPG.update_show_list_day(session, current, db_last_update.date.date())
 
         print('Shows list updated!')

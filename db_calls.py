@@ -373,7 +373,8 @@ def get_show_session(session: sqlalchemy.orm.Session, show_id: int) -> Optional[
         .first()
 
 
-def search_show_data(session: sqlalchemy.orm.Session, original_title: str, year: int) -> Optional[models.ShowData]:
+def search_show_data_by_original_title_and_year(session: sqlalchemy.orm.Session, original_title: str, year: int) -> \
+        Optional[models.ShowData]:
     """
     Search for the show data with the same original title and year.
 
@@ -389,9 +390,31 @@ def search_show_data(session: sqlalchemy.orm.Session, original_title: str, year:
         .first()
 
 
-def register_show_data(session: sqlalchemy.orm.Session, original_title: str, portuguese_title: str, duration: int,
-                       synopsis: str, year: int, show_type: str, director: str, cast: str, audio_languages: str,
-                       countries: str, age_classification: str) -> Optional[models.ShowData]:
+def search_show_data_by_search_title_and_everything_else_empty(session: sqlalchemy.orm.Session, portuguese_title: str) \
+        -> Optional[models.ShowData]:
+    """
+    Search for the show data with the same search title and every other field empty.
+
+    :param session: the db session.
+    :param portuguese_title: the portuguese title.
+    :return: the show data with that data.
+    """
+
+    search_title = auxiliary.make_searchable_title(portuguese_title.strip())
+
+    # Can't use 'is' inside the filters, it needs to be '=='
+    return session.query(models.ShowData) \
+        .filter(models.ShowData.search_title == search_title) \
+        .filter(models.ShowData.original_title == None) \
+        .filter(models.ShowData.year == None) \
+        .filter(models.ShowData.imdb_id == None) \
+        .first()
+
+
+def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, original_title: str = None,
+                       duration: int = None, synopsis: str = None, year: int = None, show_type: str = None,
+                       director: str = None, cast: str = None, audio_languages: str = None, countries: str = None,
+                       age_classification: str = None) -> Optional[models.ShowData]:
     """
     Register an entry of ShowData.
 
@@ -413,16 +436,36 @@ def register_show_data(session: sqlalchemy.orm.Session, original_title: str, por
     search_title = auxiliary.make_searchable_title(portuguese_title.strip())
 
     show_data = models.ShowData(search_title, portuguese_title.strip())
-    show_data.original_title = original_title
-    show_data.duration = duration
-    show_data.synopsis = synopsis
-    show_data.year = year
-    show_data.show_type = show_type
-    show_data.director = director
-    show_data.cast = cast
-    show_data.audio_languages = audio_languages
-    show_data.countries = countries
-    show_data.age_classification = age_classification
+
+    if original_title is not None:
+        show_data.original_title = original_title
+
+    if duration is not None:
+        show_data.duration = duration
+
+    if synopsis is not None:
+        show_data.synopsis = synopsis
+
+    if year is not None:
+        show_data.year = year
+
+    if show_type is not None:
+        show_data.show_type = show_type
+
+    if director is not None:
+        show_data.director = director
+
+    if cast is not None:
+        show_data.cast = cast
+
+    if audio_languages is not None:
+        show_data.audio_languages = audio_languages
+
+    if countries is not None:
+        show_data.countries = countries
+
+    if age_classification is not None:
+        show_data.age_classification = age_classification
 
     session.add(show_data)
 
@@ -434,10 +477,10 @@ def register_show_data(session: sqlalchemy.orm.Session, original_title: str, por
         return None
 
 
-def insert_if_missing_show_data(session: sqlalchemy.orm.Session, original_title: str, portuguese_title: str,
-                                duration: int, synopsis: str, year: int, show_type: str, director: str, cast: str,
-                                audio_languages: str, countries: str, age_classification: str) \
-        -> Optional[models.ShowData]:
+def insert_if_missing_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, original_title: str = None,
+                                duration: int = None, synopsis: str = None, year: int = None, show_type: str = None,
+                                director: str = None, cast: str = None, audio_languages: str = None,
+                                countries: str = None, age_classification: str = None) -> Optional[models.ShowData]:
     """
     Check, and return, if there's a matching entry of ShowData and, if not add it.
 
@@ -457,13 +500,16 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, original_title:
     """
 
     # Check if there's already an entry with this information
-    show_data = search_show_data(session, original_title, year)
+    if original_title is not None and year is not None:
+        show_data = search_show_data_by_original_title_and_year(session, original_title, year)
+    else:
+        show_data = search_show_data_by_search_title_and_everything_else_empty(session, portuguese_title)
 
     if show_data is not None:
         return show_data
 
     # If not, then add it
-    return register_show_data(session, original_title, portuguese_title, duration, synopsis, year, show_type, director,
+    return register_show_data(session, portuguese_title, original_title, duration, synopsis, year, show_type, director,
                               cast, audio_languages, countries, age_classification)
 
 
