@@ -133,7 +133,7 @@ def search_shows_by_text(search_text: str, is_movie: bool) -> List[TraktShow]:
     except urllib.error.HTTPError:
         return []
 
-    # Parse the list of translations from the request
+    # Parse the response
     search_json_object = json.loads(search_json)
 
     # Create a TraktShow for each entry

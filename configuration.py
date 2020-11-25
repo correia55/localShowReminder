@@ -98,6 +98,12 @@ omdb_key = os.environ.get('OMDB_KEY', None)
 if omdb_key is None:
     print('Unable to find omdb key!')
 
+# Get the api key for omdb
+tmdb_key = os.environ.get('TMDB_KEY', None)
+
+if tmdb_key is None:
+    print('Unable to find tmdb key!')
+
 # endregion
 
 # region Information Security
