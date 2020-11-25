@@ -94,7 +94,7 @@ class ShowSession(Base):
     episode = Column(Integer)
     date_time = Column(DateTime)
 
-    def __init__(self, season, episode, date_time, channel_id, show_id):
+    def __init__(self, season: int, episode: int, date_time: datetime.datetime, channel_id: int, show_id: int):
         self.channel_id = channel_id
         self.show_id = show_id
 

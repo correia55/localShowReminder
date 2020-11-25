@@ -115,14 +115,15 @@ def search_show_information_by_type(search_text: str, is_movie: bool, language: 
     return results
 
 
-def search_db(session: sqlalchemy.orm.Session, search_list, complete_title=False, below_date=None, show_season=None,
-              show_episode=None,
-              search_adult=False):
+def search_db(session: sqlalchemy.orm.Session, search_list, is_movie=None, complete_title=False, below_date=None,
+              show_season=None,
+              show_episode=None, search_adult=False):
     """
     Get the results of the search in the DB, using all the texts from the search list.
 
     :param session: the db session.
     :param search_list: the list of texts to search for in the DB.
+    :param is_movie: True if the search is only for movies.
     :param complete_title: true when we don't want to accept any other words.
     :param below_date: a date below to limit the search.
     :param show_season: to specify a season.
@@ -169,6 +170,12 @@ def search_db(session: sqlalchemy.orm.Session, search_list, complete_title=False
 
         if show_episode is not None:
             query = query.filter(models.ShowSession.episode == show_episode)
+
+        if show_season is None and show_episode is None and is_movie is not None:
+            if is_movie:
+                query = query.filter(models.ShowSession.episode.is_(None))
+            else:
+                query = query.filter(models.ShowSession.episode.isnot_(None))
 
         if not search_adult:
             # Can't use "is" here, it needs to be "=="
@@ -371,10 +378,12 @@ def process_reminders(session: sqlalchemy.orm.Session, last_date: datetime.date)
         search_adult = user.show_adult if user is not None else False
 
         if r.reminder_type == response_models.ReminderType.LISTINGS.value:
-            db_shows = search_db(session, [r.show_name], True, last_date, r.show_season, r.show_episode, search_adult)
+            db_shows = search_db(session, [r.show_name], r.is_movie, True, last_date, r.show_season, r.show_episode,
+                                 search_adult)
         else:
             titles = get_trakt_titles(session, r.trakt_id, r.is_movie)
-            db_shows = search_db(session, titles, True, last_date, r.show_season, r.show_episode, search_adult)
+            db_shows = search_db(session, titles, r.is_movie, True, last_date, r.show_season, r.show_episode,
+                                 search_adult)
 
         if len(db_shows) > 0:
             process_emails.set_language(user.language)

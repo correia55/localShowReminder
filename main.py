@@ -26,7 +26,7 @@ class FlaskApp(flask.Flask):
 basic_auth = fh.HTTPBasicAuth()
 token_auth = fh.HTTPTokenAuth()
 app = FlaskApp(__name__)
-CORS(app, supports_credentials=True, resources={r'*': {'origins': '*'}})
+CORS(app, supports_credentials=True, resources={r'*': {'origins': configuration.application_link}})
 api = fr.Api(app)
 
 # Limit the number of requests that can be made in a certain time period
@@ -607,7 +607,7 @@ class ShowsSessionsEP(fr.Resource):
                 user = session.query(models.User).filter(models.User.id == user_id).first()
                 search_adult = user.show_adult if user is not None else False
 
-            db_shows = processing.search_db(session, [search_text], complete_title=False, search_adult=search_adult)
+            db_shows = processing.search_db(session, [search_text], search_adult=search_adult)
 
             if len(db_shows) != 0:
                 return flask.make_response(flask.jsonify({'show_list': db_shows}), 200)
