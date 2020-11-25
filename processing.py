@@ -115,7 +115,8 @@ def search_show_information_by_type(search_text: str, is_movie: bool, language: 
     return results
 
 
-def search_db(session, search_list, complete_title=False, below_date=None, show_season=None, show_episode=None,
+def search_db(session: sqlalchemy.orm.Session, search_list, complete_title=False, below_date=None, show_season=None,
+              show_episode=None,
               search_adult=False):
     """
     Get the results of the search in the DB, using all the texts from the search list.
@@ -361,7 +362,7 @@ def remove_reminder(session, reminder_id, user_id):
         session.commit()
 
 
-def process_reminders(session, last_date):
+def process_reminders(session: sqlalchemy.orm.Session, last_date: datetime.date):
     """
     Process the reminders that exist in the DB.
 
@@ -388,7 +389,7 @@ def process_reminders(session, last_date):
     print('Reminders processed!')
 
 
-def get_last_update(session):
+def get_last_update(session) -> datetime.date:
     """
     Get the date of the last update.
 

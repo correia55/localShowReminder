@@ -290,8 +290,8 @@ class RemindersEP(fr.Resource):
             'is_movie': webargs.fields.Bool(required=True),
             'type': webargs.fields.Str(required=True),
             'trakt_id': webargs.fields.Int(),
-            'show_season': webargs.fields.Int(),
-            'show_episode': webargs.fields.Int()
+            'show_season': webargs.fields.Int(validate=[webargs.validate.Range(min=1, max=50)]),
+            'show_episode': webargs.fields.Int(validate=[webargs.validate.Range(min=1)])
         }
 
     @fp.use_args(register_args)
@@ -344,8 +344,8 @@ class RemindersEP(fr.Resource):
     update_args = \
         {
             'reminder_id': webargs.fields.Int(required=True),
-            'show_season': webargs.fields.Int(required=True),
-            'show_episode': webargs.fields.Int(required=True)
+            'show_season': webargs.fields.Int(required=True, validate=[webargs.validate.Range(min=1, max=50)]),
+            'show_episode': webargs.fields.Int(required=True, validate=[webargs.validate.Range(min=1)])
         }
 
     @fp.use_args(update_args)
