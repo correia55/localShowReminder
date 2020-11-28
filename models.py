@@ -139,7 +139,7 @@ class StreamingServiceShow(Base):
 
     # Most important data
     title = Column(String(255))
-    seasons_available = Column(String)
+    seasons_available = Column(String(255))
     synopsis = Column(String(500))
 
     # Foreign keys

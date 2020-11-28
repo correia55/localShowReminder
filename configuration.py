@@ -38,7 +38,7 @@ config.set_main_option('sqlalchemy.url', database_url)
 if not os.path.isdir(MIGRATIONS_DIR):
     alecomm.init(config, MIGRATIONS_DIR)
 
-    env_file = open('%senv.py' % MIGRATIONS_DIR, 'r+')
+    env_file = open('%s/env.py' % MIGRATIONS_DIR, 'r+')
     text = env_file.read()
     text = text.replace('target_metadata=target_metadata', 'target_metadata=target_metadata, compare_type=True')
     text = text.replace('target_metadata = None', 'import models\ntarget_metadata = models.Base.metadata')
