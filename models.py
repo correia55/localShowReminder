@@ -1,5 +1,6 @@
 import datetime
 
+import pytz
 import sqlalchemy
 from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, Date, DateTime
 from sqlalchemy.ext.declarative import declarative_base
@@ -114,7 +115,8 @@ class ShowSession(Base):
         """
 
         return {'id': self.id, 'season': self.season, 'episode': self.episode,
-                'date_time': self.date_time.strftime("%Y-%m-%dT%H:%M:%S%z")}
+                # Converts the date_time to UTC
+                'date_time': self.date_time.astimezone(pytz.timezone('UTC'))}
 
 
 class StreamingService(Base):

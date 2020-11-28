@@ -57,12 +57,12 @@ def make_searchable_title(title):
     return '_' + '_'.join(get_words(title)) + '_'
 
 
-def get_datetime_with_tz_offset(datetime: datetime.datetime) -> datetime.datetime:
+def get_datetime_with_tz_offset(date_time: datetime.datetime) -> datetime.datetime:
     """
     Get the datetime with the timezone offset.
 
-    :param datetime: the datetime.
+    :param date_time: the datetime.
     :return: the datetime with the timezone offset.
     """
 
-    return datetime.astimezone(pytz.timezone('Europe/Lisbon'))
+    return pytz.timezone('Europe/Lisbon').localize(date_time)
