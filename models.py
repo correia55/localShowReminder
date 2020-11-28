@@ -6,6 +6,8 @@ from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, Date, DateT
 from sqlalchemy.ext.declarative import declarative_base
 
 # Base class for DB Classes
+import auxiliary
+
 Base = declarative_base()
 
 
@@ -93,7 +95,7 @@ class ShowSession(Base):
     # Identifies to this show session
     season = Column(Integer)
     episode = Column(Integer)
-    date_time = Column(DateTime(timezone=True))
+    date_time = Column(DateTime)
 
     def __init__(self, season: int, episode: int, date_time: datetime.datetime, channel_id: int, show_id: int):
         self.channel_id = channel_id
@@ -115,8 +117,9 @@ class ShowSession(Base):
         """
 
         return {'id': self.id, 'season': self.season, 'episode': self.episode,
-                # Converts the date_time to UTC
-                'date_time': self.date_time.astimezone(pytz.timezone('UTC'))}
+                # Converts the date_time to UTC and formats it
+                'date_time': auxiliary.get_datetime_with_tz_offset(self.date_time).astimezone(
+                    pytz.timezone('UTC')).strftime("%Y-%m-%dT%H:%M:%S")}
 
 
 class StreamingService(Base):
