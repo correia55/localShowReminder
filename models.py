@@ -92,7 +92,7 @@ class ShowSession(Base):
     # Identifies to this show session
     season = Column(Integer)
     episode = Column(Integer)
-    date_time = Column(DateTime)
+    date_time = Column(DateTime(timezone=True))
 
     def __init__(self, season: int, episode: int, date_time: datetime.datetime, channel_id: int, show_id: int):
         self.channel_id = channel_id
@@ -113,7 +113,8 @@ class ShowSession(Base):
         :return: the corresponding dictionary.
         """
 
-        return {'id': self.id, 'season': self.season, 'episode': self.episode, 'date_time': self.date_time}
+        return {'id': self.id, 'season': self.season, 'episode': self.episode,
+                'date_time': self.date_time.strftime("%Y-%m-%dT%H:%M:%S%z")}
 
 
 class StreamingService(Base):

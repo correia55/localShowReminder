@@ -5,6 +5,7 @@ import re
 
 import requests
 
+import auxiliary
 import configuration
 import db_calls
 import models
@@ -151,6 +152,9 @@ class MEPG:
 
                 # Parse the datetime
                 show_datetime = datetime.datetime.strptime(show_datetime, '%Y-%m-%d %H:%M')
+
+                # Get the date time with timezone offset
+                show_datetime = auxiliary.get_datetime_with_tz_offset(show_datetime)
 
                 db_calls.register_show_session(session, show_season, show_episode, show_datetime, channel_id,
                                                show_data.id, commit=False)

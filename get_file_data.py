@@ -4,6 +4,7 @@ import re
 import openpyxl
 import sqlalchemy.orm
 
+import auxiliary
 import configuration
 import db_calls
 import models
@@ -50,7 +51,11 @@ class TVCine:
                 deleted = True
                 delete_channels_monthly_data(session, date, TVCine.channels)
 
+            # Combine the date with the time
             date_time = date.replace(hour=time.hour, minute=time.minute)
+
+            # Get the date time with timezone offset
+            date_time = auxiliary.get_datetime_with_tz_offset(date_time)
 
             # Check if it matches the regex of a series
             series = re.search('(.+) T([0-9]+),[ ]+([0-9]+)', title.strip())

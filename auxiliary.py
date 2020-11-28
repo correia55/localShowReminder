@@ -1,5 +1,8 @@
+import datetime
 import re
 import unicodedata
+
+import pytz
 
 
 def strip_accents(text: str):
@@ -52,3 +55,14 @@ def make_searchable_title(title):
     """
 
     return '_' + '_'.join(get_words(title)) + '_'
+
+
+def get_datetime_with_tz_offset(datetime: datetime.datetime) -> datetime.datetime:
+    """
+    Get the datetime with the timezone offset.
+
+    :param datetime: the datetime.
+    :return: the datetime with the timezone offset.
+    """
+
+    return datetime.astimezone(pytz.timezone('Europe/Lisbon'))
