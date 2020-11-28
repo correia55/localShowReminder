@@ -24,6 +24,10 @@ class TVCine:
             if row[0].value is None:
                 continue
 
+            # Skip the rows in which the year is not a number (header rows)
+            if not isinstance(row[4].value, int):
+                continue
+
             # Get the data
             channel_name = row[0].value
             date = row[1].value
