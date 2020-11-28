@@ -200,11 +200,11 @@ class MEPG:
                 current.append(db_channels[i])
 
                 if i % max_channels_request == 0 and i > 0:
-                    MEPG.update_show_list_day(session, current, db_last_update.date.date())
+                    MEPG.update_show_list_day(session, current, db_last_update.date)
 
                     current = []
 
             if len(current) != 0:
-                MEPG.update_show_list_day(session, current, db_last_update.date.date())
+                MEPG.update_show_list_day(session, current, db_last_update.date)
 
         print('Shows list updated!')
