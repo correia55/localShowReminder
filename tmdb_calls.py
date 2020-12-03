@@ -16,7 +16,6 @@ class TmdbShow(object):
     """The class that will represent the data in the response from a search to tmdb."""
 
     id: int
-    poster_path: str
     original_title: str
     origin_country: str
     original_language: str
@@ -27,6 +26,7 @@ class TmdbShow(object):
     is_movie: bool
     adult: bool
 
+    poster_path: Optional[str]
     origin_country: Optional[str]
     year: Optional[int]
 
@@ -54,7 +54,6 @@ class TmdbShow(object):
             self.origin_country = show_dict['origin_country']
 
         self.id = int(show_dict['id'])
-        self.poster_path = show_dict['poster_path']
         self.popularity = show_dict['popularity']
         self.vote_average = show_dict['vote_average']
         self.original_language = show_dict['original_language']
@@ -62,6 +61,11 @@ class TmdbShow(object):
 
         if 'adult' in show_dict:
             self.adult = show_dict['adult']
+
+        if 'poster_path' in show_dict and show_dict['poster_path']:
+            self.poster_path = 'https://image.tmdb.org/t/p/w220_and_h330_face' + show_dict['poster_path']
+        else:
+            self.poster_path = None
 
 
 class TmdbTranslation(object):
