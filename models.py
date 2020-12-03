@@ -265,3 +265,18 @@ class LastUpdate(Base):
 
     def __init__(self, date: datetime.date):
         self.date = date
+
+
+class Cache(Base):
+    """Used as cache to all outside requests."""
+
+    __tablename__ = 'Cache'
+
+    key = Column(String(100), primary_key=True)
+    result = Column(String(100000))
+    date = Column(Date)
+
+    def __init__(self, key: str, result: str):
+        self.key = key
+        self.result = result
+        self.date = datetime.datetime.today()

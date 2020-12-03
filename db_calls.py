@@ -5,9 +5,9 @@ import sqlalchemy.orm
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 import auxiliary
+import configuration
 import models
 import response_models
-from configuration import AVAILABLE_LANGUAGES, AvailableLanguage
 
 
 def register_channel(session, acronym: str, name: str) -> Optional[models.Channel]:
@@ -71,8 +71,8 @@ def register_user(session, email: str, password: str, language: str = None) -> O
     """
 
     # Set the language for the user
-    if language is None or language not in AVAILABLE_LANGUAGES:
-        language = AvailableLanguage.PT.value
+    if language is None or language not in configuration.AVAILABLE_LANGUAGES:
+        language = configuration.AvailableLanguage.PT.value
 
     user = models.User(email, password, language)
     session.add(user)
@@ -279,7 +279,7 @@ def delete_alarm(session: sqlalchemy.orm.Session, alarm_id: int, user_id: int) -
     return True
 
 
-def register_trakt_titles(session: sqlalchemy.orm.Session, trakt_id: int, titles_str: str) -> Optional[
+def register_show_titles(session: sqlalchemy.orm.Session, trakt_id: int, titles_str: str) -> Optional[
     models.TraktTitles]:
     """
     Register an entry of TraktTitles.
@@ -301,7 +301,7 @@ def register_trakt_titles(session: sqlalchemy.orm.Session, trakt_id: int, titles
         return None
 
 
-def get_trakt_titles(session: sqlalchemy.orm.Session, trakt_id: int) -> models.TraktTitles:
+def get_show_titles(session: sqlalchemy.orm.Session, trakt_id: int) -> models.TraktTitles:
     """
     Get the various possible titles for the selected title, in both english and portuguese, using the DB.
 
@@ -511,6 +511,56 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, portuguese_titl
     # If not, then add it
     return register_show_data(session, portuguese_title, original_title, duration, synopsis, year, show_type, director,
                               cast, audio_languages, countries, age_classification)
+
+
+def register_cache(session: sqlalchemy.orm.Session, key: str,
+                   request_result: str) -> Optional[models.Cache]:
+    """
+    Register an entry of Cache.
+
+    :param session: the db session.
+    :param key: the key that represents a request.
+    :param request_result: the result of the request.
+    :return: the created cache entry.
+    """
+
+    cache_entry = models.Cache(key, request_result)
+    session.add(cache_entry)
+
+    try:
+        session.commit()
+        return cache_entry
+    except (IntegrityError, InvalidRequestError):
+        session.rollback()
+        return None
+
+
+def get_cache(session: sqlalchemy.orm.Session, key: str) -> Optional[models.Cache]:
+    """
+    Get an entry of Cache.
+
+    :param session: the db session.
+    :param key: the key that represents a request.
+    :return: the corresponding cache entry.
+    """
+
+    cache_entry = session.query(models.Cache) \
+        .filter(models.Cache.key == key) \
+        .first()
+
+    if not cache_entry:
+        return None
+
+    current_date = datetime.date.today()
+
+    # Check if the entry is still valid
+    if current_date > cache_entry.date + datetime.timedelta(days=configuration.cache_validity_days):
+        session.delete(cache_entry)
+        session.commit()
+
+        return None
+
+    return cache_entry
 
 
 def commit(session: sqlalchemy.orm.Session) -> bool:

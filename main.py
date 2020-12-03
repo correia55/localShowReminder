@@ -573,9 +573,16 @@ class ShowsEP(fr.Resource):
         if len(search_text) < 2:
             return flask.make_response('Search Text Too Small', 400)
 
-        shows = processing.search_show_information(search_text, is_movie, language)
+        with session_scope() as session:
+            more_results, shows = processing.search_show_information(session, search_text, is_movie, language)
 
-        return flask.make_response(flask.jsonify({'show_list': shows}), 200)
+            response_dict = {'show_list': shows}
+
+            # Add a remark when there are more results than those on the response
+            if more_results:
+                response_dict['remark'] = 'Incomplete List'
+
+            return flask.make_response(flask.jsonify(response_dict), 200)
 
 
 class ShowsSessionsEP(fr.Resource):

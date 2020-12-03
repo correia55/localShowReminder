@@ -1,6 +1,6 @@
 import datetime
 from enum import Enum
-from typing import List
+from typing import List, Tuple
 
 import flask_bcrypt as fb
 import sqlalchemy.orm
@@ -10,11 +10,9 @@ import auxiliary
 import configuration
 import db_calls
 import models
-import omdb_calls
 import process_emails
 import response_models
-import trakt_calls
-from trakt_calls import search_shows_by_text, get_show_translations
+import tmdb_calls
 
 
 class ComparisonType(Enum):
@@ -54,65 +52,66 @@ def clear_show_list(session):
     print('Shows list cleared!')
 
 
-def search_show_information(search_text: str, is_movie: bool, language: str):
+def search_show_information(session: sqlalchemy.orm.Session, search_text: str, is_movie: bool, language: str) \
+        -> Tuple[bool, List[dict]]:
     """
-    Uses trakt and omdb to search for shows using a given search text.
+    Uses tmdb to search for shows, of a given type, using a given search text.
 
-    :param search_text: the search text introduced by the user.
-    :param is_movie: if it is a movie.
-    :param language: the language.
-
-    :return: the list of results.
-    """
-
-    if is_movie is not None:
-        return search_show_information_by_type(search_text, is_movie, language)
-    else:
-        results = search_show_information_by_type(search_text, False, language)
-        results += search_show_information_by_type(search_text, True, language)
-
-    return results
-
-
-def search_show_information_by_type(search_text: str, is_movie: bool, language: str):
-    """
-    Uses trakt and omdb to search for shows, of a given type, using a given search text.
-
+    :param session: the db session.
     :param search_text: the search text introduced by the user.
     :param is_movie: if the show is a movie.
     :param language: the language of interest.
-    :return: the list of results.
+    :return: a tuple with a boolean (whether there are more results or not) and the list of results.
     """
+
+    if language == 'pt':
+        language_country = 'pt-PT'
+    else:
+        language_country = 'en-US'
 
     results = []
 
     # Search Trakt using the text
-    trakt_shows = search_shows_by_text(search_text, is_movie)
+    trakt_shows = []
+    pages = 1
+    i = 1
+
+    # Combine the results from all the pages
+    while i < (pages + 1):
+        total_nb_pages, trakt_shows_page = tmdb_calls.search_shows_by_text(session, search_text, is_movie=is_movie,
+                                                                           page=i)
+
+        # Get the new total of pages
+        pages = min(configuration.tmdb_max_mb_pages, total_nb_pages)
+
+        trakt_shows.extend(trakt_shows_page)
+        i += 1
 
     for s in trakt_shows:
-        show_dict = {'is_movie': is_movie, 'show_title': s.title, 'show_year': s.year, 'show_image': 'N/A',
-                     'trakt_id': s.id, 'show_overview': s.overview, 'language': s.language}
+        show_dict = {'is_movie': s.is_movie, 'show_title': s.title, 'show_year': s.year, 'trakt_id': s.id,
+                     'show_overview': s.overview, 'language': s.original_language}
 
-        # Get the translation of the overview
-        if language != s.language:
-            if language in s.available_translations:
-                trakt_translations = get_show_translations(s.slug, is_movie)
-
-                for transl in trakt_translations:
-                    if transl.language == language:
-                        show_dict['show_overview'] = transl.overview
-                        break
-
-        # Get the poster from Omdb
-        omdb_show = omdb_calls.search_show_by_imdb_id(s.imdb_id)
-
-        if omdb_show is None:
-            results.append(show_dict)
+        if s.poster_path:
+            show_dict['show_image'] = s.poster_path
         else:
-            show_dict['show_image'] = omdb_show.poster
-            results.append(show_dict)
+            show_dict['show_image'] = 'N/A'
 
-    return results
+        # Get the translations of the overview and title
+        if language != s.original_language:
+            tmdb_translations = tmdb_calls.get_show_translations(session, s.id, s.is_movie)
+
+            for transl in tmdb_translations:
+                if transl.language_country == language_country and transl.overview != '':
+                    show_dict['show_overview'] = transl.overview
+
+                    if transl.title != '':
+                        show_dict['show_title'] = transl.title
+
+                    break
+
+        results.append(show_dict)
+
+    return total_nb_pages > configuration.tmdb_max_mb_pages, results
 
 
 def search_db(session: sqlalchemy.orm.Session, search_list, is_movie=None, complete_title=False, below_date=None,
@@ -240,27 +239,27 @@ def search_db_id(session, show_name, is_movie, below_date=None, show_season=None
     return query.all()
 
 
-def get_trakt_titles(session: sqlalchemy.orm.Session, trakt_id: int, is_movie: bool) -> List[str]:
+def get_show_titles(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: bool) -> List[str]:
     """
     Get all trakt titles for a trakt id.
     And update the DB with the results.
 
     :param session: the db session.
-    :param trakt_id: the trakt id of the show.
+    :param tmdb_id: the tmdb id of the show.
     :param is_movie: true if it is a movie.
     :return: the list of titles a show can have.
     """
 
-    trakt_titles = db_calls.get_trakt_titles(session, trakt_id)
+    show_titles = db_calls.get_show_titles(session, tmdb_id)
 
     # Titles in the DB are still valid
-    if trakt_titles is not None \
-            and trakt_titles.insertion_datetime + datetime.timedelta(
-        days=configuration.titles_validity_days) > datetime.datetime.now():
-        return trakt_titles.titles.split('|')
+    if show_titles is not None \
+            and show_titles.insertion_datetime + datetime.timedelta(
+        days=configuration.cache_validity_days) > datetime.datetime.now():
+        return show_titles.titles.split('|')
 
     # Collect all titles for a show
-    titles = trakt_calls.collect_titles_trakt(trakt_id, is_movie)
+    titles = tmdb_calls.collect_titles(session, tmdb_id, is_movie)
 
     # Create the titles string stored in the DB
     titles_str = ''
@@ -272,12 +271,12 @@ def get_trakt_titles(session: sqlalchemy.orm.Session, trakt_id: int, is_movie: b
             titles_str = t
 
     # Create a new entry
-    if trakt_titles is None:
-        trakt_titles = db_calls.register_trakt_titles(session, trakt_id, titles_str)
-        session.add(trakt_titles)
+    if show_titles is None:
+        show_titles = db_calls.register_show_titles(session, tmdb_id, titles_str)
+        session.add(show_titles)
     # Update the current entry
     else:
-        trakt_titles.titles = titles_str
+        show_titles.titles = titles_str
         session.commit()
 
     return titles
@@ -335,7 +334,7 @@ def get_reminders(session, user_id):
         reminder_type = response_models.ReminderType(r.reminder_type)
 
         if response_models.ReminderType.DB == reminder_type:
-            titles = get_trakt_titles(session, r.trakt_id, r.is_movie)
+            titles = get_show_titles(session, r.trakt_id, r.is_movie)
         else:
             titles = [r.show_name]
 
@@ -381,7 +380,7 @@ def process_reminders(session: sqlalchemy.orm.Session, last_date: datetime.date)
             db_shows = search_db(session, [r.show_name], r.is_movie, True, last_date, r.show_season, r.show_episode,
                                  search_adult)
         else:
-            titles = get_trakt_titles(session, r.trakt_id, r.is_movie)
+            titles = get_show_titles(session, r.trakt_id, r.is_movie)
             db_shows = search_db(session, titles, r.is_movie, True, last_date, r.show_season, r.show_episode,
                                  search_adult)
 
