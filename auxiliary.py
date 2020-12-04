@@ -46,7 +46,7 @@ def get_words(text: str):
     return re.compile('[^0-9A-Za-z]+').split(processed_title)
 
 
-def make_searchable_title(title):
+def make_searchable_title(title: str):
     """
     Remove accents from the title and join words with _ (underscore).
 
@@ -66,6 +66,17 @@ def get_datetime_with_tz_offset(date_time: datetime.datetime) -> datetime.dateti
     """
 
     return pytz.timezone('Europe/Lisbon').localize(date_time)
+
+
+def convert_datetime_to_utc(date_time: datetime.datetime) -> datetime.datetime:
+    """
+    Convert a datetime to utc.
+
+    :param date_time: the datetime.
+    :return: the datetime in utc.
+    """
+
+    return date_time.astimezone(datetime.timezone.utc)
 
 
 def auto_repr(cls):
