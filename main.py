@@ -104,8 +104,8 @@ class LoginEP(fr.Resource):
 
             if user is not None:
                 if user.verified:
-                    refresh_token = authentication.generate_token(session, user.id,
-                                                                  authentication.TokenType.REFRESH).decode()
+                    refresh_token = authentication.generate_token(user.id, authentication.TokenType.REFRESH,
+                                                                  session=session).decode()
 
                     if auth['username'].find('@') != -1:
                         username = auth['username'][:auth['username'].index('@')]
@@ -512,7 +512,7 @@ class SendVerificationEmailEP(fr.Resource):
             user = processing.get_user_by_email(session, email)
 
             if user is not None and not user.verified:
-                if processing.send_verification_email(session, user):
+                if processing.send_verification_email(user):
                     return flask.make_response('', 200)
                 else:
                     return flask.make_response('', 400)
@@ -712,7 +712,7 @@ class UsersEP(fr.Resource):
                     return flask.make_response('', 400)
 
                 if processing.change_user_settings(session, {ChangeType.NEW_EMAIL.value: new_email}, user.id):
-                    if processing.send_verification_email(session, user):
+                    if processing.send_verification_email(user):
                         return flask.make_response('', 200)
                     else:
                         return flask.make_response('Invalid email', 400)

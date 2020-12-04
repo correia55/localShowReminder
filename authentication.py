@@ -1,10 +1,12 @@
 import datetime
 from enum import Enum
+from typing import Optional, Mapping
 
 import jwt
+import sqlalchemy.orm
 
 import configuration
-import models
+import db_calls
 
 
 class TokenType(Enum):
@@ -17,19 +19,25 @@ class TokenType(Enum):
     PASSWORD_RECOVERY = 6
 
 
-def generate_token(session, user_id: int, token_type: TokenType) -> any:
+def generate_token(user_id: int, token_type: TokenType, session: sqlalchemy.orm.Session = None,
+                   payload_extra: dict = None) -> Optional[bytes]:
     """
     Source: https://realpython.com/token-based-authentication-with-flask/
     Generate a token of the given type, for the specified user.
 
-    :param session: the db session.
     :param user_id: the id of the user that owns the token.
     :param token_type: the type of the token.
+    :param session: the db session, only needed when the TokenType is REFRESH.
+    :param payload_extra: a dictionary with extra information that should be added to the payload of the token.
     :return: the generated token.
     """
 
     # Set the expiration date based on the type of token
     if token_type == TokenType.REFRESH:
+        if not session:
+            print('WARNING: Session is null!')
+            return None
+
         exp = datetime.datetime.utcnow() + datetime.timedelta(days=configuration.REFRESH_TOKEN_VALIDITY_DAYS)
     elif token_type == TokenType.ACCESS:
         exp = datetime.datetime.utcnow() + datetime.timedelta(hours=configuration.ACCESS_TOKEN_VALIDITY_HOURS)
@@ -39,9 +47,12 @@ def generate_token(session, user_id: int, token_type: TokenType) -> any:
         exp = datetime.datetime.utcnow() + datetime.timedelta(days=configuration.DELETION_TOKEN_VALIDITY_DAYS)
     elif token_type == TokenType.CHANGE_EMAIL_OLD:
         exp = datetime.datetime.utcnow() + datetime.timedelta(days=configuration.CHANGE_EMAIL_TOKEN_VALIDITY_DAYS)
+    elif token_type == TokenType.CHANGE_EMAIL_NEW:
+        exp = datetime.datetime.utcnow() + datetime.timedelta(days=configuration.CHANGE_EMAIL_TOKEN_VALIDITY_DAYS)
     elif token_type == TokenType.PASSWORD_RECOVERY:
         exp = datetime.datetime.utcnow() + datetime.timedelta(days=configuration.PASSWORD_RECOVERY_TOKEN_VALIDITY_DAYS)
     else:
+        print('WARNING: Invalid token type!')
         return None
 
     try:
@@ -52,63 +63,42 @@ def generate_token(session, user_id: int, token_type: TokenType) -> any:
             'type': token_type.name
         }
 
+        if payload_extra:
+            payload.update(payload_extra)
+
         token = jwt.encode(payload, configuration.secret_key, algorithm='HS256')
 
         # If it's an authentication token, save it on the db
         if token_type == TokenType.REFRESH:
-            session.add(models.Token(token.decode()))
-            session.commit()
+            db_token = db_calls.register_token(session, token)
+
+            if db_token is None:
+                print('WARNING: Token registration failed!')
+                return None
 
         return token
 
     except Exception as e:
-        print(e)
-        return e
+        print('WARNING: ' + str(e))
+        return None
 
 
-def generate_change_token(session, user_id: int, token_type: TokenType, change_dict: dict) -> any:
+def generate_change_token(user_id: int, token_type: TokenType, change_dict: dict) \
+        -> Optional[bytes]:
     """
     Source: https://realpython.com/token-based-authentication-with-flask/
     Generate a change token of the given type, for the specified user.
 
-    :param session: the db session.
     :param user_id: the id of the user that owns the token.
     :param token_type: the type of the token.
     :param change_dict: the dictionary with all of the changes.
     :return: the generated token.
     """
 
-    # Set the expiration date based on the type of token
-    if token_type == TokenType.CHANGE_EMAIL_NEW:
-        exp = datetime.datetime.utcnow() + datetime.timedelta(days=configuration.CHANGE_EMAIL_TOKEN_VALIDITY_DAYS)
-    else:
-        return None
-
-    try:
-        payload = {
-            'exp': exp,
-            'iat': datetime.datetime.utcnow(),
-            'user': user_id,
-            'type': token_type.name
-        }
-
-        payload.update(change_dict)
-
-        token = jwt.encode(payload, configuration.secret_key, algorithm='HS256')
-
-        # If it's an authentication token, save it on the db
-        if token_type == TokenType.REFRESH:
-            session.add(models.Token(token.decode()))
-            session.commit()
-
-        return token
-
-    except Exception as e:
-        print(e)
-        return e
+    return generate_token(user_id, token_type, payload_extra=change_dict)
 
 
-def generate_access_token(session, auth_token: bytearray) -> (bool, any):
+def generate_access_token(session: sqlalchemy.orm.Session, auth_token: bytearray) -> (bool, Optional[bytes]):
     """
     Generate an access token, when the authentication token is valid.
 
@@ -121,12 +111,12 @@ def generate_access_token(session, auth_token: bytearray) -> (bool, any):
     valid, user_id = validate_token(session, auth_token, TokenType.REFRESH)
 
     if valid:
-        return True, generate_token(session, user_id, TokenType.ACCESS)
+        return True, generate_token(user_id, TokenType.ACCESS, session=session)
     else:
         return False, None
 
 
-def validate_token(session, auth_token: bytes, token_type: TokenType) -> (bool, str):
+def validate_token(session: sqlalchemy.orm.Session, auth_token: bytes, token_type: TokenType) -> (bool, str):
     """
     Source: https://realpython.com/token-based-authentication-with-flask/
 
@@ -150,8 +140,7 @@ def validate_token(session, auth_token: bytes, token_type: TokenType) -> (bool, 
         else:
             # When it's an authentication token, it needs to be validated in the db
             if token_type == TokenType.REFRESH:
-                token = session.query(models.Token).filter(
-                    models.Token.token == auth_token.decode()).first()
+                token = db_calls.get_token(session, auth_token)
 
                 if token is None:
                     return False, 'Invalid token. Please log in again.'
@@ -163,7 +152,7 @@ def validate_token(session, auth_token: bytes, token_type: TokenType) -> (bool, 
         return False, 'Invalid token. Please log in again.'
 
 
-def get_token_payload(auth_token: bytes) -> any:
+def get_token_payload(auth_token: bytes) -> Optional[Mapping]:
     """
     Get the payload of the token.
 
@@ -171,8 +160,10 @@ def get_token_payload(auth_token: bytes) -> any:
     :return: the value of that field or None.
     """
 
+    # TODO: MAKE SURE THIS CANNOT BE CALLED FROM AN UNVALIDATED TOKEN
+
     try:
-        payload = jwt.decode(auth_token, configuration.secret_key)
+        payload = jwt.decode(auth_token, configuration.secret_key, algorithms=['HS256'])
         return payload
     except jwt.ExpiredSignatureError:
         return None
@@ -189,9 +180,13 @@ def get_token_field(auth_token: bytes, field: str) -> any:
     :return: the value of that field or None.
     """
 
+    # TODO: MAKE SURE THIS CANNOT BE CALLED FROM AN UNVALIDATED TOKEN
+
     payload = get_token_payload(auth_token)
 
     if payload is None:
         return None
-    else:
+    elif field in payload:
         return payload[field]
+    else:
+        return None

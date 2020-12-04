@@ -424,7 +424,7 @@ def register_user(session, email: str, password: str, language: str) -> bool:
     user = db_calls.register_user(session, email, password, language)
 
     if user is not None:
-        return send_verification_email(session, user)
+        return send_verification_email(user)
     else:
         # TODO: Send warning email
         return False
@@ -461,15 +461,14 @@ def verify_user(session, verification_token: str):
     return True
 
 
-def send_verification_email(session, user: models.User):
+def send_verification_email(user: models.User):
     """
     Send a verification email.
 
-    :param session: the db session.
     :param user: the user.
     """
 
-    verification_token = authentication.generate_token(session, user.id, authentication.TokenType.VERIFICATION).decode()
+    verification_token = authentication.generate_token(user.id, authentication.TokenType.VERIFICATION).decode()
 
     process_emails.set_language(user.language)
     return process_emails.send_verification_email(user.email, verification_token)
@@ -489,7 +488,7 @@ def send_deletion_email(session, user_id: str) -> bool:
     if user is None:
         return False
 
-    deletion_token = authentication.generate_token(session, user.id, authentication.TokenType.DELETION).decode()
+    deletion_token = authentication.generate_token(user.id, authentication.TokenType.DELETION, session).decode()
 
     process_emails.set_language(user.language)
     return process_emails.send_deletion_email(user.email, deletion_token)
@@ -509,8 +508,8 @@ def send_change_email_old(session, user_id: str) -> bool:
     if user is None:
         return False
 
-    change_email_old_token = authentication.generate_token(session, user.id,
-                                                           authentication.TokenType.CHANGE_EMAIL_OLD).decode()
+    change_email_old_token = authentication.generate_token(user.id, authentication.TokenType.CHANGE_EMAIL_OLD,
+                                                           session).decode()
 
     process_emails.set_language(user.language)
     return process_emails.send_change_email_old(user.email, change_email_old_token)
@@ -550,8 +549,7 @@ def send_change_email_new(session, change_token_old: str, new_email: str) -> (bo
         return False, True
 
     changes = {ChangeType.NEW_EMAIL.value: new_email}
-    change_email_new_token = authentication.generate_change_token(session, user.id,
-                                                                  authentication.TokenType.CHANGE_EMAIL_NEW,
+    change_email_new_token = authentication.generate_change_token(user.id, authentication.TokenType.CHANGE_EMAIL_NEW,
                                                                   changes).decode()
 
     process_emails.set_language(user.language)
@@ -572,8 +570,8 @@ def send_password_recovery_email(session, user_id: str) -> bool:
     if user is None:
         return False
 
-    password_recovery_token = authentication.generate_token(session, user.id,
-                                                            authentication.TokenType.PASSWORD_RECOVERY).decode()
+    password_recovery_token = authentication.generate_token(user.id, authentication.TokenType.PASSWORD_RECOVERY,
+                                                            session).decode()
 
     process_emails.set_language(user.language)
     return process_emails.send_password_recovery_email(user.email, password_recovery_token)

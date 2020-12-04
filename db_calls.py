@@ -320,7 +320,6 @@ def register_show_session(session: sqlalchemy.orm.Session, season: int, episode:
     """
     Register a show session.
 
-    :param commit:
     :param session: the db session.
     :param season: the season of the show session.
     :param episode: the episode of the show session.
@@ -573,6 +572,38 @@ def clear_cache(session: sqlalchemy.orm.Session) -> None:
     session.commit()
 
     print('Cache cleared!')
+
+
+def register_token(session: sqlalchemy.orm.Session, token: bytes) -> Optional[models.Token]:
+    """
+    Register a token.
+
+    :param session: the db session.
+    :param token: the token.
+    :return: the created token.
+    """
+
+    token = models.Token(token.decode())
+    session.add(token)
+
+    try:
+        session.commit()
+        return token
+    except (IntegrityError, InvalidRequestError):
+        session.rollback()
+        return None
+
+
+def get_token(session: sqlalchemy.orm.Session, token: bytes) -> Optional[models.Token]:
+    """
+    Get a token.
+
+    :param session: the db session.
+    :param token: the token.
+    :return: the corresponding token in the DB.
+    """
+
+    return session.query(models.Token).filter(models.Token.token == token.decode()).first()
 
 
 def commit(session: sqlalchemy.orm.Session) -> bool:
