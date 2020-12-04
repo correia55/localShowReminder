@@ -16,12 +16,12 @@ class ShowData(Base):
 
     __tablename__ = 'ShowData'
     __table_args__ = (
-        sqlalchemy.UniqueConstraint("search_title", "imdb_id"),
+        sqlalchemy.UniqueConstraint("search_title", "tmdb_id"),
     )
 
     # Technical
     id = Column(Integer, primary_key=True, autoincrement=True)
-    imdb_id = Column(String(255), unique=True)
+    tmdb_id = Column(String(255), unique=True)
     search_title = Column(String(255))
 
     # Identifies to this show session
@@ -45,18 +45,18 @@ class ShowData(Base):
         self.portuguese_title = portuguese_title
 
 
-class TraktTitles(Base):
-    """Used to store all of the titles associated with a trakt id, for caching purposes."""
+class ShowTitles(Base):
+    """Used to store all of the titles associated with a tmdb id, for caching purposes."""
 
-    __tablename__ = 'TraktTitles'
+    __tablename__ = 'ShowTitles'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    trakt_id = Column(Integer, unique=True)
+    tmdb_id = Column(Integer, unique=True)
     titles = Column(String(1000), nullable=False)  # Titles separated by a vertical var (|)
     insertion_datetime = Column(DateTime, default=datetime.datetime.now())
 
     def __init__(self, trakt_id: int, titles: str):
-        self.trakt_id = trakt_id
+        self.tmdb_id = trakt_id
         self.titles = titles
 
 

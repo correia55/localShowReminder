@@ -279,39 +279,39 @@ def delete_alarm(session: sqlalchemy.orm.Session, alarm_id: int, user_id: int) -
     return True
 
 
-def register_show_titles(session: sqlalchemy.orm.Session, trakt_id: int, titles_str: str) -> Optional[
-    models.TraktTitles]:
+def register_show_titles(session: sqlalchemy.orm.Session, tmdb_id: int, titles_str: str) -> Optional[
+    models.ShowTitles]:
     """
-    Register an entry of TraktTitles.
+    Register an entry of ShowTitles.
 
     :param session: the db session.
-    :param trakt_id: the trakt id of the show.
+    :param tmdb_id: the tmdb id of the show.
     :param titles_str: the string with the list of titles for the show.
-    :return: the created TraktTitles.
+    :return: the created ShowTitles.
     """
 
-    trakt_titles = models.TraktTitles(trakt_id, titles_str)
-    session.add(trakt_titles)
+    show_titles = models.ShowTitles(tmdb_id, titles_str)
+    session.add(show_titles)
 
     try:
         session.commit()
-        return trakt_titles
+        return show_titles
     except (IntegrityError, InvalidRequestError):
         session.rollback()
         return None
 
 
-def get_show_titles(session: sqlalchemy.orm.Session, trakt_id: int) -> models.TraktTitles:
+def get_show_titles(session: sqlalchemy.orm.Session, tmdb_id: int) -> models.ShowTitles:
     """
     Get the various possible titles for the selected title, in both english and portuguese, using the DB.
 
     :param session: the db session.
-    :param trakt_id: the trakt id of the show.
+    :param tmdb_id: the tmdb id of the show.
     :return: the various possible titles.
     """
 
-    return session.query(models.TraktTitles) \
-        .filter(models.TraktTitles.trakt_id == trakt_id) \
+    return session.query(models.ShowTitles) \
+        .filter(models.ShowTitles.tmdb_id == tmdb_id) \
         .first()
 
 
@@ -407,7 +407,7 @@ def search_show_data_by_search_title_and_everything_else_empty(session: sqlalche
         .filter(models.ShowData.search_title == search_title) \
         .filter(models.ShowData.original_title == None) \
         .filter(models.ShowData.year == None) \
-        .filter(models.ShowData.imdb_id == None) \
+        .filter(models.ShowData.tmdb_id == None) \
         .first()
 
 

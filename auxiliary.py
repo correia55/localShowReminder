@@ -66,3 +66,19 @@ def get_datetime_with_tz_offset(date_time: datetime.datetime) -> datetime.dateti
     """
 
     return pytz.timezone('Europe/Lisbon').localize(date_time)
+
+
+def auto_repr(cls):
+    """
+    Automatically generate the method __repr__ for a class.
+    Source: https://stackoverflow.com/questions/32910096/is-there-a-way-to-auto-generate-a-str-implementation-in-python#33800620
+    """
+
+    def __repr__(self):
+        return '%s(%s)' % (
+            type(self).__name__,
+            ', '.join('%s=%s' % item for item in vars(self).items())
+        )
+
+    cls.__repr__ = __repr__
+    return cls

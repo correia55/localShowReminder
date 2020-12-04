@@ -6,12 +6,12 @@ from typing import List, Optional, Tuple
 
 import sqlalchemy.orm
 
+import auxiliary
 import configuration
 import db_calls
-import utilities
 
 
-@utilities.auto_str
+@auxiliary.auto_repr
 class TmdbShow(object):
     """The class that will represent the data in the response from a search to tmdb."""
 
@@ -319,7 +319,7 @@ def collect_titles(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: bool
     :return a list with the titles from a show.
     """
 
-    # Get the show's information from trakt
+    # Get the show's information from tmdb
     tmdb_show = search_show_by_id(session, tmdb_id, is_movie)
 
     # If no result is found
@@ -341,8 +341,7 @@ def collect_titles(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: bool
     trak_alias_list = get_show_aliases(session, tmdb_id, is_movie)
 
     for a in trak_alias_list:
-        if (
-                a.country == 'US' or a.country == 'PT' or a.country == tmdb_show.origin_country) \
+        if (a.country == 'US' or a.country == 'PT' or (not is_movie and a.country == tmdb_show.origin_country)) \
                 and a.title is not None and a.title != '':
             titles.add(a.title)
 
