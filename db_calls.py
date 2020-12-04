@@ -563,6 +563,18 @@ def get_cache(session: sqlalchemy.orm.Session, key: str) -> Optional[models.Cach
     return cache_entry
 
 
+def clear_cache(session: sqlalchemy.orm.Session) -> None:
+    """Delete invalid cache entries."""
+
+    today = datetime.datetime.now().date()
+
+    session.query(models.Cache).filter(models.Cache.date < today -
+                                       datetime.timedelta(days=configuration.cache_validity_days)).delete()
+    session.commit()
+
+    print('Cache cleared!')
+
+
 def commit(session: sqlalchemy.orm.Session) -> bool:
     """
     Commit the session.

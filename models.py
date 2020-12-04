@@ -280,3 +280,6 @@ class Cache(Base):
         self.key = key
         self.result = result
         self.date = datetime.datetime.today()
+
+    def __repr__(self):
+        return 'key: %s; date: %s' % (self.key, str(self.date))

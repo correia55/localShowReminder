@@ -1,11 +1,14 @@
 import datetime
 
+import sqlalchemy.orm
+
 import configuration
+import db_calls
 import get_webservice_data
 import processing
 
 
-def daily_tasks(session):
+def daily_tasks(session: sqlalchemy.orm.Session):
     """
     Run the daily tasks.
 
@@ -14,6 +17,9 @@ def daily_tasks(session):
 
     # Delete old shows from the DB
     processing.clear_show_list(session)
+
+    # Delete invalid cache
+    db_calls.clear_cache(session)
 
     # Update the list of channels
     get_webservice_data.update_channel_list(session)
