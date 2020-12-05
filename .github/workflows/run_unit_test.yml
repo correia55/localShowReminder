@@ -41,6 +41,7 @@ jobs:
         with:
           parallel: true
           flag-name: Unit Test
+          github-token: ${{ secrets.COVERALLS_TOKEN }}
 
   coveralls_finish:
     needs: test
