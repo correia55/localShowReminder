@@ -45,6 +45,7 @@ jobs:
           parallel: true
           flag-name: Unit Test
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          base-path: .
 
   coveralls_finish:
     needs: test
