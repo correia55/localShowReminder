@@ -1,1 +1,1 @@
-# localShowReminder ![Unit Tests](https://github.com/correia55/localShowReminder/workflows/Unit%20Tests/badge.svg?branch=master)
+# localShowReminder ![codecov](https://codecov.io/gh/correia55/localShowReminder/branch/master/graph/badge.svg?token=K34FZDITIU)
