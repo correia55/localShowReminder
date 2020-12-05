@@ -154,7 +154,7 @@ class MEPG:
                 show_datetime = datetime.datetime.strptime(show_datetime, '%Y-%m-%d %H:%M')
 
                 db_calls.register_show_session(session, show_season, show_episode, show_datetime, channel_id,
-                                               show_data.id, commit=False)
+                                               show_data.id, should_commit=False)
 
         session.commit()
 

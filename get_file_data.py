@@ -90,7 +90,7 @@ class TVCine:
                 return
 
             # Insert the instance
-            db_calls.register_show_session(session, season, episode, date_time, channel_id, show_data.id, commit=False)
+            db_calls.register_show_session(session, season, episode, date_time, channel_id, show_data.id, should_commit=False)
 
         db_calls.commit(session)
 

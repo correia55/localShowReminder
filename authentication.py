@@ -34,10 +34,6 @@ def generate_token(user_id: int, token_type: TokenType, session: sqlalchemy.orm.
 
     # Set the expiration date based on the type of token
     if token_type == TokenType.REFRESH:
-        if not session:
-            print('WARNING: Session is null!')
-            return None
-
         exp = datetime.datetime.utcnow() + datetime.timedelta(days=configuration.REFRESH_TOKEN_VALIDITY_DAYS)
     elif token_type == TokenType.ACCESS:
         exp = datetime.datetime.utcnow() + datetime.timedelta(hours=configuration.ACCESS_TOKEN_VALIDITY_HOURS)
@@ -83,8 +79,7 @@ def generate_token(user_id: int, token_type: TokenType, session: sqlalchemy.orm.
         return None
 
 
-def generate_change_token(user_id: int, token_type: TokenType, change_dict: dict) \
-        -> Optional[bytes]:
+def generate_change_token(user_id: int, token_type: TokenType, change_dict: dict) -> Optional[bytes]:
     """
     Source: https://realpython.com/token-based-authentication-with-flask/
     Generate a change token of the given type, for the specified user.
@@ -94,6 +89,9 @@ def generate_change_token(user_id: int, token_type: TokenType, change_dict: dict
     :param change_dict: the dictionary with all of the changes.
     :return: the generated token.
     """
+
+    if token_type == TokenType.REFRESH:
+        return None
 
     return generate_token(user_id, token_type, payload_extra=change_dict)
 
@@ -108,7 +106,7 @@ def generate_access_token(session: sqlalchemy.orm.Session, auth_token: bytearray
     message otherwise).
     """
 
-    valid, user_id = validate_token(session, auth_token, TokenType.REFRESH)
+    valid, user_id = validate_token(auth_token, TokenType.REFRESH, session)
 
     if valid:
         return True, generate_token(user_id, TokenType.ACCESS, session=session)
@@ -116,54 +114,53 @@ def generate_access_token(session: sqlalchemy.orm.Session, auth_token: bytearray
         return False, None
 
 
-def validate_token(session: sqlalchemy.orm.Session, auth_token: bytes, token_type: TokenType) -> (bool, str):
+def validate_token(token: bytes, token_type: TokenType, session: sqlalchemy.orm.Session = None) \
+        -> (bool, Optional[str]):
     """
     Source: https://realpython.com/token-based-authentication-with-flask/
 
     Decode and validate the token.
 
-    :param session: the db session.
-    :param auth_token: the authentication token.
+    :param token: the token.
     :param token_type: the type of the token.
-    :return: whether or not the token is valid and a message or the user_id.
+    :param session: the db session, only needed when the TokenType is REFRESH.
+    :return: whether or not the token is valid and, when valid, the user_id.
     """
 
-    if not auth_token:
-        return False, 'Invalid token. Please log in again.'
+    payload = get_token_payload(token)
 
-    try:
-        payload = jwt.decode(auth_token, configuration.secret_key)
+    if payload is None:
+        return False, None
 
-        # When the token is of the incorrect type
-        if payload['type'] != token_type.name:
-            return False, 'Invalid token. Please log in again.'
-        else:
-            # When it's an authentication token, it needs to be validated in the db
-            if token_type == TokenType.REFRESH:
-                token = db_calls.get_token(session, auth_token)
+    # When the token is of the incorrect type
+    if 'type' not in payload or payload['type'] != token_type.name:
+        return False, None
+    else:
+        # When it's an authentication token, it needs to be validated in the db
+        if token_type == TokenType.REFRESH:
+            token = db_calls.get_token(session, token)
 
-                if token is None:
-                    return False, 'Invalid token. Please log in again.'
+            if token is None:
+                return False, None
 
-            return True, payload['user']
-    except jwt.ExpiredSignatureError:
-        return False, 'Signature expired. Please log in again.'
-    except jwt.InvalidTokenError:
-        return False, 'Invalid token. Please log in again.'
+        return True, payload['user']
 
 
-def get_token_payload(auth_token: bytes) -> Optional[Mapping]:
+def get_token_payload(token: bytes) -> Optional[Mapping]:
     """
     Get the payload of the token.
 
-    :param auth_token: the token.
+    :param token: the token.
     :return: the value of that field or None.
     """
 
     # TODO: MAKE SURE THIS CANNOT BE CALLED FROM AN UNVALIDATED TOKEN
 
+    if not token:
+        return None
+
     try:
-        payload = jwt.decode(auth_token, configuration.secret_key, algorithms=['HS256'])
+        payload = jwt.decode(token, configuration.secret_key, algorithms=['HS256'])
         return payload
     except jwt.ExpiredSignatureError:
         return None

@@ -1,6 +1,6 @@
 import datetime
 from enum import Enum
-from typing import List, Tuple
+from typing import List, Tuple, Mapping
 
 import flask_bcrypt as fb
 import sqlalchemy.orm
@@ -440,8 +440,7 @@ def verify_user(session, verification_token: str):
     """
 
     # Validate verification token
-    valid, user_id = authentication.validate_token(session, verification_token.encode(),
-                                                   authentication.TokenType.VERIFICATION)
+    valid, user_id = authentication.validate_token(verification_token.encode(), authentication.TokenType.VERIFICATION)
 
     if not valid:
         return False
@@ -527,8 +526,7 @@ def send_change_email_new(session, change_token_old: str, new_email: str) -> (bo
     """
 
     # Validate the change token from the old email address
-    valid, user_id = authentication.validate_token(session, change_token_old.encode(),
-                                                   authentication.TokenType.CHANGE_EMAIL_OLD)
+    valid, user_id = authentication.validate_token(change_token_old.encode(), authentication.TokenType.CHANGE_EMAIL_OLD)
 
     if not valid:
         return False, False
@@ -643,7 +641,7 @@ def delete_user(session, deletion_token: str):
     """
 
     # Validate deletion token
-    valid, user_id = authentication.validate_token(session, deletion_token.encode(), authentication.TokenType.DELETION)
+    valid, user_id = authentication.validate_token(deletion_token.encode(), authentication.TokenType.DELETION)
 
     if not valid:
         return False
@@ -672,8 +670,7 @@ def change_user_settings_token(session, change_token: str):
     """
 
     # Validate change token
-    valid, user_id = authentication.validate_token(session, change_token.encode(),
-                                                   authentication.TokenType.CHANGE_EMAIL_NEW)
+    valid, user_id = authentication.validate_token(change_token.encode(), authentication.TokenType.CHANGE_EMAIL_NEW)
 
     if not valid:
         return False
@@ -684,7 +681,7 @@ def change_user_settings_token(session, change_token: str):
     return change_user_settings(session, payload, user_id)
 
 
-def change_user_settings(session, changes: dict, user_id: str):
+def change_user_settings(session, changes: Mapping, user_id: str):
     """
     Change the settings that are present in the dictionary.
 
@@ -747,8 +744,7 @@ def recover_password(session, recover_token: str, new_password: str):
     """
 
     # Validate change token
-    valid, user_id = authentication.validate_token(session, recover_token.encode(),
-                                                   authentication.TokenType.PASSWORD_RECOVERY)
+    valid, user_id = authentication.validate_token(recover_token.encode(), authentication.TokenType.PASSWORD_RECOVERY)
 
     if not valid:
         return False

@@ -68,10 +68,9 @@ def verify_access_token(token):
     :return: whether or not the token is valid.
     """
 
-    with session_scope() as session:
-        valid, user_id = authentication.validate_token(session, token.encode(), authentication.TokenType.ACCESS)
+    valid, user_id = authentication.validate_token(token.encode(), authentication.TokenType.ACCESS)
 
-        return valid
+    return valid
 
 
 @contextmanager
