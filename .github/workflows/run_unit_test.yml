@@ -37,9 +37,12 @@ jobs:
         run: touch conftest.py
     
       - name: Run tests with pytest
-        run: pytest --cov=.
+        run: pytest --cov=. --cov-report=xml
       
-      - name: Coveralls
-        uses: coverallsapp/github-action@master
+      - name: Codecov
+      - uses: actions/checkout@master
+      - uses: codecov/codecov-action@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+          flags: Unit Tests
+          verbose: true # optional (default = false)
