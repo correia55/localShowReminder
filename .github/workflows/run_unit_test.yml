@@ -29,12 +29,15 @@ jobs:
           
       - name: Install Pytest
         run: pip install pytest
+          
+      - name: Install Pytest Coverage
+        run: pip install pytest-cov
         
       - name: Create a conftest (for pytest to be able to import modules)
         run: touch conftest.py
     
       - name: Run tests with pytest
-        run: pytest
+        run: pytest --cov=.
       
       - name: Coveralls
         uses: AndreMiras/coveralls-python-action@develop
