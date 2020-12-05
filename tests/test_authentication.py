@@ -30,7 +30,10 @@ class TestAuthentication(unittest.TestCase):
 
         configuration_mock.REFRESH_TOKEN_VALIDITY_DAYS = None
         configuration_mock.ACCESS_TOKEN_VALIDITY_HOURS = None
+        configuration_mock.VERIFICATION_TOKEN_VALIDITY_DAYS = None
+        configuration_mock.DELETION_TOKEN_VALIDITY_DAYS = None
         configuration_mock.CHANGE_EMAIL_TOKEN_VALIDITY_DAYS = None
+        configuration_mock.PASSWORD_RECOVERY_TOKEN_VALIDITY_DAYS = None
 
     def test_get_token_payload_ok(self) -> None:
         """ Test the function that returns the payload of a token, with a success case. """
@@ -294,6 +297,51 @@ class TestAuthentication(unittest.TestCase):
         self.assertIsNone(actual_result)
         db_calls_mock.register_token.assert_not_called()
 
+    def test_generate_access_token_ok(self) -> None:
+        """ Test the function that generates an access token, with a success case. """
+
+        # The expected result
+        expected_expiration_date = datetime.datetime.today().replace(microsecond=0) + datetime.timedelta(hours=10)
+
+        expected_type = 'ACCESS'
+
+        # Prepare the mocks
+        configuration_mock.REFRESH_TOKEN_VALIDITY_DAYS = 5
+        configuration_mock.ACCESS_TOKEN_VALIDITY_HOURS = 10
+
+        refresh_token = authentication.generate_token(123, authentication.TokenType.REFRESH, unittest.mock.MagicMock())
+        db_calls_mock.register_token.return_value = models.Token(refresh_token)
+
+        # Call the function
+        actual_result, actual_token = authentication.generate_access_token(unittest.mock.MagicMock(), refresh_token)
+
+        # Verify the result
+        self.assertTrue(actual_result)
+        self.assertIsNotNone(actual_token)
+
+        # Verify the date
+        actual_expiration_date = datetime.datetime.fromtimestamp(authentication.get_token_field(actual_token, 'exp'))
+        self.assertEqual(expected_expiration_date, actual_expiration_date)
+
+        # Verify the other fields exist
+        self.assertEqual(expected_type, authentication.get_token_field(actual_token, 'type'))
+        self.assertEqual(123, authentication.get_token_field(actual_token, 'user'))
+
+    def test_generate_access_token_error_01(self) -> None:
+        """ Test the function that generates an access token, with an error due to an invalid REFRESH token. """
+
+        # Prepare the mocks
+        configuration_mock.DELETION_TOKEN_VALIDITY_DAYS = 5
+
+        # Call the function
+        refresh_token = authentication.generate_token(123, authentication.TokenType.DELETION)
+
+        actual_result, actual_token = authentication.generate_access_token(unittest.mock.MagicMock(), refresh_token)
+
+        # Verify the result
+        self.assertFalse(actual_result)
+        self.assertIsNone(actual_token)
+
     def test_validate_token_ok_01(self) -> None:
         """ Test the function that validates a token, with a success case for an ACCESS token. """
 
@@ -321,7 +369,7 @@ class TestAuthentication(unittest.TestCase):
         # Prepare the mocks
         configuration_mock.REFRESH_TOKEN_VALIDITY_DAYS = 5
 
-        token = authentication.generate_token(123, authentication.TokenType.REFRESH)
+        token = authentication.generate_token(123, authentication.TokenType.REFRESH, unittest.mock.MagicMock())
 
         db_calls_mock.get_token.return_value = models.Token(token)
 
@@ -379,6 +427,26 @@ class TestAuthentication(unittest.TestCase):
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
+
+    def test_validate_token_error_04(self) -> None:
+        """ Test the function that validates a token, with an error due to db not finding the REFRESH token. """
+
+        # The expected result
+        expected_result = False, None
+
+        # Prepare the mocks
+        configuration_mock.REFRESH_TOKEN_VALIDITY_DAYS = 5
+        db_calls_mock.get_token.return_value = None
+
+        # Call the function
+        token = authentication.generate_token(123, authentication.TokenType.REFRESH)
+
+        actual_result = authentication.validate_token(token, authentication.TokenType.REFRESH,
+                                                      unittest.mock.MagicMock())
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+        db_calls_mock.get_token.assert_called()
 
 
 if __name__ == '__main__':

@@ -96,7 +96,7 @@ def generate_change_token(user_id: int, token_type: TokenType, change_dict: dict
     return generate_token(user_id, token_type, payload_extra=change_dict)
 
 
-def generate_access_token(session: sqlalchemy.orm.Session, auth_token: bytearray) -> (bool, Optional[bytes]):
+def generate_access_token(session: sqlalchemy.orm.Session, auth_token: bytes) -> (bool, Optional[bytes]):
     """
     Generate an access token, when the authentication token is valid.
 
@@ -109,6 +109,7 @@ def generate_access_token(session: sqlalchemy.orm.Session, auth_token: bytearray
     valid, user_id = validate_token(auth_token, TokenType.REFRESH, session)
 
     if valid:
+        # This generate_token could only fail if the variables of the configuration had not been set
         return True, generate_token(user_id, TokenType.ACCESS, session=session)
     else:
         return False, None
