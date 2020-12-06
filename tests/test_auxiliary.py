@@ -4,6 +4,16 @@ import unittest
 import auxiliary
 
 
+@auxiliary.auto_repr
+class AutoReprTest:
+    string: str
+    number: int
+
+    def __init__(self, string: str, number: int) -> None:
+        self.string = string
+        self.number = number
+
+
 class TestAuxiliary(unittest.TestCase):
     def test_strip_accents(self) -> None:
         """ Test the function strip_accents. """
@@ -105,6 +115,20 @@ class TestAuxiliary(unittest.TestCase):
         # Call the function
         date_time = auxiliary.get_datetime_with_tz_offset(datetime.datetime(2020, 1, 1, 9))
         actual_result = auxiliary.convert_datetime_to_utc(date_time)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_auto_repr(self) -> None:
+        """ Test the annotation that automatically generates the function __repr__ for any class. """
+
+        # The expected result
+        expected_result = 'AutoReprTest(string=a string, number=353)'
+
+        # Call the function
+        auto_repr_test = AutoReprTest('a string', 353)
+
+        actual_result = auto_repr_test.__repr__()
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)

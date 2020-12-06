@@ -181,19 +181,19 @@ class TestAuthentication(unittest.TestCase):
         self.assertEqual(1, authentication.get_token_field(actual_result, 'user'))
 
     def test_generate_token_ok_02(self) -> None:
-        """ Test the function that generates a token, with a success case for ACCESS.
+        """ Test the function that generates a token, with a success case for VERIFICATION.
          And also include some extra fields in the payload."""
 
         # The expected result
-        expected_expiration_date = datetime.datetime.today().replace(microsecond=0) + datetime.timedelta(hours=5)
+        expected_expiration_date = datetime.datetime.today().replace(microsecond=0) + datetime.timedelta(days=5)
 
-        expected_type = 'ACCESS'
+        expected_type = 'VERIFICATION'
 
         # Prepare the mocks
-        configuration_mock.ACCESS_TOKEN_VALIDITY_HOURS = 5
+        configuration_mock.VERIFICATION_TOKEN_VALIDITY_DAYS = 5
 
         # Call the function
-        actual_result = authentication.generate_token(1234, authentication.TokenType.ACCESS,
+        actual_result = authentication.generate_token(1234, authentication.TokenType.VERIFICATION,
                                                       payload_extra={'extra_key': 'extra_value'})
 
         # Verify the result
