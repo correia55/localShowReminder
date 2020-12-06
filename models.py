@@ -243,11 +243,6 @@ class Reminder(Base):
         self.session_id = session_id
         self.user_id = user_id
 
-    def __eq__(self, o: object) -> bool:
-        return self.anticipation_minutes == o.anticipation_minutes \
-               and self.session_id == o.session_id \
-               and self.user_id == o.user_id
-
 
 class Token(Base):
     """Used to store user's valid refresh tokens."""

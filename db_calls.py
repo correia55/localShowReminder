@@ -71,13 +71,13 @@ def get_channel_name(session: sqlalchemy.orm.Session, name: str) -> Optional[mod
         .first()
 
 
-def register_user(session, email: str, password: str, language: str = None) -> Optional[models.User]:
+def register_user(session, email: str, password_hash: str, language: str = None) -> Optional[models.User]:
     """
     Register a user.
 
     :param session: the db session.
     :param email: the email of the user.
-    :param password: the password of the user.
+    :param password_hash: the password's hash.
     :param language: the language of the user.
     :return: the created user.
     """
@@ -90,7 +90,7 @@ def register_user(session, email: str, password: str, language: str = None) -> O
     if language is None or language not in configuration.AVAILABLE_LANGUAGES:
         language = configuration.AvailableLanguage.PT.value
 
-    user = models.User(email, password, language)
+    user = models.User(email, password_hash, language)
     session.add(user)
 
     try:
