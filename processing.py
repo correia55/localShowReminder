@@ -49,8 +49,6 @@ def clear_show_list(session):
         models.ShowSession.date_time < today_start - datetime.timedelta(7)).delete()
     session.commit()
 
-    print('Shows list cleared!')
-
 
 def search_show_information(session: sqlalchemy.orm.Session, search_text: str, is_movie: bool, language: str) \
         -> Tuple[bool, List[dict]]:
@@ -180,7 +178,7 @@ def search_db(session: sqlalchemy.orm.Session, search_list: List[str], is_movie:
 
         if not search_adult:
             # Can't use "is" here, it needs to be "=="
-            query = query.filter(models.Channel.adult == False)
+            query = query.filter(models.Channel.adult.is_(False))
 
         if below_date is not None:
             query = query.filter(models.ShowSession.date_time > below_date)
@@ -284,101 +282,101 @@ def get_show_titles(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: boo
     return titles
 
 
-def update_reminder(session, reminder_id: int, show_season: int, show_episode: int, user_id: int):
+def update_alarm(session, alarm_id: int, show_season: int, show_episode: int, user_id: int):
     """
-    Update a reminder with the given data.
+    Update a alarm with the given data.
     This only matters when the show is not a movie, so we can update the season and/or episode.
 
     :param session: the db session.
-    :param reminder_id: the id of the corresponding id.
-    :param show_season: show season for the reminder.
-    :param show_episode: show episode for the reminder.
+    :param alarm_id: the id of the corresponding id.
+    :param show_season: show season for the alarm.
+    :param show_episode: show episode for the alarm.
     :param user_id: the id of the corresponding user.
     """
 
     # Somehow using the is False does not work
-    reminder = session.query(models.Reminder) \
-        .filter(models.Reminder.user_id == user_id) \
-        .filter(models.Reminder.is_movie == False) \
-        .filter(models.Reminder.id == reminder_id).first()
+    alarm = session.query(models.Alarm) \
+        .filter(models.Alarm.user_id == user_id) \
+        .filter(models.Alarm.is_movie.is_(False)) \
+        .filter(models.Alarm.id == alarm_id).first()
 
-    # End processing if the reminder does not exist
-    if reminder is None:
+    # End processing if the alarm does not exist
+    if alarm is None:
         return False
 
-    reminder.show_season = show_season
-    reminder.show_episode = show_episode
+    alarm.show_season = show_season
+    alarm.show_episode = show_episode
 
     session.commit()
 
     return True
 
 
-def get_reminders(session, user_id):
+def get_alarms(session, user_id):
     """
-    Get a list of reminders for the user who's id is user_id.
+    Get a list of alarms for the user who's id is user_id.
 
     :param session: the db session.
     :param user_id: the id of the user.
-    :return: a list of reminders for the user who's id is user_id.
+    :return: a list of alarms for the user who's id is user_id.
     """
 
     if not user_id:
         return []
 
-    reminders = session.query(models.Reminder) \
-        .filter(models.Reminder.user_id == user_id).all()
+    alarms = session.query(models.Alarm) \
+        .filter(models.Alarm.user_id == user_id).all()
 
-    # Add the possible titles to the reminders sent
-    final_reminders = []
+    # Add the possible titles to the alarms sent
+    final_alarms = []
 
-    for r in reminders:
-        reminder_type = response_models.ReminderType(r.reminder_type)
+    for r in alarms:
+        alarm_type = response_models.AlarmType(r.alarm_type)
 
-        if response_models.ReminderType.DB == reminder_type:
+        if response_models.AlarmType.DB == alarm_type:
             titles = get_show_titles(session, r.trakt_id, r.is_movie)
         else:
             titles = [r.show_name]
 
-        final_reminders.append(response_models.Reminder(r, titles))
+        final_alarms.append(response_models.Alarm(r, titles))
 
-    return final_reminders
+    return final_alarms
 
 
-def remove_reminder(session, reminder_id, user_id):
+def remove_alarm(session, alarm_id, user_id):
     """
-    Delete the reminder with the corresponding id.
+    Delete the alarm with the corresponding id.
 
     :param session: the db session.
-    :param reminder_id: the id of the reminder.
+    :param alarm_id: the id of the alarm.
     :param user_id: the id of the user.
     """
 
-    reminder = session.query(models.Reminder) \
-        .filter(models.Reminder.id == reminder_id) \
-        .filter(models.Reminder.user_id == user_id) \
+    alarm = session.query(models.Alarm) \
+        .filter(models.Alarm.id == alarm_id) \
+        .filter(models.Alarm.user_id == user_id) \
         .first()
 
-    if reminder is not None:
-        session.delete(reminder)
+    if alarm is not None:
+        session.delete(alarm)
         session.commit()
 
 
-def process_reminders(session: sqlalchemy.orm.Session, last_date: datetime.date):
+def process_alarms(session: sqlalchemy.orm.Session, last_date: datetime.date):
     """
-    Process the reminders that exist in the DB.
+    Process the alarms that exist in the DB.
 
     :param session: the db session.
     :param last_date: the date of the last update.
     """
 
-    reminders = db_calls.get_reminders(session)
+    alarms = db_calls.get_alarms(session)
 
-    for r in reminders:
+    for r in alarms:
         user = session.query(models.User).filter(models.User.id == r.user_id).first()
         search_adult = user.show_adult if user is not None else False
 
-        if r.reminder_type == response_models.ReminderType.LISTINGS.value:
+        if r.alarm_type == response_models.AlarmType.LISTINGS.value:
             db_shows = search_db(session, [r.show_name], r.is_movie, True, last_date, r.show_season, r.show_episode,
                                  search_adult, False)
         else:
@@ -388,9 +386,7 @@ def process_reminders(session: sqlalchemy.orm.Session, last_date: datetime.date)
 
         if len(db_shows) > 0:
             process_emails.set_language(user.language)
-            process_emails.send_reminders_email(user.email, db_shows)
-
-    print('Reminders processed!')
+            process_emails.send_alarms_email(user.email, db_shows)
 
 
 def get_last_update(session) -> datetime.date:
@@ -772,55 +768,53 @@ def get_settings(session, user_id: int):
     return {'include_adult_channels': user.show_adult, 'language': user.language}
 
 
-def get_alarms(session, user_id: int) -> List[response_models.Alarm]:
+def get_reminders(session, user_id: int) -> List[response_models.Reminder]:
     """
-    Get a list of alarms for the user who's id is user_id.
+    Get a list of reminders for the user who's id is user_id.
 
     :param session: the db session.
     :param user_id: the id of the user.
-    :return: a list of alarms for the user who's id is user_id.
+    :return: a list of reminders for the user who's id is user_id.
     """
 
     if not user_id:
         return []
 
-    alarms = db_calls.get_alarms_user(session, user_id)
+    reminders = db_calls.get_reminders_user(session, user_id)
 
-    final_alarms = []
+    final_reminders = []
 
-    for a in alarms:
-        final_alarms.append(response_models.Alarm(session, a))
+    for a in reminders:
+        final_reminders.append(response_models.Reminder(session, a))
 
-    return final_alarms
+    return final_reminders
 
 
-def process_alarms(session: sqlalchemy.orm.Session) -> None:
+def process_reminders(session: sqlalchemy.orm.Session) -> None:
     """
-    Process the alarms that exist in the DB, sending an email when the session is within the desired time frame.
+    Process the reminders that exist in the DB, sending an email when the session is within the desired time frame.
 
     :param session: the db session.
     """
 
-    alarms_sessions = db_calls.get_sessions_alarms(session)
+    reminders_sessions = db_calls.get_sessions_reminders(session)
 
-    for a_s in alarms_sessions:
-        alarm: models.Alarm = a_s.Alarm
+    for a_s in reminders_sessions:
+        reminder: models.Reminder = a_s.Reminder
         show_session: models.ShowSession = a_s.ShowSession
 
-        anticipation_hours = alarm.anticipation_minutes / 60
+        anticipation_hours = reminder.anticipation_minutes / 60
 
-        # If it is time to fire the alarm
+        # If it is time to fire the reminder
         if datetime.datetime.utcnow() + datetime.timedelta(hours=anticipation_hours) > show_session.date_time:
-            user = db_calls.get_user_id(session, alarm.user_id)
+            user = db_calls.get_user_id(session, reminder.user_id)
             channel = db_calls.get_channel_id(session, show_session.channel_id)
 
             # Add the channel to the session
             show_session.channel = channel.name
 
             process_emails.set_language(user.language)
-            process_emails.send_reminders_email(user.email, [show_session])
+            process_emails.send_alarms_email(user.email, [show_session])
 
-            session.delete(alarm)
+            session.delete(reminder)
             session.commit()
-
-    print('Alarms processed!')

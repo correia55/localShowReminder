@@ -7,7 +7,7 @@ import configuration
 
 
 class OmdbShow(object):
-    """The class that will represent the data in the response from a search to omdb."""
+    """The class that will represent the data in the response from a search to Omdb."""
 
     poster: str
 
@@ -17,7 +17,7 @@ class OmdbShow(object):
 
 def search_show_by_imdb_id(imdb_id: str) -> Optional[OmdbShow]:
     """
-    Get a show's information, from omdb.
+    Get a show's information, from Omdb.
 
     :param imdb_id: the imdb id of the show.
     :return: the OmdbShow.
@@ -37,7 +37,7 @@ def search_show_by_imdb_id(imdb_id: str) -> Optional[OmdbShow]:
     # Parse the show from the request
     show_json_object = json.loads(search_json)
 
-    # When the omdb can't find the information
+    # When the Omdb can't find the information
     if show_json_object['Response'] == 'False':
         return None
 

@@ -1,41 +1,41 @@
 import datetime
+from enum import Enum
 from typing import List
 
 import sqlalchemy.orm
-from enum import Enum
 
 import db_calls
 import models
 
 
-class ReminderType(Enum):
+class AlarmType(Enum):
     LISTINGS = 0
     DB = 1
 
 
-class Reminder:
+class Alarm:
     id: int
     show_name: str
     is_movie: bool
-    reminder_type: ReminderType
+    alarm_type: AlarmType
     show_season: int
     show_episode: int
     show_titles: [str]
 
-    def __init__(self, reminder: models.Reminder, titles: List[str]):
+    def __init__(self, alarm: models.Alarm, titles: List[str]):
         """
-        Create an instance using a DB reminder and a list of titles.
+        Create an instance using a DB alarm and a list of titles.
 
-        :param reminder: the DB reminder.
+        :param alarm: the DB alarm.
         :param titles: the list of titles.
         """
 
-        self.id = reminder.id
-        self.show_name = reminder.show_name
-        self.is_movie = reminder.is_movie
-        self.reminder_type = ReminderType(reminder.reminder_type)
-        self.show_season = reminder.show_season
-        self.show_episode = reminder.show_episode
+        self.id = alarm.id
+        self.show_name = alarm.show_name
+        self.is_movie = alarm.is_movie
+        self.alarm_type = AlarmType(alarm.alarm_type)
+        self.show_season = alarm.show_season
+        self.show_episode = alarm.show_episode
         self.show_titles = titles
 
     def to_dict(self):
@@ -46,30 +46,30 @@ class Reminder:
         """
 
         return {'id': self.id, 'show_name': self.show_name, 'is_movie': self.is_movie,
-                'reminder_type': self.reminder_type.name,
+                'alarm_type': self.alarm_type.name,
                 'show_season': self.show_season, 'show_episode': self.show_episode,
                 'show_titles': self.show_titles}
 
 
-class Alarm:
+class Reminder:
     id: int
     title: str
     date_time: datetime.datetime
     anticipation_minutes: int
 
-    def __init__(self, session: sqlalchemy.orm.Session, alarm: models.Alarm):
+    def __init__(self, session: sqlalchemy.orm.Session, reminder: models.Reminder):
         """
-        Create an instance using a DB Alarm.
+        Create an instance using a DB reminder.
 
-        :param alarm: the DB alarm.
+        :param reminder: the DB reminder.
         """
 
-        alarm_session = db_calls.get_show_session(session, alarm.show_id)
+        reminder_session = db_calls.get_show_session(session, reminder.show_id)
 
-        self.id = alarm.id
-        self.title = alarm_session.title
-        self.date_time = alarm_session.date_time
-        self.anticipation_minutes = alarm.anticipation_minutes
+        self.id = reminder.id
+        self.title = reminder_session.title
+        self.date_time = reminder_session.date_time
+        self.anticipation_minutes = reminder.anticipation_minutes
 
     def to_dict(self):
         """

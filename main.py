@@ -15,7 +15,7 @@ import db_calls
 import models
 import processing
 from processing import ChangeType
-from response_models import ReminderType
+from response_models import AlarmType
 
 
 class FlaskApp(flask.Flask):
@@ -169,104 +169,8 @@ class RecoverPasswordEP(fr.Resource):
                 return flask.make_response('Invalid Token', 400)
 
 
-class AlarmsEP(fr.Resource):
-    decorators = [token_auth.login_required]
-
-    def __init__(self):
-        super(AlarmsEP, self).__init__()
-
-    def get(self):
-        """Get the list of alarms of the user."""
-
-        with session_scope() as session:
-            # Get the user id from the token
-            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
-            user_id = authentication.get_token_field(token.encode(), 'user')
-
-            alarms = processing.get_alarms(session, user_id)
-
-            return flask.make_response(flask.jsonify({'alarm_list': processing.list_to_json(alarms)}), 200)
-
-    register_args = \
-        {
-            'show_session_id': webargs.fields.Int(required=True),
-            'anticipation_minutes': webargs.fields.Int(required=True)
-        }
-
-    @fp.use_args(register_args)
-    def post(self, args):
-        """Register an alarm."""
-
-        show_session_id = args['show_session_id']
-        anticipation_minutes = args['anticipation_minutes']
-
-        with session_scope() as session:
-            # Get the user id from the token
-            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
-            user_id = authentication.get_token_field(token.encode(), 'user')
-
-            if db_calls.register_alarm(session, show_session_id, anticipation_minutes, user_id) is not None:
-                return flask.make_response(
-                    flask.jsonify({
-                        'alarm_list': processing.list_to_json(processing.get_alarms(session, user_id))
-                    }), 201)
-            else:
-                return flask.make_response('Invalid Alarm', 400)
-
-    update_args = \
-        {
-            'alarm_id': webargs.fields.Int(required=True),
-            'anticipation_minutes': webargs.fields.Int(required=True)
-        }
-
-    @fp.use_args(update_args)
-    def put(self, args):
-        """Update an alarm."""
-
-        alarm_id = args['alarm_id']
-        anticipation_minutes = args['anticipation_minutes']
-
-        with session_scope() as session:
-            # Get the user id from the token
-            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
-            user_id = authentication.get_token_field(token.encode(), 'user')
-
-            if db_calls.update_alarm(session, alarm_id, anticipation_minutes, user_id):
-                return flask.make_response(
-                    flask.jsonify({
-                        'alarm_list': processing.list_to_json(processing.get_alarms(session, user_id))
-                    }), 201)
-            else:
-                return flask.make_response('', 404)
-
-    delete_args = \
-        {
-            'alarm_id': webargs.fields.Int(required=True)
-        }
-
-    @fp.use_args(delete_args)
-    def delete(self, args):
-        """Delete an alarm."""
-
-        alarm_id = args['alarm_id']
-
-        with session_scope() as session:
-            # Get the user id from the token
-            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
-            user_id = authentication.get_token_field(token.encode(), 'user')
-
-            if db_calls.delete_alarm(session, alarm_id, user_id):
-                return flask.make_response(flask.jsonify({
-                    'alarm_list': processing.list_to_json(processing.get_alarms(session, user_id))
-                }), 200)
-            else:
-                return flask.make_response('', 404)
-
-
 class RemindersEP(fr.Resource):
     decorators = [token_auth.login_required]
-
-    # TODO: TEST THE REMINDERS
 
     def __init__(self):
         super(RemindersEP, self).__init__()
@@ -285,82 +189,49 @@ class RemindersEP(fr.Resource):
 
     register_args = \
         {
-            'show_name': webargs.fields.Str(required=True),
-            'is_movie': webargs.fields.Bool(required=True),
-            'type': webargs.fields.Str(required=True),
-            'trakt_id': webargs.fields.Int(),
-            'show_season': webargs.fields.Int(validate=[webargs.validate.Range(min=1, max=50)]),
-            'show_episode': webargs.fields.Int(validate=[webargs.validate.Range(min=1)])
+            'show_session_id': webargs.fields.Int(required=True),
+            'anticipation_minutes': webargs.fields.Int(required=True)
         }
 
     @fp.use_args(register_args)
     def post(self, args):
         """Register a reminder."""
 
-        show_name = args['show_name']
-        is_movie = args['is_movie']
-        reminder_type = args['type']
-        trakt_id = None
-        show_season = None
-        show_episode = None
-
-        for k, v in args.items():
-            if v is None:
-                continue
-
-            if k == 'show_season':
-                show_season = v
-            elif k == 'show_episode':
-                show_episode = v
-            elif k == 'trakt_id':
-                trakt_id = v
+        show_session_id = args['show_session_id']
+        anticipation_minutes = args['anticipation_minutes']
 
         with session_scope() as session:
-            try:
-                reminder_type = ReminderType[reminder_type]
-            except KeyError:
-                return flask.make_response('Invalid Reminder Type', 400)
-
-            if reminder_type == ReminderType.DB and trakt_id is None:
-                return flask.make_response('Missing Trakt Id', 400)
-
-            if not is_movie and (show_season is None or show_episode is None):
-                return flask.make_response('Missing Season Episode', 400)
-
             # Get the user id from the token
             token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
             user_id = authentication.get_token_field(token.encode(), 'user')
 
-            if db_calls.register_reminder(session, show_name, trakt_id, is_movie, reminder_type, show_season,
-                                          show_episode, user_id) is not None:
+            if db_calls.register_reminder(session, show_session_id, anticipation_minutes, user_id) is not None:
                 return flask.make_response(
                     flask.jsonify({
                         'reminder_list': processing.list_to_json(processing.get_reminders(session, user_id))
                     }), 201)
             else:
-                return flask.make_response('Reminder Already Exists', 400)
+                return flask.make_response('Invalid reminder', 400)
 
     update_args = \
         {
             'reminder_id': webargs.fields.Int(required=True),
-            'show_season': webargs.fields.Int(required=True, validate=[webargs.validate.Range(min=1, max=50)]),
-            'show_episode': webargs.fields.Int(required=True, validate=[webargs.validate.Range(min=1)])
+            'anticipation_minutes': webargs.fields.Int(required=True)
         }
 
     @fp.use_args(update_args)
     def put(self, args):
-        """Update a reminder."""
+        """Update an reminder."""
 
         reminder_id = args['reminder_id']
-        show_season = args['show_season']
-        show_episode = args['show_episode']
+        anticipation_minutes = args['anticipation_minutes']
 
         with session_scope() as session:
             # Get the user id from the token
             token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
             user_id = authentication.get_token_field(token.encode(), 'user')
 
-            if processing.update_reminder(session, reminder_id, show_season, show_episode, user_id):
+            if db_calls.update_reminder(session, reminder_id, anticipation_minutes, user_id):
                 return flask.make_response(
                     flask.jsonify({
                         'reminder_list': processing.list_to_json(processing.get_reminders(session, user_id))
@@ -384,10 +255,137 @@ class RemindersEP(fr.Resource):
             token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
             user_id = authentication.get_token_field(token.encode(), 'user')
 
-            processing.remove_reminder(session, reminder_id, user_id)
+            if db_calls.delete_reminder(session, reminder_id, user_id):
+                return flask.make_response(flask.jsonify({
+                    'reminder_list': processing.list_to_json(processing.get_reminders(session, user_id))
+                }), 200)
+            else:
+                return flask.make_response('', 404)
+
+
+class AlarmsEP(fr.Resource):
+    decorators = [token_auth.login_required]
+
+    def __init__(self):
+        super(AlarmsEP, self).__init__()
+
+    def get(self):
+        """Get the list of alarms of the user."""
+
+        with session_scope() as session:
+            # Get the user id from the token
+            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+            user_id = authentication.get_token_field(token.encode(), 'user')
+
+            alarms = processing.get_alarms(session, user_id)
+
+            return flask.make_response(flask.jsonify({'alarm_list': processing.list_to_json(alarms)}), 200)
+
+    register_args = \
+        {
+            'show_name': webargs.fields.Str(required=True),
+            'is_movie': webargs.fields.Bool(required=True),
+            'type': webargs.fields.Str(required=True),
+            'trakt_id': webargs.fields.Int(),
+            'show_season': webargs.fields.Int(validate=[webargs.validate.Range(min=1, max=50)]),
+            'show_episode': webargs.fields.Int(validate=[webargs.validate.Range(min=1)])
+        }
+
+    @fp.use_args(register_args)
+    def post(self, args):
+        """Register an alarm."""
+
+        show_name = args['show_name']
+        is_movie = args['is_movie']
+        alarm_type = args['type']
+        trakt_id = None
+        show_season = None
+        show_episode = None
+
+        for k, v in args.items():
+            if v is None:
+                continue
+
+            if k == 'show_season':
+                show_season = v
+            elif k == 'show_episode':
+                show_episode = v
+            elif k == 'trakt_id':
+                trakt_id = v
+
+        with session_scope() as session:
+            try:
+                alarm_type = AlarmType[alarm_type]
+            except KeyError:
+                return flask.make_response('Invalid Alarm Type', 400)
+
+            if alarm_type == AlarmType.DB and trakt_id is None:
+                return flask.make_response('Missing Trakt Id', 400)
+
+            if not is_movie and (show_season is None or show_episode is None):
+                return flask.make_response('Missing Season Episode', 400)
+
+            # Get the user id from the token
+            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+            user_id = authentication.get_token_field(token.encode(), 'user')
+
+            if db_calls.register_alarm(session, show_name, trakt_id, is_movie, alarm_type, show_season,
+                                       show_episode, user_id) is not None:
+                return flask.make_response(
+                    flask.jsonify({
+                        'alarm_list': processing.list_to_json(processing.get_alarms(session, user_id))
+                    }), 201)
+            else:
+                return flask.make_response('Alarm Already Exists', 400)
+
+    update_args = \
+        {
+            'alarm_id': webargs.fields.Int(required=True),
+            'show_season': webargs.fields.Int(required=True, validate=[webargs.validate.Range(min=1, max=50)]),
+            'show_episode': webargs.fields.Int(required=True, validate=[webargs.validate.Range(min=1)])
+        }
+
+    @fp.use_args(update_args)
+    def put(self, args):
+        """Update an alarm."""
+
+        alarm_id = args['alarm_id']
+        show_season = args['show_season']
+        show_episode = args['show_episode']
+
+        with session_scope() as session:
+            # Get the user id from the token
+            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+            user_id = authentication.get_token_field(token.encode(), 'user')
+
+            if processing.update_alarm(session, alarm_id, show_season, show_episode, user_id):
+                return flask.make_response(
+                    flask.jsonify({
+                        'alarm_list': processing.list_to_json(processing.get_alarms(session, user_id))
+                    }), 201)
+            else:
+                return flask.make_response('', 404)
+
+    delete_args = \
+        {
+            'alarm_id': webargs.fields.Int(required=True)
+        }
+
+    @fp.use_args(delete_args)
+    def delete(self, args):
+        """Delete a alarm."""
+
+        alarm_id = args['alarm_id']
+
+        with session_scope() as session:
+            # Get the user id from the token
+            token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+            user_id = authentication.get_token_field(token.encode(), 'user')
+
+            processing.remove_alarm(session, alarm_id, user_id)
 
             return flask.make_response(flask.jsonify({
-                'reminder_list': processing.list_to_json(processing.get_reminders(session, user_id))
+                'alarm_list': processing.list_to_json(processing.get_alarms(session, user_id))
             }), 200)
 
 
@@ -457,8 +455,8 @@ class SendChangeEmailEP(fr.Resource):
             success, already_exists = processing.send_change_email_new(session, change_token, new_email)
 
             if success or already_exists:
-                # Even though this means it's a failure
-                # returning a different message from success would result in revealing that there's an associated account
+                # Even though this means it's a failure, returning a different message from success
+                # would result in revealing that there's an associated account
                 if already_exists:
                     # TODO: SEND WARNING EMAIL
                     pass

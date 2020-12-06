@@ -15,6 +15,9 @@ import db_calls
 import models
 
 
+# TODO: UPDATE TESTS WITH THE NEW SHOW_DATA SHOW_SESSION ORGANIZATION
+
+
 class TestDBCalls(unittest.TestCase):
     session: sqlalchemy.orm.Session
 
@@ -33,10 +36,10 @@ class TestDBCalls(unittest.TestCase):
             # Delete all sessions associated with the test channel
             for s in sessions:
                 if user is not None:
-                    # Delete all alarms associated with a session
-                    alarms = db_calls.get_alarms_user(self.session, user.id)
+                    # Delete all reminders associated with a session
+                    reminders = db_calls.get_reminders_user(self.session, user.id)
 
-                    for a in alarms:
+                    for a in reminders:
                         self.session.delete(a)
 
                     self.session.commit()
@@ -52,8 +55,8 @@ class TestDBCalls(unittest.TestCase):
         self.session.commit()
         self.session.close()
 
-    def test_get_alarms_01(self) -> None:
-        """ Test the function get_alarms without results. """
+    def test_get_reminders_01(self) -> None:
+        """ Test the function get_reminders without results. """
 
         # The expected result
         expected_result = []
@@ -63,7 +66,7 @@ class TestDBCalls(unittest.TestCase):
         self.assertIsNotNone(user)
 
         # Call the function
-        actual_result = db_calls.get_alarms_user(self.session, user.id)
+        actual_result = db_calls.get_reminders_user(self.session, user.id)
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -72,8 +75,8 @@ class TestDBCalls(unittest.TestCase):
         self.session.delete(user)
         self.session.commit()
 
-    def test_get_alarms_02(self) -> None:
-        """ Test the function get_alarms with results. """
+    def test_get_reminders_02(self) -> None:
+        """ Test the function get_reminders with results. """
 
         # Prepare the DB by creating a new user
         user = db_calls.register_user(self.session, 'test_email', 'test_password')
@@ -86,20 +89,20 @@ class TestDBCalls(unittest.TestCase):
                                                       datetime.datetime.utcnow())
         self.assertIsNotNone(show_session)
 
-        alarm = db_calls.register_alarm(self.session, show_session.id, 10, user.id)
-        self.assertIsNotNone(alarm)
+        reminder = db_calls.register_reminder(self.session, show_session.id, 10, user.id)
+        self.assertIsNotNone(reminder)
 
         # The expected result
-        expected_result = [models.Alarm(10, show_session.id, user.id)]
+        expected_result = [models.Reminder(10, show_session.id, user.id)]
 
         # Call the function
-        actual_result = db_calls.get_alarms_user(self.session, user.id)
+        actual_result = db_calls.get_reminders_user(self.session, user.id)
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
 
         # Clean up the DB
-        self.session.delete(alarm)
+        self.session.delete(reminder)
         self.session.commit()
 
         self.session.delete(show_session)

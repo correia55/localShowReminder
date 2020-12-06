@@ -20,8 +20,8 @@ msgstr "Account Verification"
 msgid "deletion_email"
 msgstr "Delete Account"
 
-msgid "reminder_results"
-msgstr "Reminder results"
+msgid "alarm_results"
+msgstr "Alarm results"
 
 msgid "dear"
 msgstr "Dear"
@@ -30,7 +30,7 @@ msgid "regards_sentence"
 msgstr "Best regards"
 
 msgid "unsubscribe_sentence"
-msgstr "Don't like these emails? Delete your reminders or account at"
+msgstr "Don't like these emails? Delete your reminders, alarms or account at"
 
 msgid "registration_sentence"
 msgstr "Thank you for registering at"
@@ -54,7 +54,7 @@ msgid "expiration_sentence"
 msgstr "If you let it expire, you will need to login to our system and request a new email"
 
 msgid "results_sentence"
-msgstr "These are the results for the reminders you created"
+msgstr "These are the results for the alarms you created"
 
 msgid "first_letter_of_season"
 msgstr "S"

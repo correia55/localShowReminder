@@ -1,22 +1,25 @@
+import sqlalchemy.orm
+
 import configuration
 import processing
 
 
-def daily_tasks(session):
+def hourly_tasks(db_session: sqlalchemy.orm.Session):
     """
     Run the hourly tasks.
 
-    :param session: the db session.
+    :param db_session: the db session.
     """
 
-    processing.process_alarms(session)
+    processing.process_reminders(db_session)
+    print('Reminders processed!')
 
 
 if __name__ == '__main__':
     session = configuration.Session()
 
     try:
-        daily_tasks(session)
+        hourly_tasks(session)
         session.commit()
     except:
         session.rollback()

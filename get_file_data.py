@@ -4,7 +4,6 @@ import re
 import openpyxl
 import sqlalchemy.orm
 
-import auxiliary
 import configuration
 import db_calls
 import models
@@ -14,7 +13,7 @@ class TVCine:
     channels = ['TVCine Top', 'TVCine Edition', 'TVCine Emotion', 'TVCine Action']
 
     @staticmethod
-    def update_show_list(session, filename: str):
+    def update_show_list(db_session: sqlalchemy.orm.Session, filename: str):
         wb = openpyxl.load_workbook(filename)
 
         deleted = False
@@ -44,12 +43,12 @@ class TVCine:
             director = row[11].value
             cast = row[12].value
             title = str(row[13].value)
-            episode_title = row[14].value
+            # episode_title = row[14].value
 
             # Delete all shows that already exist for this month
             if not deleted:
                 deleted = True
-                delete_channels_monthly_data(session, date, TVCine.channels)
+                delete_channels_monthly_data(db_session, date, TVCine.channels)
 
             # Combine the date with the time
             date_time = date.replace(hour=time.hour, minute=time.minute)
@@ -64,7 +63,7 @@ class TVCine:
                 season = int(series.group(2))
                 episode = int(series.group(3))
 
-                episode_synosis = synopsis
+                # episode_synopsis = synopsis
                 synopsis = None
 
                 # Also get the original title without the season and episode
@@ -75,14 +74,14 @@ class TVCine:
             else:
                 season = None
                 episode = None
-                episode_synosis = None
+                # episode_synopsis = None
 
             channel_name = 'TVCine ' + channel_name.strip().split()[1]
-            channel_id = session.query(models.Channel).filter(models.Channel.name == channel_name).first().id
+            channel_id = db_session.query(models.Channel).filter(models.Channel.name == channel_name).first().id
 
             # Insert the ShowData, if necessary
-            show_data = db_calls.insert_if_missing_show_data(session, title, original_title, duration, synopsis, year,
-                                                             show_type, director, cast, languages, countries,
+            show_data = db_calls.insert_if_missing_show_data(db_session, title, original_title, duration, synopsis,
+                                                             year, show_type, director, cast, languages, countries,
                                                              age_classification)
 
             if show_data is None:
@@ -90,16 +89,17 @@ class TVCine:
                 return
 
             # Insert the instance
-            db_calls.register_show_session(session, season, episode, date_time, channel_id, show_data.id, should_commit=False)
+            db_calls.register_show_session(db_session, season, episode, date_time, channel_id, show_data.id,
+                                           should_commit=False)
 
-        db_calls.commit(session)
+        db_calls.commit(db_session)
 
 
-def delete_channels_monthly_data(session, date, channels):
+def delete_channels_monthly_data(db_session, date, channels):
     """
     Delete all the shows in a given month, in a set of channels.
 
-    :param session: the DB session.
+    :param db_session: the DB session.
     :param date: a date in the month of interest.
     :param channels: the set of channels.
     """
@@ -112,38 +112,38 @@ def delete_channels_monthly_data(session, date, channels):
         end_of_month = start_of_month.replace(year=start_of_month.year, month=1) - datetime.timedelta(seconds=1)
 
     for channel in channels:
-        channel_id = session.query(models.Channel).filter(models.Channel.name == channel).first().id
-        shows = session.query(models.ShowSession) \
+        channel_id = db_session.query(models.Channel).filter(models.Channel.name == channel).first().id
+        shows = db_session.query(models.ShowSession) \
             .filter(models.ShowSession.channel_id == channel_id) \
             .filter(models.ShowSession.date_time > start_of_month) \
             .filter(models.ShowSession.date_time < end_of_month)
         shows.delete()
 
-    session.commit()
+    db_session.commit()
 
 
-def update_show_list(session: sqlalchemy.orm.Session, channel_set: int, filename: str) -> ():
+def update_show_list(db_session: sqlalchemy.orm.Session, channel_set: int, filename: str) -> ():
     """
     Select the function according to the channel set.
 
-    :param session: the DB session.
+    :param db_session: the DB session.
     :param channel_set: the set of channels of the file.
     :param filename: the name of the file.
     """
 
     # TVCine
     if channel_set == 0:
-        TVCine.update_show_list(session, filename)
+        TVCine.update_show_list(db_session, filename)
 
 
 if __name__ == '__main__':
-    channel_set = int(input('Choose one channel set for the data being inserted.\n0 - TVCine\n'))
-    filename = input('What is the path to the file?\n')
+    input_channel_set = int(input('Choose one channel set for the data being inserted.\n0 - TVCine\n'))
+    input_filename = input('What is the path to the file?\n')
 
     session = configuration.Session()
 
     try:
-        update_show_list(session, channel_set, filename)
+        update_show_list(session, input_channel_set, input_filename)
         session.commit()
     except:
         session.rollback()

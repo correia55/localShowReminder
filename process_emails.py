@@ -191,19 +191,19 @@ def send_change_email_new(destination: str, token: str, old_email: str) -> bool:
     return send_email(content, subject, destination)
 
 
-def send_reminders_email(destination: str, results: List[models.ShowSession]) -> bool:
+def send_alarms_email(destination: str, results: List[models.ShowSession]) -> bool:
     """
-    Send an email with the results found for the reminders created.
+    Send an email with the results found for the alarms created.
 
     :param str destination: the destination address.
     :param list results: the list of results.
     """
 
-    subject = current.gettext('reminder_results')
+    subject = current.gettext('alarm_results')
 
-    content = env.get_template('reminders_email.html').render(application_name=configuration.application_name,
-                                                              application_link=configuration.application_link,
-                                                              username=destination, results=results, title=subject)
+    content = env.get_template('alarms_email.html').render(application_name=configuration.application_name,
+                                                           application_link=configuration.application_link,
+                                                           username=destination, results=results, title=subject)
 
     return send_email(content, subject, destination)
 

@@ -338,9 +338,9 @@ def collect_titles(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: bool
             titles.add(t.title)
 
     # Add the titles in the aliases
-    trak_alias_list = get_show_aliases(session, tmdb_id, is_movie)
+    tmdb_alias_list = get_show_aliases(session, tmdb_id, is_movie)
 
-    for a in trak_alias_list:
+    for a in tmdb_alias_list:
         if (a.country == 'US' or a.country == 'PT' or (not is_movie and a.country == tmdb_show.origin_country)) \
                 and a.title is not None and a.title != '':
             titles.add(a.title)

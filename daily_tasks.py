@@ -8,32 +8,37 @@ import get_webservice_data
 import processing
 
 
-def daily_tasks(session: sqlalchemy.orm.Session):
+def daily_tasks(db_session: sqlalchemy.orm.Session):
     """
     Run the daily tasks.
 
-    :param session: the db session.
+    :param db_session: the db session.
     """
 
     # Delete old shows from the DB
-    processing.clear_show_list(session)
+    processing.clear_show_list(db_session)
+    print('Shows list cleared!')
 
     # Delete invalid cache
-    db_calls.clear_cache(session)
+    db_calls.clear_cache(db_session)
+    print('Cache cleared!')
 
     # Update the list of channels
-    get_webservice_data.update_channel_list(session)
+    get_webservice_data.update_channel_list(db_session)
 
     # Get the date of the last update
-    last_update_date = processing.get_last_update(session)
+    last_update_date = processing.get_last_update(db_session)
 
     # Update the list of shows in the DB
     if get_webservice_data.configuration.selected_epg == 'MEPG':
-        get_webservice_data.MEPG.update_show_list(session)
+        get_webservice_data.MEPG.update_show_list(db_session)
 
-    # Search the shows for the existing reminders
+    print('Shows list updated!')
+
+    # Search the shows for the existing alarms
     # The date needs to be the day after because it is at 00:00
-    processing.process_reminders(session, last_update_date + datetime.timedelta(days=1))
+    processing.process_alarms(db_session, last_update_date + datetime.timedelta(days=1))
+    print('Alarms processed!')
 
 
 if __name__ == '__main__':

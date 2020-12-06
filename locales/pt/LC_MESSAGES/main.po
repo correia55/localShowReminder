@@ -20,8 +20,8 @@ msgstr "Verificação da Conta"
 msgid "deletion_email"
 msgstr "Apagar Conta"
 
-msgid "reminder_results"
-msgstr "Resultados dos Lembretes"
+msgid "alarm_results"
+msgstr "Resultados dos Alarmes"
 
 msgid "dear"
 msgstr "Caro"
@@ -30,7 +30,7 @@ msgid "regards_sentence"
 msgstr "Melhores cumprimentos"
 
 msgid "unsubscribe_sentence"
-msgstr "Não quer receber mais destes emails? Apague os seu lembretes ou conta em"
+msgstr "Não quer receber mais destes emails? Apague os seu lembretes, alarmes ou conta em"
 
 msgid "registration_sentence"
 msgstr "Obrigado por se registar em"
@@ -54,7 +54,7 @@ msgid "expiration_sentence"
 msgstr "Se o deixar expirar, precisará de pedir um novo email através do formulário de login no site"
 
 msgid "results_sentence"
-msgstr "São estes os resultados para os lembretes criados"
+msgstr "São estes os resultados para os alarmes criados"
 
 msgid "first_letter_of_season"
 msgstr "T"

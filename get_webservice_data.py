@@ -5,7 +5,6 @@ import re
 
 import requests
 
-import auxiliary
 import configuration
 import db_calls
 import models
@@ -172,7 +171,7 @@ class MEPG:
         """
 
         # Get list of all channels from the db
-        db_channels = session.query(models.Channel).filter(models.Channel.search_epg == True).all()
+        db_channels = session.query(models.Channel).filter(models.Channel.search_epg.is_(True)).all()
 
         # Get the date of the last update
         db_last_update = session.query(models.LastUpdate).first()
@@ -207,5 +206,3 @@ class MEPG:
 
             if len(current) != 0:
                 MEPG.update_show_list_day(session, current, db_last_update.date)
-
-        print('Shows list updated!')

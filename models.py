@@ -195,29 +195,29 @@ class User(Base):
         self.language = language
 
 
-class Reminder(Base):
-    __tablename__ = 'Reminder'
+class Alarm(Base):
+    __tablename__ = 'Alarm'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
     show_name = Column(String(255), nullable=False)
-    trakt_id = Column(Integer, nullable=True)
+    trakt_id = Column(Integer)
 
-    is_movie = Column(Boolean, nullable=False)
-    reminder_type = Column(Integer, nullable=False)
+    is_movie = Column(Boolean)
+    alarm_type = Column(Integer, nullable=False)
 
     show_season = Column(Integer)
     show_episode = Column(Integer)
 
     user_id = Column(Integer, ForeignKey('User.id'))
 
-    def __init__(self, show_name: str, trakt_id: int, is_movie: bool, reminder_type: int, show_season: int,
+    def __init__(self, show_name: str, trakt_id: int, is_movie: bool, alarm_type: int, show_season: int,
                  show_episode: int, user_id: int):
         self.show_name = show_name
         self.trakt_id = trakt_id
 
         self.is_movie = is_movie
-        self.reminder_type = reminder_type
+        self.alarm_type = alarm_type
 
         self.show_season = show_season
         self.show_episode = show_episode
@@ -225,8 +225,8 @@ class Reminder(Base):
         self.user_id = user_id
 
 
-class Alarm(Base):
-    __tablename__ = 'Alarm'
+class Reminder(Base):
+    __tablename__ = 'Reminder'
     __table_args__ = (
         sqlalchemy.UniqueConstraint("session_id", "user_id"),
     )

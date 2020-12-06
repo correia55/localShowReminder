@@ -137,83 +137,40 @@ def get_user_email(session: sqlalchemy.orm.Session, email: str) -> Optional[mode
         .first()
 
 
-def register_reminder(session: sqlalchemy.orm.Session, show_name: str, trakt_id: int, is_movie: bool,
-                      reminder_type: response_models.ReminderType, show_season, show_episode, user_id) \
-        -> Optional[models.Reminder]:
+def register_alarm(session: sqlalchemy.orm.Session, show_name: str, trakt_id: int, is_movie: bool,
+                   alarm_type: response_models.AlarmType, show_season, show_episode, user_id) \
+        -> Optional[models.Alarm]:
     """
-    Create a reminder for the given data.
+    Create an alarm for the given data.
 
     :param session: the db session.
     :param show_name: the name of the show.
     :param trakt_id: the trakt id of the show.
     :param is_movie: true if it is a movie.
-    :param reminder_type: reminder type.
-    :param show_season: show season for the reminder.
-    :param show_episode: show episode for the reminder.
-    :param user_id: the owner of the reminder.
+    :param alarm_type: alarm type.
+    :param show_season: show season for the alarm.
+    :param show_episode: show episode for the alarm.
+    :param user_id: the owner of the alarm.
     """
 
     if not session:
         print('WARNING: Session is null!')
         return None
 
-    reminder = session.query(models.Reminder) \
-        .filter(models.Reminder.user_id == user_id) \
-        .filter(models.Reminder.is_movie == is_movie) \
-        .filter(models.Reminder.show_name == show_name).first()
+    alarm = session.query(models.Alarm) \
+        .filter(models.Alarm.user_id == user_id) \
+        .filter(models.Alarm.is_movie == is_movie) \
+        .filter(models.Alarm.show_name == show_name).first()
 
-    # End processing if the reminder already exists
-    if reminder is not None:
+    # End processing if the alarm already exists
+    if alarm is not None:
         return None
 
     if is_movie:
         show_season = None
         show_episode = None
 
-    reminder = models.Reminder(show_name, trakt_id, is_movie, reminder_type.value, show_season, show_episode, user_id)
-    session.add(reminder)
-
-    try:
-        session.commit()
-        return reminder
-    except (IntegrityError, InvalidRequestError):
-        session.rollback()
-        return None
-
-
-def get_reminders(session: sqlalchemy.orm.Session) -> List[models.Reminder]:
-    """
-    Get all reminders.
-
-    :param session: the db session.
-    :return: all reminders.
-    """
-
-    if not session:
-        print('WARNING: Session is null!')
-        return []
-
-    return session.query(models.Reminder) \
-        .all()
-
-
-def register_alarm(session: sqlalchemy.orm.Session, show_session_id: int, anticipation_minutes: int,
-                   user_id: int) -> Optional[models.Alarm]:
-    """
-    Register an alarm.
-
-    :param session: the db session.
-    :param show_session_id: the id of the show session.
-    :param anticipation_minutes: the minutes before the show's session for the alarm.
-    :param user_id: the id of the user.
-    :return: the created alarm.
-    """
-
-    if not session:
-        print('WARNING: Session is null!')
-        return None
-
-    alarm = models.Alarm(anticipation_minutes, show_session_id, user_id)
+    alarm = models.Alarm(show_name, trakt_id, is_movie, alarm_type.value, show_season, show_episode, user_id)
     session.add(alarm)
 
     try:
@@ -240,48 +197,92 @@ def get_alarms(session: sqlalchemy.orm.Session) -> List[models.Alarm]:
         .all()
 
 
-def get_alarms_user(session: sqlalchemy.orm.Session, user_id: int) -> List[models.Alarm]:
+def register_reminder(session: sqlalchemy.orm.Session, show_session_id: int, anticipation_minutes: int,
+                      user_id: int) -> Optional[models.Reminder]:
     """
-    Get a list of alarms for the user who's id is user_id.
+    Register a reminder.
+
+    :param session: the db session.
+    :param show_session_id: the id of the show session.
+    :param anticipation_minutes: the minutes before the show's session for the reminder.
+    :param user_id: the id of the user.
+    :return: the created reminder.
+    """
+
+    if not session:
+        print('WARNING: Session is null!')
+        return None
+
+    reminder = models.Reminder(anticipation_minutes, show_session_id, user_id)
+    session.add(reminder)
+
+    try:
+        session.commit()
+        return reminder
+    except (IntegrityError, InvalidRequestError):
+        session.rollback()
+        return None
+
+
+def get_reminders(session: sqlalchemy.orm.Session) -> List[models.Reminder]:
+    """
+    Get all reminders.
+
+    :param session: the db session.
+    :return: all reminders.
+    """
+
+    if not session:
+        print('WARNING: Session is null!')
+        return []
+
+    return session.query(models.Reminder) \
+        .all()
+
+
+def get_reminders_user(session: sqlalchemy.orm.Session, user_id: int) -> List[models.Reminder]:
+    """
+    Get a list of reminders for the user who's id is user_id.
 
     :param session: the db session.
     :param user_id: the id of the user.
-    :return: a list of alarms for the user who's id is user_id.
+    :return: a list of reminders for the user who's id is user_id.
     """
 
     if not session:
         print('WARNING: Session is null!')
         return []
 
-    return session.query(models.Alarm) \
-        .filter(models.Alarm.user_id == user_id) \
+    return session.query(models.Reminder) \
+        .filter(models.Reminder.user_id == user_id) \
         .all()
 
 
-def get_sessions_alarms(session: sqlalchemy.orm.Session) -> List:
+def get_sessions_reminders(session: sqlalchemy.orm.Session) -> List:
     """
-    Get all alarms and the corresponding sessions.
+    Get all reminders and the corresponding sessions.
 
     :param session: the db session.
-    :return: all alarms and the corresponding sessions.
+    :return: all reminders and the corresponding sessions.
     """
 
     if not session:
         print('WARNING: Session is null!')
         return []
 
-    return session.query(models.Alarm, models.ShowSession) \
-        .filter(models.Alarm.show_id == models.ShowSession.id) \
+    return session.query(models.Reminder, models.ShowSession) \
+        .filter(models.Reminder.show_id == models.ShowSession.id) \
         .all()
 
 
-def update_alarm(session: sqlalchemy.orm.Session, alarm_id: int, anticipation_minutes: int, user_id: int) -> bool:
+def update_reminder(session: sqlalchemy.orm.Session, reminder_id: int, anticipation_minutes: int,
+                    user_id: int) -> bool:
     """
-    Update an alarm.
+    Update a reminder.
 
     :param session: the db session.
-    :param alarm_id: the id of the alarm.
-    :param anticipation_minutes: the minutes before the show's session for the alarm.
+    :param reminder_id: the id of the reminder.
+    :param anticipation_minutes: the minutes before the show's session for the reminder.
     :param user_id: the id of the user.
     :return: True if the operation was a success.
     """
@@ -290,28 +291,28 @@ def update_alarm(session: sqlalchemy.orm.Session, alarm_id: int, anticipation_mi
         print('WARNING: Session is null!')
         return False
 
-    # Get the alarm
-    alarm = session.query(models.Alarm) \
-        .filter(models.Alarm.id == alarm_id) \
-        .filter(models.Alarm.user_id == user_id) \
+    # Get the reminder
+    reminder = session.query(models.Reminder) \
+        .filter(models.Reminder.id == reminder_id) \
+        .filter(models.Reminder.user_id == user_id) \
         .first()
 
-    # Check if the alarm exists
-    if alarm is None:
+    # Check if the reminder exists
+    if reminder is None:
         return False
 
-    alarm.anticipation_minutes = anticipation_minutes
+    reminder.anticipation_minutes = anticipation_minutes
     session.commit()
 
     return True
 
 
-def delete_alarm(session: sqlalchemy.orm.Session, alarm_id: int, user_id: int) -> bool:
+def delete_reminder(session: sqlalchemy.orm.Session, reminder_id: int, user_id: int) -> bool:
     """
-    Delete the alarm with the corresponding id.
+    Delete the reminder with the corresponding id.
 
     :param session: the db session.
-    :param alarm_id: the id of the alarm.
+    :param reminder_id: the id of the reminder.
     :param user_id: the id of the user.
     :return: True if the operation was a success.
     """
@@ -320,16 +321,16 @@ def delete_alarm(session: sqlalchemy.orm.Session, alarm_id: int, user_id: int) -
         print('WARNING: Session is null!')
         return False
 
-    # Get the alarm
-    alarm = session.query(models.Alarm) \
-        .filter(models.Alarm.id == alarm_id) \
-        .filter(models.Alarm.user_id == user_id) \
+    # Get the reminder
+    reminder = session.query(models.Reminder) \
+        .filter(models.Reminder.id == reminder_id) \
+        .filter(models.Reminder.user_id == user_id) \
         .first()
 
-    if alarm is None:
+    if reminder is None:
         return False
 
-    session.delete(alarm)
+    session.delete(reminder)
     session.commit()
 
     return True
@@ -673,8 +674,6 @@ def clear_cache(session: sqlalchemy.orm.Session) -> None:
     session.query(models.Cache).filter(models.Cache.date < today -
                                        datetime.timedelta(days=configuration.cache_validity_days)).delete()
     session.commit()
-
-    print('Cache cleared!')
 
 
 def register_token(session: sqlalchemy.orm.Session, token: bytes) -> Optional[models.Token]:
