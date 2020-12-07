@@ -10,6 +10,19 @@ import models
 import response_models
 
 
+def get_regex_operation_dbms() -> str:
+    """
+    Get the name of the operation that compares with regex, based on the current DBMS.
+
+    :return: the name of the operation
+    """
+
+    if 'mysql' in configuration.database_url:
+        return 'REGEXP'
+    else:
+        return '~*'
+
+
 def register_channel(session, acronym: str, name: str) -> Optional[models.Channel]:
     """
     Register a channel.
@@ -19,10 +32,6 @@ def register_channel(session, acronym: str, name: str) -> Optional[models.Channe
     :param name: the name.
     :return: the created channel.
     """
-
-    if not session:
-        print('WARNING: Session is null!')
-        return None
 
     channel = models.Channel(acronym, name)
     session.add(channel)
@@ -44,10 +53,6 @@ def get_channel_id(session: sqlalchemy.orm.Session, channel_id: int) -> Optional
     :return: the channel.
     """
 
-    if not session:
-        print('WARNING: Session is null!')
-        return None
-
     return session.query(models.Channel) \
         .filter(models.Channel.id == channel_id) \
         .first()
@@ -61,10 +66,6 @@ def get_channel_name(session: sqlalchemy.orm.Session, name: str) -> Optional[mod
     :param name: the name of the channel.
     :return: the channel.
     """
-
-    if not session:
-        print('WARNING: Session is null!')
-        return None
 
     return session.query(models.Channel) \
         .filter(models.Channel.name == name) \
@@ -81,10 +82,6 @@ def register_user(session, email: str, password_hash: str, language: str = None)
     :param language: the language of the user.
     :return: the created user.
     """
-
-    if not session:
-        print('WARNING: Session is null!')
-        return None
 
     # Set the language for the user
     if language is None or language not in configuration.AVAILABLE_LANGUAGES:
@@ -110,10 +107,6 @@ def get_user_id(session: sqlalchemy.orm.Session, user_id: int) -> Optional[model
     :return: the user.
     """
 
-    if not session:
-        print('WARNING: Session is null!')
-        return None
-
     return session.query(models.User) \
         .filter(models.User.id == user_id) \
         .first()
@@ -127,10 +120,6 @@ def get_user_email(session: sqlalchemy.orm.Session, email: str) -> Optional[mode
     :param email: the email of the user.
     :return: the user.
     """
-
-    if not session:
-        print('WARNING: Session is null!')
-        return None
 
     return session.query(models.User) \
         .filter(models.User.email == email) \
@@ -152,10 +141,6 @@ def register_alarm(session: sqlalchemy.orm.Session, show_name: str, trakt_id: in
     :param show_episode: show episode for the alarm.
     :param user_id: the owner of the alarm.
     """
-
-    if not session:
-        print('WARNING: Session is null!')
-        return None
 
     alarm = session.query(models.Alarm) \
         .filter(models.Alarm.user_id == user_id) \
@@ -189,10 +174,6 @@ def get_alarms(session: sqlalchemy.orm.Session) -> List[models.Alarm]:
     :return: all alarms.
     """
 
-    if not session:
-        print('WARNING: Session is null!')
-        return []
-
     return session.query(models.Alarm) \
         .all()
 
@@ -208,10 +189,6 @@ def register_reminder(session: sqlalchemy.orm.Session, show_session_id: int, ant
     :param user_id: the id of the user.
     :return: the created reminder.
     """
-
-    if not session:
-        print('WARNING: Session is null!')
-        return None
 
     reminder = models.Reminder(anticipation_minutes, show_session_id, user_id)
     session.add(reminder)
@@ -232,10 +209,6 @@ def get_reminders(session: sqlalchemy.orm.Session) -> List[models.Reminder]:
     :return: all reminders.
     """
 
-    if not session:
-        print('WARNING: Session is null!')
-        return []
-
     return session.query(models.Reminder) \
         .all()
 
@@ -249,10 +222,6 @@ def get_reminders_user(session: sqlalchemy.orm.Session, user_id: int) -> List[mo
     :return: a list of reminders for the user who's id is user_id.
     """
 
-    if not session:
-        print('WARNING: Session is null!')
-        return []
-
     return session.query(models.Reminder) \
         .filter(models.Reminder.user_id == user_id) \
         .all()
@@ -265,10 +234,6 @@ def get_sessions_reminders(session: sqlalchemy.orm.Session) -> List:
     :param session: the db session.
     :return: all reminders and the corresponding sessions.
     """
-
-    if not session:
-        print('WARNING: Session is null!')
-        return []
 
     return session.query(models.Reminder, models.ShowSession) \
         .filter(models.Reminder.show_id == models.ShowSession.id) \
@@ -286,10 +251,6 @@ def update_reminder(session: sqlalchemy.orm.Session, reminder_id: int, anticipat
     :param user_id: the id of the user.
     :return: True if the operation was a success.
     """
-
-    if not session:
-        print('WARNING: Session is null!')
-        return False
 
     # Get the reminder
     reminder = session.query(models.Reminder) \
@@ -317,10 +278,6 @@ def delete_reminder(session: sqlalchemy.orm.Session, reminder_id: int, user_id: 
     :return: True if the operation was a success.
     """
 
-    if not session:
-        print('WARNING: Session is null!')
-        return False
-
     # Get the reminder
     reminder = session.query(models.Reminder) \
         .filter(models.Reminder.id == reminder_id) \
@@ -346,10 +303,6 @@ def register_show_titles(session: sqlalchemy.orm.Session, tmdb_id: int, titles_s
     :return: the created ShowTitles.
     """
 
-    if not session:
-        print('WARNING: Session is null!')
-        return None
-
     show_titles = models.ShowTitles(tmdb_id, titles_str)
     session.add(show_titles)
 
@@ -370,10 +323,6 @@ def get_show_titles(session: sqlalchemy.orm.Session, tmdb_id: int) -> Optional[m
     :return: the various possible titles.
     """
 
-    if not session:
-        print('WARNING: Session is null!')
-        return None
-
     return session.query(models.ShowTitles) \
         .filter(models.ShowTitles.tmdb_id == tmdb_id) \
         .first()
@@ -393,10 +342,6 @@ def register_show_session(session: sqlalchemy.orm.Session, season: int, episode:
     :param should_commit: True it the data should be committed right away.
     :return: the created show session.
     """
-
-    if not session:
-        print('WARNING: Session is null!')
-        return None
 
     show_session = models.ShowSession(season, episode, date_time, channel_id, show_id)
     session.add(show_session)
@@ -421,10 +366,6 @@ def get_show_sessions_channel(session: sqlalchemy.orm.Session, channel_id: int) 
     :return: a list of sessions of a given channel.
     """
 
-    if not session:
-        print('WARNING: Session is null!')
-        return []
-
     return session.query(models.ShowSession) \
         .filter(models.ShowSession.channel_id == channel_id) \
         .all()
@@ -438,10 +379,6 @@ def get_show_session(session: sqlalchemy.orm.Session, show_id: int) -> Optional[
     :param show_id: the id of the show session.
     :return: the show session with a given id.
     """
-
-    if not session:
-        print('WARNING: Session is null!')
-        return None
 
     return session.query(models.ShowSession) \
         .filter(models.ShowSession.id == show_id) \
@@ -459,10 +396,6 @@ def search_show_data_by_original_title_and_year(session: sqlalchemy.orm.Session,
     :return: the show data with that data.
     """
 
-    if not session:
-        print('WARNING: Session is null!')
-        return None
-
     return session.query(models.ShowData) \
         .filter(models.ShowData.original_title == original_title) \
         .filter(models.ShowData.year == year) \
@@ -478,10 +411,6 @@ def search_show_data_by_search_title_and_everything_else_empty(session: sqlalche
     :param portuguese_title: the portuguese title.
     :return: the show data with that data.
     """
-
-    if not session:
-        print('WARNING: Session is null!')
-        return None
 
     search_title = auxiliary.make_searchable_title(portuguese_title.strip())
 
@@ -515,10 +444,6 @@ def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, o
     :param age_classification: the age classification.
     :return: the created show data.
     """
-
-    if not session:
-        print('WARNING: Session is null!')
-        return None
 
     search_title = auxiliary.make_searchable_title(portuguese_title.strip())
 
@@ -586,10 +511,6 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, portuguese_titl
     :return: the corresponding show data.
     """
 
-    if not session:
-        print('WARNING: Session is null!')
-        return None
-
     # Check if there's already an entry with this information
     if original_title is not None and year is not None:
         show_data = search_show_data_by_original_title_and_year(session, original_title, year)
@@ -615,10 +536,6 @@ def register_cache(session: sqlalchemy.orm.Session, key: str,
     :return: the created cache entry.
     """
 
-    if not session:
-        print('WARNING: Session is null!')
-        return None
-
     cache_entry = models.Cache(key, request_result)
     session.add(cache_entry)
 
@@ -638,10 +555,6 @@ def get_cache(session: sqlalchemy.orm.Session, key: str) -> Optional[models.Cach
     :param key: the key that represents a request.
     :return: the corresponding cache entry.
     """
-
-    if not session:
-        print('WARNING: Session is null!')
-        return None
 
     cache_entry = session.query(models.Cache) \
         .filter(models.Cache.key == key) \
@@ -665,10 +578,6 @@ def get_cache(session: sqlalchemy.orm.Session, key: str) -> Optional[models.Cach
 def clear_cache(session: sqlalchemy.orm.Session) -> None:
     """Delete invalid cache entries."""
 
-    if not session:
-        print('WARNING: Session is null!')
-        return None
-
     today = datetime.datetime.now().date()
 
     session.query(models.Cache).filter(models.Cache.date < today -
@@ -684,10 +593,6 @@ def register_token(session: sqlalchemy.orm.Session, token: bytes) -> Optional[mo
     :param token: the token.
     :return: the created token.
     """
-
-    if not session:
-        print('WARNING: Session is null!')
-        return None
 
     token = models.Token(token.decode())
     session.add(token)
@@ -709,11 +614,181 @@ def get_token(session: sqlalchemy.orm.Session, token: bytes) -> Optional[models.
     :return: the corresponding token in the DB.
     """
 
-    if not session:
-        print('WARNING: Session is null!')
+    return session.query(models.Token).filter(models.Token.token == token.decode()).first()
+
+
+def register_streaming_service(session: sqlalchemy.orm.Session, ss_name: str) -> Optional[models.StreamingService]:
+    """
+    Register a streaming service.
+
+    :param session: the db session.
+    :param ss_name: the name of the streaming service.
+    :return: the created streaming service.
+    """
+
+    streaming_service = models.StreamingService(ss_name)
+    session.add(streaming_service)
+
+    try:
+        session.commit()
+        return streaming_service
+    except (IntegrityError, InvalidRequestError):
+        session.rollback()
         return None
 
-    return session.query(models.Token).filter(models.Token.token == token.decode()).first()
+
+def get_streaming_service_id(session: sqlalchemy.orm.Session, ss_id: int) -> Optional[models.StreamingService]:
+    """
+    Get the streaming service with a given id.
+
+    :param session: the db session.
+    :param ss_id: the id of the streaming service.
+    :return: the streaming service.
+    """
+
+    return session.query(models.StreamingService) \
+        .filter(models.StreamingService.id == ss_id) \
+        .first()
+
+
+def register_streaming_service_show(session: sqlalchemy.orm.Session, first_season_available: Optional[int],
+                                    last_season_available: Optional[int], streaming_service_id: int, show_id: int,
+                                    last_season_number_episodes: Optional[int] = None, should_commit: bool = True) \
+        -> Optional[models.StreamingServiceShow]:
+    """
+    Register a streaming service show.
+
+    :param session: the db session.
+    :param first_season_available: the first season available in the streaming service.
+    :param last_season_available: the last season available in the streaming service.
+    :param streaming_service_id: the id of the streaming service.
+    :param show_id: the id of the corresponding show data (technical).
+    :param last_season_number_episodes: the number of episodes available in the streaming service.
+    :param should_commit: True it the data should be committed right away.
+    :return: the created streaming service show.
+    """
+
+    if first_season_available is not None:
+        if first_season_available > last_season_available:
+            print('WARNING: First season must be equals or inferior to the last season!')
+            return None
+
+    ss_show = models.StreamingServiceShow(first_season_available, last_season_available, show_id, streaming_service_id,
+                                          last_season_number_episodes)
+    session.add(ss_show)
+
+    if should_commit:
+        try:
+            session.commit()
+            return ss_show
+        except (IntegrityError, InvalidRequestError):
+            session.rollback()
+            return None
+    else:
+        return ss_show
+
+
+def get_streaming_service_show(session: sqlalchemy.orm.Session, show_id: int) -> Optional[models.StreamingServiceShow]:
+    """
+    Get the streaming service show with a given id.
+
+    :param session: the db session.
+    :param show_id: the id of the streaming service show.
+    :return: the streaming service show with a given id.
+    """
+
+    return session.query(models.StreamingServiceShow) \
+        .filter(models.StreamingServiceShow.id == show_id) \
+        .first()
+
+
+def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: str, is_movie: Optional[bool],
+                              season: Optional[int], episode: Optional[int], search_adult: bool,
+                              below_date: Optional[datetime.datetime]):
+    """
+    Get the show sessions, and all associated data, that match a given search pattern and criteria.
+
+    :param session: the db session.
+    :param search_pattern: the search pattern.
+    :param is_movie: True if the search is only for movies.
+    :param season: to specify a season.
+    :param episode: to specify an episode.
+    :param search_adult: if it should also search in adult channels.
+    :param below_date: a date below to limit the search.
+    :return: the streaming service show with a given id.
+    """
+
+    regex_operation = get_regex_operation_dbms()
+
+    query = session.query(models.ShowSession, models.Channel.name, models.ShowData.portuguese_title) \
+        .filter(models.ShowData.search_title.op(regex_operation)(search_pattern))
+
+    if is_movie:
+        query = query.filter(models.ShowSession.episode.is_(None))
+    else:
+        if season is not None:
+            query = query.filter(models.ShowSession.season == season)
+
+        if episode is not None:
+            query = query.filter(models.ShowSession.episode == episode)
+
+    if not search_adult:
+        query = query.filter(models.Channel.adult.is_(False))
+
+    if below_date is not None:
+        query = query.filter(models.ShowSession.date_time > below_date)
+
+    # Join channels
+    query = query.join(models.Channel)
+
+    # Join show data
+    query = query.join(models.ShowData)
+
+    return query.all()
+
+
+def search_streaming_service_shows_data(session: sqlalchemy.orm.Session, search_pattern: str, is_movie: Optional[bool],
+                                        season: Optional[int], episode: Optional[int], search_adult: bool,
+                                        below_date: Optional[datetime.datetime]):
+    """
+    Get the streaming services' shows, and all associated data, that match a given search pattern and criteria.
+
+    :param session: the db session.
+    :param search_pattern: the search pattern.
+    :param is_movie: True if the search is only for movies.
+    :param season: to specify a season.
+    :param episode: to specify an episode.
+    :param search_adult: if it should also search in adult channels.
+    :param below_date: a date below to limit the search.
+    :return: the streaming service show with a given id.
+    """
+
+    regex_operation = get_regex_operation_dbms()
+
+    query = session.query(models.StreamingServiceShow, models.StreamingService.name, models.ShowData.portuguese_title) \
+        .filter(models.ShowData.search_title.op(regex_operation)(search_pattern))
+
+    if is_movie:
+        query = query.filter(models.StreamingServiceShow.first_season_available.is_(None))
+    else:
+        if season is not None:
+            query = query.filter(models.StreamingServiceShow.first_season_available <= season)
+            query = query.filter(models.StreamingServiceShow.last_season_available >= season)
+
+        # TODO: FILTER THE EPISODE WHEN WE'RE SETTING THE NUMBER OF EPISODES OF THE LAST SEASON
+
+    # TODO: SEARCH ADULT IF NEEDED
+
+    if below_date is not None:
+        query = query.filter(models.StreamingServiceShow.update_timestamp > below_date)
+
+    # Join channels
+    query = query.join(models.StreamingService)
+
+    # Join show data
+    query = query.join(models.ShowData)
+
+    return query.all()
 
 
 def commit(session: sqlalchemy.orm.Session) -> bool:
@@ -723,10 +798,6 @@ def commit(session: sqlalchemy.orm.Session) -> bool:
     :param session: the db session.
     :return: True if it succeeded.
     """
-
-    if not session:
-        print('WARNING: Session is null!')
-        return False
 
     try:
         session.commit()

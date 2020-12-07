@@ -51,27 +51,7 @@ class TestDBCalls(unittest.TestCase):
         self.session.commit()
         self.session.close()
 
-    def test_get_user_id_error_01(self) -> None:
-        """ Test the function get_user_id without session. """
-
-        # The expected result
-        expected_result = None
-
-        # Prepare the DB by creating a new user
-        user = db_calls.register_user(self.session, 'test_email', 'test_password')
-        self.assertIsNotNone(user)
-
-        # Call the function
-        actual_result = db_calls.get_user_id(None, user.id)
-
-        # Verify the result
-        self.assertEqual(expected_result, actual_result)
-
-        # Clean up the DB
-        self.session.delete(user)
-        self.session.commit()
-
-    def test_get_user_id_error_02(self) -> None:
+    def test_get_user_id_error(self) -> None:
         """ Test the function get_user_id without user. """
 
         # The expected result
@@ -100,27 +80,7 @@ class TestDBCalls(unittest.TestCase):
         self.session.delete(expected_result)
         self.session.commit()
 
-    def test_get_user_email_error_01(self) -> None:
-        """ Test the function get_user_email without session. """
-
-        # The expected result
-        expected_result = None
-
-        # Prepare the DB by creating a new user
-        user = db_calls.register_user(self.session, 'test_email', 'test_password')
-        self.assertIsNotNone(user)
-
-        # Call the function
-        actual_result = db_calls.get_user_email(None, user.email)
-
-        # Verify the result
-        self.assertEqual(expected_result, actual_result)
-
-        # Clean up the DB
-        self.session.delete(user)
-        self.session.commit()
-
-    def test_get_user_email_error_02(self) -> None:
+    def test_get_user_email_error(self) -> None:
         """ Test the function get_user_email without user. """
 
         # The expected result
@@ -149,19 +109,7 @@ class TestDBCalls(unittest.TestCase):
         self.session.delete(expected_result)
         self.session.commit()
 
-    def test_register_user_error_01(self) -> None:
-        """ Test the function register_user without session. """
-
-        # The expected result
-        expected_result = None
-
-        # Call the function
-        actual_result = db_calls.register_user(None, 'test_email', 'test_password')
-
-        # Verify the result
-        self.assertEqual(expected_result, actual_result)
-
-    def test_register_user_error_02(self) -> None:
+    def test_register_user_error(self) -> None:
         """ Test the function register_user with error due to same email already registered. """
 
         # The expected result
@@ -215,27 +163,7 @@ class TestDBCalls(unittest.TestCase):
         self.session.delete(actual_result)
         self.session.commit()
 
-    def test_get_reminders_error_01(self) -> None:
-        """ Test the function get_reminders without session. """
-
-        # The expected result
-        expected_result = []
-
-        # Prepare the DB by creating a new user
-        user = db_calls.register_user(self.session, 'test_email', 'test_password')
-        self.assertIsNotNone(user)
-
-        # Call the function
-        actual_result = db_calls.get_reminders_user(None, user.id)
-
-        # Verify the result
-        self.assertEqual(expected_result, actual_result)
-
-        # Clean up the DB
-        self.session.delete(user)
-        self.session.commit()
-
-    def test_get_reminders_error_02(self) -> None:
+    def test_get_reminders_error(self) -> None:
         """ Test the function get_reminders without results. """
 
         # The expected result
@@ -299,6 +227,205 @@ class TestDBCalls(unittest.TestCase):
 
         self.session.delete(user)
         self.session.commit()
+
+    def test_register_streaming_service_error(self) -> None:
+        """ Test the function register_streaming_service with error due to same name already registered. """
+
+        # The expected result
+        expected_result = None
+
+        # Prepare the DB by creating a new streaming service
+        streaming_service = db_calls.register_streaming_service(self.session, 'streaming_service')
+        self.assertIsNotNone(streaming_service)
+
+        # Call the function
+        actual_result = db_calls.register_streaming_service(self.session, 'streaming_service')
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+        # Clean up the DB
+        self.session.delete(streaming_service)
+        self.session.commit()
+
+    def test_register_streaming_service_ok(self) -> None:
+        """ Test the function register_streaming_service with success. """
+
+        # Call the function
+        actual_result = db_calls.register_streaming_service(self.session, 'streaming_service')
+
+        # Verify the result
+        self.assertEqual('streaming_service', actual_result.name)
+
+        # Clean up the DB
+        self.session.delete(actual_result)
+        self.session.commit()
+
+    def test_get_streaming_service_id_error(self) -> None:
+        """ Test the function get_streaming_service_id without streaming service. """
+
+        # The expected result
+        expected_result = None
+
+        # Call the function
+        actual_result = db_calls.get_streaming_service_id(self.session, -1)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_get_streaming_service_id_ok(self) -> None:
+        """ Test the function get_streaming_service_id with a streaming service. """
+
+        # Prepare the DB by creating a new streaming service
+        expected_result = db_calls.register_streaming_service(self.session, 'streaming_service')
+        self.assertIsNotNone(expected_result)
+
+        # Call the function
+        actual_result = db_calls.get_streaming_service_id(self.session, expected_result.id)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+        # Clean up the DB
+        self.session.delete(expected_result)
+        self.session.commit()
+
+    def test_register_streaming_service_show_error_01(self) -> None:
+        """ Test the function register_streaming_service_show with error due to same show id and ss id already
+        registered. """
+
+        # The expected result
+        expected_result = None
+
+        # Prepare the DB
+        streaming_service = db_calls.register_streaming_service(self.session, 'streaming_service')
+        self.assertIsNotNone(streaming_service)
+
+        show_data = db_calls.register_show_data(self.session, 'test_title')
+        self.assertIsNotNone(show_data)
+
+        streaming_service_show = db_calls.register_streaming_service_show(self.session, None, None,
+                                                                          streaming_service.id, show_data.id,
+                                                                          should_commit=True)
+        self.assertIsNotNone(streaming_service_show)
+
+        # Call the function
+        actual_result = db_calls.register_streaming_service_show(self.session, None, None, streaming_service.id,
+                                                                 show_data.id, should_commit=True)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+        # Clean up the DB
+        self.session.delete(streaming_service_show)
+        self.session.commit()
+
+        self.session.delete(show_data)
+        self.session.commit()
+
+        self.session.delete(streaming_service)
+        self.session.commit()
+
+    def test_register_streaming_service_show_error_02(self) -> None:
+        """ Test the function register_streaming_service_show with error due to last season being inferior to first. """
+
+        # The expected result
+        expected_result = None
+
+        # Prepare the DB
+        streaming_service = db_calls.register_streaming_service(self.session, 'streaming_service')
+        self.assertIsNotNone(streaming_service)
+
+        show_data = db_calls.register_show_data(self.session, 'test_title')
+        self.assertIsNotNone(show_data)
+
+        # Call the function
+        actual_result = db_calls.register_streaming_service_show(self.session, 5, 1, streaming_service.id,
+                                                                 show_data.id, should_commit=True)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+        # Clean up the DB
+        self.session.delete(show_data)
+        self.session.commit()
+
+        self.session.delete(streaming_service)
+        self.session.commit()
+
+    def test_register_streaming_service_show_ok(self) -> None:
+        """ Test the function register_streaming_service_show with success. """
+
+        # Prepare the DB
+        streaming_service = db_calls.register_streaming_service(self.session, 'streaming_service')
+        self.assertIsNotNone(streaming_service)
+
+        show_data = db_calls.register_show_data(self.session, 'test_title')
+        self.assertIsNotNone(show_data)
+
+        # Call the function
+        actual_result = db_calls.register_streaming_service_show(self.session, 1, 5, streaming_service.id,
+                                                                 show_data.id, should_commit=True)
+
+        # Verify the result
+        self.assertEqual(1, actual_result.first_season_available)
+        self.assertEqual(5, actual_result.last_season_available)
+        self.assertEqual(show_data.id, actual_result.show_data_id)
+        self.assertEqual(streaming_service.id, actual_result.streaming_service_id)
+
+        # Clean up the DB
+        self.session.delete(actual_result)
+        self.session.commit()
+
+        self.session.delete(show_data)
+        self.session.commit()
+
+        self.session.delete(streaming_service)
+        self.session.commit()
+
+    def test_get_streaming_service_show_error(self) -> None:
+        """ Test the function get_streaming_service_show without streaming service show. """
+
+        # The expected result
+        expected_result = None
+
+        # Call the function
+        actual_result = db_calls.get_streaming_service_show(self.session, -1)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_get_streaming_service_show_ok(self) -> None:
+        """ Test the function get_streaming_service_show with a streaming service show. """
+
+        # Prepare the DB
+        streaming_service = db_calls.register_streaming_service(self.session, 'streaming_service')
+        self.assertIsNotNone(streaming_service)
+
+        show_data = db_calls.register_show_data(self.session, 'test_title')
+        self.assertIsNotNone(show_data)
+
+        expected_result = db_calls.register_streaming_service_show(self.session, None, None, streaming_service.id,
+                                                                   show_data.id, should_commit=True)
+        self.assertIsNotNone(expected_result)
+
+        # Call the function
+        actual_result = db_calls.get_streaming_service_show(self.session, expected_result.id)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+        # Clean up the DB
+        self.session.delete(expected_result)
+        self.session.commit()
+
+        self.session.delete(show_data)
+        self.session.commit()
+
+        self.session.delete(streaming_service)
+        self.session.commit()
+
+    # TODO: ADD THE TESTS FOR THE SEARCHES
 
 
 if __name__ == '__main__':

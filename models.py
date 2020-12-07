@@ -24,6 +24,7 @@ class ShowData(Base):
     search_title = Column(String(255))
 
     # Identifies to this show session
+    is_movie = Column(Boolean)
     original_title = Column(String(255))
     portuguese_title = Column(String(255))
     number_seasons = Column(Integer)
@@ -143,27 +144,29 @@ class StreamingService(Base):
 
 class StreamingServiceShow(Base):
     __tablename__ = 'StreamingServiceShow'
+    __table_args__ = (
+        sqlalchemy.UniqueConstraint("show_data_id", "streaming_service_id"),
+    )
 
     # Technical
     id = Column(Integer, primary_key=True, autoincrement=True)
     update_timestamp = Column(DateTime, default=datetime.datetime.now())
-    search_title = Column(String(255))
 
     # Most important data
-    title = Column(String(255))
-    seasons_available = Column(String(255))
-    synopsis = Column(String(500))
+    first_season_available = Column(Integer)
+    last_season_available = Column(Integer)
+    last_season_number_episodes = Column(Integer)
 
     # Foreign keys
     show_data_id = Column(Integer, ForeignKey('ShowData.id'))
     streaming_service_id = Column(Integer, ForeignKey('StreamingService.id'))
 
-    def __init__(self, search_title: str, title: str, seasons_available: str, synopsis: str, show_data_id: int,
-                 streaming_service_id: int):
-        self.search_title = search_title
-        self.title = title
-        self.seasons_available = seasons_available
-        self.synopsis = synopsis
+    def __init__(self, first_season_available: int, last_season_available: int, show_data_id: int,
+                 streaming_service_id: int, last_season_number_episodes: int = None):
+        self.first_season_available = first_season_available
+        self.last_season_available = last_season_available
+        self.last_season_number_episodes = last_season_number_episodes
+
         self.show_data_id = show_data_id
         self.streaming_service_id = streaming_service_id
 

@@ -611,7 +611,7 @@ class ShowsSessionsEP(fr.Resource):
                 user = session.query(models.User).filter(models.User.id == user_id).first()
                 search_adult = user.show_adult if user is not None else False
 
-            db_shows = processing.search_db(session, [search_text], search_adult=search_adult)
+            db_shows = processing.search_sessions_db(session, [search_text], search_adult=search_adult)
 
             if len(db_shows) != 0:
                 return flask.make_response(flask.jsonify({'show_list': db_shows}), 200)

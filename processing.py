@@ -113,9 +113,9 @@ def search_show_information(session: sqlalchemy.orm.Session, search_text: str, i
     return total_nb_pages > configuration.tmdb_max_mb_pages, results
 
 
-def search_db(session: sqlalchemy.orm.Session, search_list: List[str], is_movie: bool = None,
-              complete_title: bool = False, below_date: datetime.date = None, show_season: int = None,
-              show_episode: int = None, search_adult: bool = False, date_with_t_format: bool = True):
+def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], is_movie: bool = None,
+                       complete_title: bool = False, below_date: datetime.date = None, show_season: int = None,
+                       show_episode: int = None, search_adult: bool = False, date_with_t_format: bool = True):
     """
     Get the results of the search in the DB, using all the texts from the search list.
 
@@ -155,41 +155,8 @@ def search_db(session: sqlalchemy.orm.Session, search_list: List[str], is_movie:
 
         print('Search pattern: %s' % search_pattern)
 
-        # Operation for search with regex depending on the dbms
-        if 'mysql' in configuration.database_url:
-            operation = 'REGEXP'
-        else:
-            operation = '~*'
-
-        query = session.query(models.ShowSession, models.Channel.name, models.ShowData.portuguese_title) \
-            .filter(models.ShowData.search_title.op(operation)(search_pattern))
-
-        if show_season is not None:
-            query = query.filter(models.ShowSession.season == show_season)
-
-        if show_episode is not None:
-            query = query.filter(models.ShowSession.episode == show_episode)
-
-        if show_season is None and show_episode is None and is_movie is not None:
-            if is_movie:
-                query = query.filter(models.ShowSession.episode.is_(None))
-            else:
-                query = query.filter(models.ShowSession.episode.isnot_(None))
-
-        if not search_adult:
-            # Can't use "is" here, it needs to be "=="
-            query = query.filter(models.Channel.adult.is_(False))
-
-        if below_date is not None:
-            query = query.filter(models.ShowSession.date_time > below_date)
-
-        # Join channels
-        query = query.join(models.Channel)
-
-        # Join show data
-        query = query.join(models.ShowData)
-
-        db_shows = query.all()
+        db_shows = db_calls.search_show_sessions_data(session, search_pattern, is_movie, show_season, show_episode,
+                                                      search_adult, below_date)
 
         for s in db_shows:
             show = s[0].to_dict(date_with_t_format)
@@ -377,12 +344,13 @@ def process_alarms(session: sqlalchemy.orm.Session, last_date: datetime.date):
         search_adult = user.show_adult if user is not None else False
 
         if r.alarm_type == response_models.AlarmType.LISTINGS.value:
-            db_shows = search_db(session, [r.show_name], r.is_movie, True, last_date, r.show_season, r.show_episode,
-                                 search_adult, False)
+            db_shows = search_sessions_db(session, [r.show_name], r.is_movie, True, last_date, r.show_season,
+                                          r.show_episode,
+                                          search_adult, False)
         else:
             titles = get_show_titles(session, r.trakt_id, r.is_movie)
-            db_shows = search_db(session, titles, r.is_movie, True, last_date, r.show_season, r.show_episode,
-                                 search_adult, False)
+            db_shows = search_sessions_db(session, titles, r.is_movie, True, last_date, r.show_season, r.show_episode,
+                                          search_adult, False)
 
         if len(db_shows) > 0:
             process_emails.set_language(user.language)
