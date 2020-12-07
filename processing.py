@@ -142,16 +142,16 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
         print('List of words obtained from the search text: %s' % str(search_words))
 
         # Create a search pattern to search the DB
-        search_pattern = '' if complete_title else '.*'
+        search_pattern = '^' if complete_title else ''
 
         for w in search_words:
             if w != '':
                 search_pattern += '_%ss?' % w
 
         if complete_title:
-            search_pattern += '_'
+            search_pattern += '_$'
         else:
-            search_pattern += '_.*'
+            search_pattern += '_'
 
         print('Search pattern: %s' % search_pattern)
 

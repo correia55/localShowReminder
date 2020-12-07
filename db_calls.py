@@ -328,8 +328,9 @@ def get_show_titles(session: sqlalchemy.orm.Session, tmdb_id: int) -> Optional[m
         .first()
 
 
-def register_show_session(session: sqlalchemy.orm.Session, season: int, episode: int, date_time: datetime.datetime,
-                          channel_id: int, show_id: int, should_commit: bool = True) -> Optional[models.ShowSession]:
+def register_show_session(session: sqlalchemy.orm.Session, season: Optional[int], episode: Optional[int],
+                          date_time: datetime.datetime, channel_id: int, show_id: int, should_commit: bool = True) \
+        -> Optional[models.ShowSession]:
     """
     Register a show session.
 
@@ -724,7 +725,7 @@ def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: s
         .filter(models.ShowData.search_title.op(regex_operation)(search_pattern))
 
     if is_movie:
-        query = query.filter(models.ShowSession.episode.is_(None))
+        query = query.filter(models.ShowData.is_movie.is_(True))
     else:
         if season is not None:
             query = query.filter(models.ShowSession.season == season)

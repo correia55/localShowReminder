@@ -20,37 +20,6 @@ class TestDBCalls(unittest.TestCase):
     def setUp(self) -> None:
         self.session = configuration.Session()
 
-    def tearDown(self) -> None:
-        # Delete test data
-        user = db_calls.get_user_email(self.session, 'test_email')
-
-        channel = db_calls.get_channel_name(self.session, 'TEST_CHANNEL')
-
-        if channel is not None:
-            sessions = db_calls.get_show_sessions_channel(self.session, channel.id)
-
-            # Delete all sessions associated with the test channel
-            for s in sessions:
-                if user is not None:
-                    # Delete all reminders associated with a session
-                    reminders = db_calls.get_reminders_user(self.session, user.id)
-
-                    for a in reminders:
-                        self.session.delete(a)
-
-                    self.session.commit()
-
-                self.session.delete(s)
-
-            self.session.delete(channel)
-            self.session.commit()
-
-        if user is not None:
-            self.session.delete(user)
-
-        self.session.commit()
-        self.session.close()
-
     def test_get_user_id_error(self) -> None:
         """ Test the function get_user_id without user. """
 
@@ -425,7 +394,419 @@ class TestDBCalls(unittest.TestCase):
         self.session.delete(streaming_service)
         self.session.commit()
 
-    # TODO: ADD THE TESTS FOR THE SEARCHES
+    def test_get_regex_operation_01(self) -> None:
+        """ Test the function get_regex_operation with a Mysql DB. """
+
+        # The expected result
+        expected_result = 'REGEXP'
+
+        # Change the value of the DB url
+        original_db_url = configuration.database_url
+        configuration.database_url = 'mysql:///something'
+
+        # Call the function
+        actual_result = db_calls.get_regex_operation_dbms()
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+        # Change the value of the DB url back to the original value
+        configuration.database_url = original_db_url
+
+    def test_get_regex_operation_02(self) -> None:
+        """ Test the function get_regex_operation with a non Mysql DB. """
+
+        # The expected result
+        expected_result = '~*'
+
+        # Change the value of the DB url
+        original_db_url = configuration.database_url
+        configuration.database_url = 'postgres:///something'
+
+        # Call the function
+        actual_result = db_calls.get_regex_operation_dbms()
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+        # Change the value of the DB url back to the original value
+        configuration.database_url = original_db_url
+
+    def test_search_show_sessions_data_01(self) -> None:
+        """
+        Test the function search_show_sessions_data:
+        - show that does not match the pattern;
+        - show that does not match because the channel is adult;
+        - show that does not match because it has no session;
+        - show that matches and is movie;
+        - show that matches and is series with season 1 and episode 1;
+        - show that matches and is series with season 2 and episode 1;
+        - show that matches and has old date.
+        """
+
+        # Prepare the DB
+        now = datetime.datetime.utcnow()
+
+        # Non adult channel
+        channel = db_calls.register_channel(self.session, 'TC', 'TEST_CHANNEL')
+        self.assertIsNotNone(channel)
+
+        # Adult channel
+        channel_2 = db_calls.register_channel(self.session, 'TC2', 'TEST_CHANNEL_2')
+        self.assertIsNotNone(channel_2)
+        channel_2.adult = True
+
+        show_data = db_calls.register_show_data(self.session, 'fake show')
+        self.assertIsNotNone(show_data)
+
+        # This show is not a match because it has no session associated with it
+        show_data_2 = db_calls.register_show_data(self.session, 'fake')
+        self.assertIsNotNone(show_data_2)
+
+        show_data_3 = db_calls.register_show_data(self.session, 'other fake')
+        self.assertIsNotNone(show_data_3)
+
+        show_data_4 = db_calls.register_show_data(self.session, 'other fakes')
+        self.assertIsNotNone(show_data_4)
+        show_data_4.is_movie = False
+
+        show_data_5 = db_calls.register_show_data(self.session, 'some other fakes')
+        self.assertIsNotNone(show_data_5)
+        show_data_5.is_movie = True
+
+        show_data_6 = db_calls.register_show_data(self.session, 'fakes')
+        self.assertIsNotNone(show_data_5)
+        show_data_6.is_movie = True
+
+        # This session is not a match because the title is not a match
+        show_session = db_calls.register_show_session(self.session, 5, 5, now, channel.id, show_data.id)
+        self.assertIsNotNone(show_session)
+
+        # This session is not a match because it is associated with an adult channel
+        show_session_2 = db_calls.register_show_session(self.session, 4, 4, now, channel_2.id, show_data_3.id)
+        self.assertIsNotNone(show_session_2)
+
+        # This session is a match
+        show_session_3 = db_calls.register_show_session(self.session, 1, 1, now, channel.id, show_data_3.id)
+        self.assertIsNotNone(show_session_3)
+
+        # This session is a match
+        show_session_4 = db_calls.register_show_session(self.session, 2, 1, now, channel.id, show_data_4.id)
+        self.assertIsNotNone(show_session_4)
+
+        # This session is a match
+        show_session_5 = db_calls.register_show_session(self.session, None, None, now, channel.id, show_data_5.id)
+        self.assertIsNotNone(show_session_5)
+
+        # This session is a match
+        show_session_6 = db_calls.register_show_session(self.session, None, None, now - datetime.timedelta(days=50),
+                                                        channel.id, show_data_6.id)
+        self.assertIsNotNone(show_session_6)
+
+        # Call the function
+        actual_result = db_calls.search_show_sessions_data(self.session, '_fakes?_$', None, None, None, False, None)
+
+        # Verify the result
+        self.assertEqual(4, len(actual_result))
+
+        self.assertEqual(1, actual_result[0][0].season)
+        self.assertEqual(1, actual_result[0][0].episode)
+        self.assertEqual('TEST_CHANNEL', actual_result[0][1])
+        self.assertEqual('other fake', actual_result[0][2])
+
+        self.assertEqual(2, actual_result[1][0].season)
+        self.assertEqual(1, actual_result[1][0].episode)
+        self.assertEqual('TEST_CHANNEL', actual_result[1][1])
+        self.assertEqual('other fakes', actual_result[1][2])
+
+        self.assertEqual(None, actual_result[2][0].season)
+        self.assertEqual(None, actual_result[2][0].episode)
+        self.assertEqual('TEST_CHANNEL', actual_result[2][1])
+        self.assertEqual('some other fakes', actual_result[2][2])
+
+        self.assertEqual(None, actual_result[3][0].season)
+        self.assertEqual(None, actual_result[3][0].episode)
+        self.assertEqual('TEST_CHANNEL', actual_result[3][1])
+        self.assertEqual('fakes', actual_result[3][2])
+
+        # Clean up the DB
+        self.session.delete(show_session)
+        self.session.commit()
+
+        self.session.delete(show_session_2)
+        self.session.commit()
+
+        self.session.delete(show_session_3)
+        self.session.commit()
+
+        self.session.delete(show_session_4)
+        self.session.commit()
+
+        self.session.delete(show_session_5)
+        self.session.commit()
+
+        self.session.delete(show_session_6)
+        self.session.commit()
+
+        self.session.delete(show_data)
+        self.session.commit()
+
+        self.session.delete(show_data_2)
+        self.session.commit()
+
+        self.session.delete(show_data_3)
+        self.session.commit()
+
+        self.session.delete(show_data_4)
+        self.session.commit()
+
+        self.session.delete(show_data_5)
+        self.session.commit()
+
+        self.session.delete(show_data_6)
+        self.session.commit()
+
+        self.session.delete(channel)
+        self.session.commit()
+
+        self.session.delete(channel_2)
+        self.session.commit()
+
+    def test_search_show_sessions_data_02(self) -> None:
+        """
+        Test the function search_show_sessions_data:
+        only two match the movie and pattern criteria, but only one has a valid date.
+        """
+
+        # Prepare the DB
+        now = datetime.datetime.utcnow()
+
+        # Non adult channel
+        channel = db_calls.register_channel(self.session, 'TC', 'TEST_CHANNEL')
+        self.assertIsNotNone(channel)
+
+        # Adult channel
+        channel_2 = db_calls.register_channel(self.session, 'TC2', 'TEST_CHANNEL_2')
+        self.assertIsNotNone(channel_2)
+        channel_2.adult = True
+
+        show_data = db_calls.register_show_data(self.session, 'fake show')
+        self.assertIsNotNone(show_data)
+
+        # This show is not a match because it has no session associated with it
+        show_data_2 = db_calls.register_show_data(self.session, 'fake')
+        self.assertIsNotNone(show_data_2)
+
+        show_data_3 = db_calls.register_show_data(self.session, 'other fake')
+        self.assertIsNotNone(show_data_3)
+
+        show_data_4 = db_calls.register_show_data(self.session, 'other fakes')
+        self.assertIsNotNone(show_data_4)
+        show_data_4.is_movie = False
+
+        show_data_5 = db_calls.register_show_data(self.session, 'some other fakes')
+        self.assertIsNotNone(show_data_5)
+        show_data_5.is_movie = True
+
+        show_data_6 = db_calls.register_show_data(self.session, 'fakes')
+        self.assertIsNotNone(show_data_5)
+        show_data_6.is_movie = True
+
+        # This session is not a match because the title is not a match
+        show_session = db_calls.register_show_session(self.session, 5, 5, now, channel.id, show_data.id)
+        self.assertIsNotNone(show_session)
+
+        # This session is not a match because it is associated with an adult channel
+        show_session_2 = db_calls.register_show_session(self.session, 4, 4, now, channel_2.id, show_data_3.id)
+        self.assertIsNotNone(show_session_2)
+
+        # This session is a match
+        show_session_3 = db_calls.register_show_session(self.session, 1, 1, now, channel.id, show_data_3.id)
+        self.assertIsNotNone(show_session_3)
+
+        # This session is a match
+        show_session_4 = db_calls.register_show_session(self.session, 2, 1, now, channel.id, show_data_4.id)
+        self.assertIsNotNone(show_session_4)
+
+        # This session is a match
+        show_session_5 = db_calls.register_show_session(self.session, None, None, now, channel.id, show_data_5.id)
+        self.assertIsNotNone(show_session_5)
+
+        # This session is a match
+        show_session_6 = db_calls.register_show_session(self.session, None, None, now - datetime.timedelta(days=50),
+                                                        channel.id, show_data_6.id)
+        self.assertIsNotNone(show_session_6)
+
+        # Call the function
+        actual_result = db_calls.search_show_sessions_data(self.session, '_fakes?_$', True, None, None, True,
+                                                           now - datetime.timedelta(days=2))
+
+        # Verify the result
+        self.assertEqual(1, len(actual_result))
+
+        self.assertEqual(None, actual_result[0][0].season)
+        self.assertEqual(None, actual_result[0][0].episode)
+        self.assertEqual('TEST_CHANNEL', actual_result[0][1])
+        self.assertEqual('some other fakes', actual_result[0][2])
+
+        # Clean up the DB
+        self.session.delete(show_session)
+        self.session.commit()
+
+        self.session.delete(show_session_2)
+        self.session.commit()
+
+        self.session.delete(show_session_3)
+        self.session.commit()
+
+        self.session.delete(show_session_4)
+        self.session.commit()
+
+        self.session.delete(show_session_5)
+        self.session.commit()
+
+        self.session.delete(show_session_6)
+        self.session.commit()
+
+        self.session.delete(show_data)
+        self.session.commit()
+
+        self.session.delete(show_data_2)
+        self.session.commit()
+
+        self.session.delete(show_data_3)
+        self.session.commit()
+
+        self.session.delete(show_data_4)
+        self.session.commit()
+
+        self.session.delete(show_data_5)
+        self.session.commit()
+
+        self.session.delete(show_data_6)
+        self.session.commit()
+
+        self.session.delete(channel)
+        self.session.commit()
+
+        self.session.delete(channel_2)
+        self.session.commit()
+
+    def test_search_show_sessions_data_03(self) -> None:
+        """Test the function search_show_sessions_data: only one matches everything and it is from an adult channel."""
+
+        # Prepare the DB
+        now = datetime.datetime.utcnow()
+
+        # Non adult channel
+        channel = db_calls.register_channel(self.session, 'TC', 'TEST_CHANNEL')
+        self.assertIsNotNone(channel)
+
+        # Adult channel
+        channel_2 = db_calls.register_channel(self.session, 'TC2', 'TEST_CHANNEL_2')
+        self.assertIsNotNone(channel_2)
+        channel_2.adult = True
+
+        show_data = db_calls.register_show_data(self.session, 'fake show')
+        self.assertIsNotNone(show_data)
+
+        # This show is not a match because it has no session associated with it
+        show_data_2 = db_calls.register_show_data(self.session, 'fake')
+        self.assertIsNotNone(show_data_2)
+
+        show_data_3 = db_calls.register_show_data(self.session, 'other fake')
+        self.assertIsNotNone(show_data_3)
+
+        show_data_4 = db_calls.register_show_data(self.session, 'other fakes')
+        self.assertIsNotNone(show_data_4)
+        show_data_4.is_movie = False
+
+        show_data_5 = db_calls.register_show_data(self.session, 'some other fakes')
+        self.assertIsNotNone(show_data_5)
+        show_data_5.is_movie = True
+
+        show_data_6 = db_calls.register_show_data(self.session, 'fakes')
+        self.assertIsNotNone(show_data_5)
+        show_data_6.is_movie = True
+
+        # This session is not a match because the title is not a match
+        show_session = db_calls.register_show_session(self.session, 5, 5, now, channel.id, show_data.id)
+        self.assertIsNotNone(show_session)
+
+        # This session is not a match because it is associated with an adult channel
+        show_session_2 = db_calls.register_show_session(self.session, 4, 4, now, channel_2.id, show_data_3.id)
+        self.assertIsNotNone(show_session_2)
+
+        # This session is a match
+        show_session_3 = db_calls.register_show_session(self.session, 1, 1, now, channel.id, show_data_3.id)
+        self.assertIsNotNone(show_session_3)
+
+        # This session is a match
+        show_session_4 = db_calls.register_show_session(self.session, 2, 1, now, channel.id, show_data_4.id)
+        self.assertIsNotNone(show_session_4)
+
+        # This session is a match
+        show_session_5 = db_calls.register_show_session(self.session, None, None, now, channel.id, show_data_5.id)
+        self.assertIsNotNone(show_session_5)
+
+        # This session is a match
+        show_session_6 = db_calls.register_show_session(self.session, None, None, now - datetime.timedelta(days=50),
+                                                        channel.id, show_data_6.id)
+        self.assertIsNotNone(show_session_6)
+
+        # Call the function
+        actual_result = db_calls.search_show_sessions_data(self.session, '_fakes?_$', False, 4, 4, True, None)
+
+        # Verify the result
+        self.assertEqual(1, len(actual_result))
+
+        self.assertEqual(4, actual_result[0][0].season)
+        self.assertEqual(4, actual_result[0][0].episode)
+        self.assertEqual('TEST_CHANNEL_2', actual_result[0][1])
+        self.assertEqual('other fake', actual_result[0][2])
+
+        # Clean up the DB
+        self.session.delete(show_session)
+        self.session.commit()
+
+        self.session.delete(show_session_2)
+        self.session.commit()
+
+        self.session.delete(show_session_3)
+        self.session.commit()
+
+        self.session.delete(show_session_4)
+        self.session.commit()
+
+        self.session.delete(show_session_5)
+        self.session.commit()
+
+        self.session.delete(show_session_6)
+        self.session.commit()
+
+        self.session.delete(show_data)
+        self.session.commit()
+
+        self.session.delete(show_data_2)
+        self.session.commit()
+
+        self.session.delete(show_data_3)
+        self.session.commit()
+
+        self.session.delete(show_data_4)
+        self.session.commit()
+
+        self.session.delete(show_data_5)
+        self.session.commit()
+
+        self.session.delete(show_data_6)
+        self.session.commit()
+
+        self.session.delete(channel)
+        self.session.commit()
+
+        self.session.delete(channel_2)
+        self.session.commit()
 
 
 if __name__ == '__main__':
