@@ -14,13 +14,25 @@
         {% endif %}
 
         <p class="circled result">
-            {{ show.title }}
+            <b>{{ show.show_name }}</b>
 
-            {% if show.episode is not none %}
-                {% trans %}first_letter_of_season{% endtrans %}{{ show.season }} {% trans %}first_letter_of_episode{% endtrans %}{{ show.episode }}
+            {% if show.type.value == 'TV' %}
+                {% if show.episode is not none %}
+                    {% trans %}first_letter_of_season{% endtrans %}{{ show.season }} {% trans %}first_letter_of_episode{% endtrans %}{{ show.episode }}
+                {% endif %}
+
+                {% trans %}at_date{% endtrans %} {{ show.date_time }}, {% trans %}in_channel{% endtrans %} {{ show.service_name}}.
+            {% else %}
+                {% if show.first_season_available is not none %}
+                    {% if show.first_season_available == show.last_season_available %}
+                        {% trans %}season{% endtrans %} {{ show.first_season_available }} {% trans %}available{% endtrans %}
+                    {% else %}
+                        {% trans %}seasons{% endtrans %} {{ show.first_season_available }} {% trans %}to_seasons{% endtrans %} {{ show.last_season_available }} {% trans %}available_plural{% endtrans %}
+                    {% endif %}
+                {% endif %}
+
+                {% trans %}in_channel{% endtrans %} {{ show.service_name}}.
             {% endif %}
-
-            {% trans %}at_date{% endtrans %} {{ show.date_time }}, {% trans %}in_channel{% endtrans %} {{ show.channel}}.
         </p>
     {% endfor %}
     </div>

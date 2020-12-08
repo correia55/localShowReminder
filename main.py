@@ -10,6 +10,7 @@ import webargs.flaskparser as fp
 from flask_cors import CORS
 
 import authentication
+import auxiliary
 import configuration
 import db_calls
 import models
@@ -185,7 +186,7 @@ class RemindersEP(fr.Resource):
 
             reminders = processing.get_reminders(session, user_id)
 
-            return flask.make_response(flask.jsonify({'reminder_list': processing.list_to_json(reminders)}), 200)
+            return flask.make_response(flask.jsonify({'reminder_list': auxiliary.list_to_json(reminders)}), 200)
 
     register_args = \
         {
@@ -208,7 +209,7 @@ class RemindersEP(fr.Resource):
             if db_calls.register_reminder(session, show_session_id, anticipation_minutes, user_id) is not None:
                 return flask.make_response(
                     flask.jsonify({
-                        'reminder_list': processing.list_to_json(processing.get_reminders(session, user_id))
+                        'reminder_list': auxiliary.list_to_json(processing.get_reminders(session, user_id))
                     }), 201)
             else:
                 return flask.make_response('Invalid reminder', 400)
@@ -234,7 +235,7 @@ class RemindersEP(fr.Resource):
             if db_calls.update_reminder(session, reminder_id, anticipation_minutes, user_id):
                 return flask.make_response(
                     flask.jsonify({
-                        'reminder_list': processing.list_to_json(processing.get_reminders(session, user_id))
+                        'reminder_list': auxiliary.list_to_json(processing.get_reminders(session, user_id))
                     }), 201)
             else:
                 return flask.make_response('', 404)
@@ -257,7 +258,7 @@ class RemindersEP(fr.Resource):
 
             if db_calls.delete_reminder(session, reminder_id, user_id):
                 return flask.make_response(flask.jsonify({
-                    'reminder_list': processing.list_to_json(processing.get_reminders(session, user_id))
+                    'reminder_list': auxiliary.list_to_json(processing.get_reminders(session, user_id))
                 }), 200)
             else:
                 return flask.make_response('', 404)
@@ -279,7 +280,7 @@ class AlarmsEP(fr.Resource):
 
             alarms = processing.get_alarms(session, user_id)
 
-            return flask.make_response(flask.jsonify({'alarm_list': processing.list_to_json(alarms)}), 200)
+            return flask.make_response(flask.jsonify({'alarm_list': auxiliary.list_to_json(alarms)}), 200)
 
     register_args = \
         {
@@ -333,7 +334,7 @@ class AlarmsEP(fr.Resource):
                                        show_episode, user_id) is not None:
                 return flask.make_response(
                     flask.jsonify({
-                        'alarm_list': processing.list_to_json(processing.get_alarms(session, user_id))
+                        'alarm_list': auxiliary.list_to_json(processing.get_alarms(session, user_id))
                     }), 201)
             else:
                 return flask.make_response('Alarm Already Exists', 400)
@@ -361,7 +362,7 @@ class AlarmsEP(fr.Resource):
             if processing.update_alarm(session, alarm_id, show_season, show_episode, user_id):
                 return flask.make_response(
                     flask.jsonify({
-                        'alarm_list': processing.list_to_json(processing.get_alarms(session, user_id))
+                        'alarm_list': auxiliary.list_to_json(processing.get_alarms(session, user_id))
                     }), 201)
             else:
                 return flask.make_response('', 404)
@@ -385,7 +386,7 @@ class AlarmsEP(fr.Resource):
             processing.remove_alarm(session, alarm_id, user_id)
 
             return flask.make_response(flask.jsonify({
-                'alarm_list': processing.list_to_json(processing.get_alarms(session, user_id))
+                'alarm_list': auxiliary.list_to_json(processing.get_alarms(session, user_id))
             }), 200)
 
 
@@ -582,9 +583,9 @@ class ShowsEP(fr.Resource):
             return flask.make_response(flask.jsonify(response_dict), 200)
 
 
-class ShowsSessionsEP(fr.Resource):
+class LocalShowsEP(fr.Resource):
     def __init__(self):
-        super(ShowsSessionsEP, self).__init__()
+        super(LocalShowsEP, self).__init__()
 
     search_args = \
         {
@@ -593,7 +594,9 @@ class ShowsSessionsEP(fr.Resource):
 
     @fp.use_args(search_args)
     def get(self, args):
-        """Get search results for the search_text in the listings."""
+        """Get search results for the search_text in the listings and streaming services."""
+
+        # TODO: DO SOME MORE TESTING
 
         search_text: str = args['search_text'].strip()
 
@@ -613,8 +616,10 @@ class ShowsSessionsEP(fr.Resource):
 
             db_shows = processing.search_sessions_db(session, [search_text], search_adult=search_adult)
 
+            db_shows += processing.search_streaming_services_shows_db(session, [search_text], search_adult=search_adult)
+
             if len(db_shows) != 0:
-                return flask.make_response(flask.jsonify({'show_list': db_shows}), 200)
+                return flask.make_response(flask.jsonify({'show_list': auxiliary.list_to_json(db_shows)}), 200)
 
             return flask.make_response('Not Found', 404)
 
@@ -878,7 +883,7 @@ api.add_resource(AlarmsEP, '/alarms', endpoint='alarms')
 api.add_resource(RemindersEP, '/reminders', endpoint='reminders')
 api.add_resource(SessionEP, '/session', endpoint='session')
 api.add_resource(ShowsEP, '/shows', endpoint='shows')
-api.add_resource(ShowsSessionsEP, '/shows-sessions', endpoint='shows_sessions')
+api.add_resource(LocalShowsEP, '/local-shows', endpoint='local-shows')
 api.add_resource(UsersEP, '/users', endpoint='users')
 api.add_resource(UsersSettingsEP, '/users-settings', endpoint='users-settings')
 api.add_resource(UsersBASettingsEP, '/users-ba-settings', endpoint='users-ba-settings')

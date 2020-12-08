@@ -721,7 +721,8 @@ def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: s
 
     regex_operation = get_regex_operation_dbms()
 
-    query = session.query(models.ShowSession, models.Channel.name, models.ShowData.portuguese_title) \
+    query = session.query(models.ShowSession, models.Channel.name, models.ShowData.portuguese_title,
+                          models.ShowData.is_movie) \
         .filter(models.ShowData.search_title.op(regex_operation)(search_pattern))
 
     if is_movie:
@@ -766,7 +767,8 @@ def search_streaming_service_shows_data(session: sqlalchemy.orm.Session, search_
 
     regex_operation = get_regex_operation_dbms()
 
-    query = session.query(models.StreamingServiceShow, models.StreamingService.name, models.ShowData.portuguese_title) \
+    query = session.query(models.StreamingServiceShow, models.StreamingService.name, models.ShowData.portuguese_title,
+                          models.ShowData.is_movie) \
         .filter(models.ShowData.search_title.op(regex_operation)(search_pattern))
 
     if is_movie:

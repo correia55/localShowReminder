@@ -100,3 +100,18 @@ msgstr "Foi feito um pedido para recuperação da palavra chave da conta associa
 
 msgid "others_sentence"
 msgstr "Se o pedido de alteração não foi feito por si, por favor ignore-o."
+
+msgid "seasons"
+msgstr "temporadas"
+
+msgid "season"
+msgstr "temporada"
+
+msgid "to_seasons"
+msgstr "a"
+
+msgid "available"
+msgstr "disponível"
+
+msgid "available_plural"
+msgstr "disponíveis"

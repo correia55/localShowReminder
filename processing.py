@@ -28,17 +28,6 @@ class ChangeType(Enum):
     LANGUAGE = 'language'
 
 
-def list_to_json(list_of_objects):
-    """Create a list with the result of to_dict for each element."""
-
-    result = []
-
-    for o in list_of_objects:
-        result.append(o.to_dict())
-
-    return result
-
-
 def clear_show_list(session):
     """Delete entries with more than 7 days old, from the DB."""
 
@@ -115,7 +104,7 @@ def search_show_information(session: sqlalchemy.orm.Session, search_text: str, i
 
 def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], is_movie: bool = None,
                        complete_title: bool = False, below_date: datetime.date = None, show_season: int = None,
-                       show_episode: int = None, search_adult: bool = False, date_with_t_format: bool = True):
+                       show_episode: int = None, search_adult: bool = False) -> List[response_models.LocalShowResult]:
     """
     Get the results of the search in the DB, using all the texts from the search list.
 
@@ -127,7 +116,6 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
     :param show_season: to specify a season.
     :param show_episode: to specify an episode.
     :param search_adult: if it should also search in adult channels.
-    :param date_with_t_format: if the date should come formated as YYYY-MM-ddTHH:mm:ss.
     :return: results of the search in the DB.
     """
 
@@ -159,11 +147,66 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
                                                       search_adult, below_date)
 
         for s in db_shows:
-            show = s[0].to_dict(date_with_t_format)
-            show['channel'] = s[1]
-            show['title'] = s[2]
+            show = response_models.LocalShowResult.create_from_show_session(s[0], s[2], s[3], s[1])
+            results[show.id] = show
 
-            results[show['id']] = show
+    # Create a list from the dictionary of results
+    final_results = []
+
+    for r in results.values():
+        final_results.append(r)
+
+    return final_results
+
+
+def search_streaming_services_shows_db(session: sqlalchemy.orm.Session, search_list: List[str], is_movie: bool = None,
+                                       complete_title: bool = False, below_date: datetime.date = None,
+                                       show_season: int = None, show_episode: int = None, search_adult: bool = False) \
+        -> List[response_models.LocalShowResult]:
+    """
+    Get the results of the search in the DB, using all the texts from the search list.
+
+    :param session: the db session.
+    :param search_list: the list of texts to search for in the DB.
+    :param is_movie: True if the search is only for movies.
+    :param complete_title: true when we don't want to accept any other words.
+    :param below_date: a date below to limit the search.
+    :param show_season: to specify a season.
+    :param show_episode: to specify an episode.
+    :param search_adult: if it should also search in adult channels.
+    :return: results of the search in the DB.
+    """
+
+    results = dict()
+
+    for search_text in search_list:
+        print('Original search text: %s' % search_text)
+
+        # Split the search text into a list of words
+        search_words = auxiliary.get_words(search_text)
+
+        print('List of words obtained from the search text: %s' % str(search_words))
+
+        # Create a search pattern to search the DB
+        search_pattern = '^' if complete_title else ''
+
+        for w in search_words:
+            if w != '':
+                search_pattern += '_%ss?' % w
+
+        if complete_title:
+            search_pattern += '_$'
+        else:
+            search_pattern += '_'
+
+        print('Search pattern: %s' % search_pattern)
+
+        db_shows = db_calls.search_streaming_service_shows_data(session, search_pattern, is_movie, show_season,
+                                                                show_episode, search_adult, below_date)
+
+        for s in db_shows:
+            show = response_models.LocalShowResult.create_from_streaming_service_show(s[0], s[2], s[3], s[1])
+            results[show.id] = show
 
     # Create a list from the dictionary of results
     final_results = []
@@ -345,12 +388,15 @@ def process_alarms(session: sqlalchemy.orm.Session, last_date: datetime.date):
 
         if r.alarm_type == response_models.AlarmType.LISTINGS.value:
             db_shows = search_sessions_db(session, [r.show_name], r.is_movie, True, last_date, r.show_season,
-                                          r.show_episode,
-                                          search_adult, False)
+                                          r.show_episode, search_adult)
+            db_shows += search_streaming_services_shows_db(session, [r.show_name], r.is_movie, True, last_date,
+                                                           r.show_season, r.show_episode, search_adult)
         else:
             titles = get_show_titles(session, r.trakt_id, r.is_movie)
             db_shows = search_sessions_db(session, titles, r.is_movie, True, last_date, r.show_season, r.show_episode,
-                                          search_adult, False)
+                                          search_adult)
+            db_shows += search_streaming_services_shows_db(session, titles, r.is_movie, True, last_date, r.show_season,
+                                                           r.show_episode, search_adult)
 
         if len(db_shows) > 0:
             process_emails.set_language(user.language)

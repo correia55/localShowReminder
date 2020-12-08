@@ -93,3 +93,14 @@ def auto_repr(cls):
 
     cls.__repr__ = __repr__
     return cls
+
+
+def list_to_json(list_of_objects):
+    """Create a list with the result of to_dict for each element."""
+
+    result = []
+
+    for o in list_of_objects:
+        result.append(o.to_dict())
+
+    return result

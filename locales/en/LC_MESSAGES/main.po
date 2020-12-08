@@ -100,3 +100,18 @@ msgstr "A password recovery request was made for the associated account, to cont
 
 msgid "others_sentence"
 msgstr "If this request was not made by you, please ignore it."
+
+msgid "seasons"
+msgstr "seasons"
+
+msgid "season"
+msgstr "season"
+
+msgid "to_seasons"
+msgstr "to"
+
+msgid "available"
+msgstr "available"
+
+msgid "available_plural"
+msgstr "available"

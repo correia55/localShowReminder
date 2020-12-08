@@ -475,7 +475,7 @@ class TestDBCalls(unittest.TestCase):
         show_data_5.is_movie = True
 
         show_data_6 = db_calls.register_show_data(self.session, 'fakes')
-        self.assertIsNotNone(show_data_5)
+        self.assertIsNotNone(show_data_6)
         show_data_6.is_movie = True
 
         # This session is not a match because the title is not a match
@@ -513,63 +513,48 @@ class TestDBCalls(unittest.TestCase):
         self.assertEqual(1, actual_result[0][0].episode)
         self.assertEqual('TEST_CHANNEL', actual_result[0][1])
         self.assertEqual('other fake', actual_result[0][2])
+        self.assertEqual(None, actual_result[0][3])
 
         self.assertEqual(2, actual_result[1][0].season)
         self.assertEqual(1, actual_result[1][0].episode)
         self.assertEqual('TEST_CHANNEL', actual_result[1][1])
         self.assertEqual('other fakes', actual_result[1][2])
+        self.assertEqual(False, actual_result[1][3])
 
         self.assertEqual(None, actual_result[2][0].season)
         self.assertEqual(None, actual_result[2][0].episode)
         self.assertEqual('TEST_CHANNEL', actual_result[2][1])
         self.assertEqual('some other fakes', actual_result[2][2])
+        self.assertEqual(True, actual_result[2][3])
 
         self.assertEqual(None, actual_result[3][0].season)
         self.assertEqual(None, actual_result[3][0].episode)
         self.assertEqual('TEST_CHANNEL', actual_result[3][1])
         self.assertEqual('fakes', actual_result[3][2])
+        self.assertEqual(True, actual_result[3][3])
 
         # Clean up the DB
         self.session.delete(show_session)
-        self.session.commit()
-
         self.session.delete(show_session_2)
-        self.session.commit()
-
         self.session.delete(show_session_3)
-        self.session.commit()
-
         self.session.delete(show_session_4)
-        self.session.commit()
-
         self.session.delete(show_session_5)
-        self.session.commit()
-
         self.session.delete(show_session_6)
+
         self.session.commit()
 
         self.session.delete(show_data)
-        self.session.commit()
-
         self.session.delete(show_data_2)
-        self.session.commit()
-
         self.session.delete(show_data_3)
-        self.session.commit()
-
         self.session.delete(show_data_4)
-        self.session.commit()
-
         self.session.delete(show_data_5)
-        self.session.commit()
-
         self.session.delete(show_data_6)
+
         self.session.commit()
 
         self.session.delete(channel)
-        self.session.commit()
-
         self.session.delete(channel_2)
+
         self.session.commit()
 
     def test_search_show_sessions_data_02(self) -> None:
@@ -609,22 +594,22 @@ class TestDBCalls(unittest.TestCase):
         show_data_5.is_movie = True
 
         show_data_6 = db_calls.register_show_data(self.session, 'fakes')
-        self.assertIsNotNone(show_data_5)
+        self.assertIsNotNone(show_data_6)
         show_data_6.is_movie = True
 
         # This session is not a match because the title is not a match
         show_session = db_calls.register_show_session(self.session, 5, 5, now, channel.id, show_data.id)
         self.assertIsNotNone(show_session)
 
-        # This session is not a match because it is associated with an adult channel
+        # This session is not a match because it is not a movie
         show_session_2 = db_calls.register_show_session(self.session, 4, 4, now, channel_2.id, show_data_3.id)
         self.assertIsNotNone(show_session_2)
 
-        # This session is a match
+        # This session is not a match because it is not a movie
         show_session_3 = db_calls.register_show_session(self.session, 1, 1, now, channel.id, show_data_3.id)
         self.assertIsNotNone(show_session_3)
 
-        # This session is a match
+        # This session is not a match because it is not a movie
         show_session_4 = db_calls.register_show_session(self.session, 2, 1, now, channel.id, show_data_4.id)
         self.assertIsNotNone(show_session_4)
 
@@ -632,7 +617,7 @@ class TestDBCalls(unittest.TestCase):
         show_session_5 = db_calls.register_show_session(self.session, None, None, now, channel.id, show_data_5.id)
         self.assertIsNotNone(show_session_5)
 
-        # This session is a match
+        # This session is not a match because of the date
         show_session_6 = db_calls.register_show_session(self.session, None, None, now - datetime.timedelta(days=50),
                                                         channel.id, show_data_6.id)
         self.assertIsNotNone(show_session_6)
@@ -648,48 +633,30 @@ class TestDBCalls(unittest.TestCase):
         self.assertEqual(None, actual_result[0][0].episode)
         self.assertEqual('TEST_CHANNEL', actual_result[0][1])
         self.assertEqual('some other fakes', actual_result[0][2])
+        self.assertEqual(True, actual_result[0][3])
 
         # Clean up the DB
         self.session.delete(show_session)
-        self.session.commit()
-
         self.session.delete(show_session_2)
-        self.session.commit()
-
         self.session.delete(show_session_3)
-        self.session.commit()
-
         self.session.delete(show_session_4)
-        self.session.commit()
-
         self.session.delete(show_session_5)
-        self.session.commit()
-
         self.session.delete(show_session_6)
+
         self.session.commit()
 
         self.session.delete(show_data)
-        self.session.commit()
-
         self.session.delete(show_data_2)
-        self.session.commit()
-
         self.session.delete(show_data_3)
-        self.session.commit()
-
         self.session.delete(show_data_4)
-        self.session.commit()
-
         self.session.delete(show_data_5)
-        self.session.commit()
-
         self.session.delete(show_data_6)
+
         self.session.commit()
 
         self.session.delete(channel)
-        self.session.commit()
-
         self.session.delete(channel_2)
+
         self.session.commit()
 
     def test_search_show_sessions_data_03(self) -> None:
@@ -726,30 +693,30 @@ class TestDBCalls(unittest.TestCase):
         show_data_5.is_movie = True
 
         show_data_6 = db_calls.register_show_data(self.session, 'fakes')
-        self.assertIsNotNone(show_data_5)
+        self.assertIsNotNone(show_data_6)
         show_data_6.is_movie = True
 
         # This session is not a match because the title is not a match
         show_session = db_calls.register_show_session(self.session, 5, 5, now, channel.id, show_data.id)
         self.assertIsNotNone(show_session)
 
-        # This session is not a match because it is associated with an adult channel
+        # This session is a match
         show_session_2 = db_calls.register_show_session(self.session, 4, 4, now, channel_2.id, show_data_3.id)
         self.assertIsNotNone(show_session_2)
 
-        # This session is a match
+        # This session is not a match because it has the wrong episode
         show_session_3 = db_calls.register_show_session(self.session, 1, 1, now, channel.id, show_data_3.id)
         self.assertIsNotNone(show_session_3)
 
-        # This session is a match
+        # This session is not a match because it has the wrong episode
         show_session_4 = db_calls.register_show_session(self.session, 2, 1, now, channel.id, show_data_4.id)
         self.assertIsNotNone(show_session_4)
 
-        # This session is a match
+        # This session is not a match because it has the wrong episode
         show_session_5 = db_calls.register_show_session(self.session, None, None, now, channel.id, show_data_5.id)
         self.assertIsNotNone(show_session_5)
 
-        # This session is a match
+        # This session is not a match because it has the wrong episode
         show_session_6 = db_calls.register_show_session(self.session, None, None, now - datetime.timedelta(days=50),
                                                         channel.id, show_data_6.id)
         self.assertIsNotNone(show_session_6)
@@ -764,48 +731,30 @@ class TestDBCalls(unittest.TestCase):
         self.assertEqual(4, actual_result[0][0].episode)
         self.assertEqual('TEST_CHANNEL_2', actual_result[0][1])
         self.assertEqual('other fake', actual_result[0][2])
+        self.assertEqual(None, actual_result[0][3])
 
         # Clean up the DB
         self.session.delete(show_session)
-        self.session.commit()
-
         self.session.delete(show_session_2)
-        self.session.commit()
-
         self.session.delete(show_session_3)
-        self.session.commit()
-
         self.session.delete(show_session_4)
-        self.session.commit()
-
         self.session.delete(show_session_5)
-        self.session.commit()
-
         self.session.delete(show_session_6)
+
         self.session.commit()
 
         self.session.delete(show_data)
-        self.session.commit()
-
         self.session.delete(show_data_2)
-        self.session.commit()
-
         self.session.delete(show_data_3)
-        self.session.commit()
-
         self.session.delete(show_data_4)
-        self.session.commit()
-
         self.session.delete(show_data_5)
-        self.session.commit()
-
         self.session.delete(show_data_6)
+
         self.session.commit()
 
         self.session.delete(channel)
-        self.session.commit()
-
         self.session.delete(channel_2)
+
         self.session.commit()
 
     def test_search_streaming_service_shows_data_01(self) -> None:
@@ -847,7 +796,7 @@ class TestDBCalls(unittest.TestCase):
         show_data_5.is_movie = True
 
         show_data_6 = db_calls.register_show_data(self.session, 'fakes')
-        self.assertIsNotNone(show_data_5)
+        self.assertIsNotNone(show_data_6)
         show_data_6.is_movie = True
 
         # This session is not a match because the title is not a match
@@ -880,64 +829,65 @@ class TestDBCalls(unittest.TestCase):
         # Verify the result
         self.assertEqual(4, len(actual_result))
 
-        self.assertEqual(1, actual_result[0][0].first_season_available)
-        self.assertEqual(1, actual_result[0][0].last_season_available)
-        self.assertEqual('streaming_service', actual_result[0][1])
-        self.assertEqual('other fake', actual_result[0][2])
+        found = 0
 
-        self.assertEqual(1, actual_result[1][0].first_season_available)
-        self.assertEqual(2, actual_result[1][0].last_season_available)
-        self.assertEqual('streaming_service', actual_result[1][1])
-        self.assertEqual('other fakes', actual_result[1][2])
+        # Can't ensure order
+        for r in actual_result:
+            if r[2] == 'other fake':
+                self.assertEqual(1, r[0].first_season_available)
+                self.assertEqual(1, r[0].last_season_available)
+                self.assertEqual('streaming_service', r[1])
+                self.assertEqual(None, r[3])
 
-        self.assertEqual(None, actual_result[2][0].first_season_available)
-        self.assertEqual(None, actual_result[2][0].last_season_available)
-        self.assertEqual('streaming_service_2', actual_result[2][1])
-        self.assertEqual('some other fakes', actual_result[2][2])
+                found += 1
 
-        self.assertEqual(None, actual_result[3][0].first_season_available)
-        self.assertEqual(None, actual_result[3][0].last_season_available)
-        self.assertEqual('streaming_service_2', actual_result[3][1])
-        self.assertEqual('fakes', actual_result[3][2])
+            elif r[2] == 'other fakes':
+                self.assertEqual(1, r[0].first_season_available)
+                self.assertEqual(2, r[0].last_season_available)
+                self.assertEqual('streaming_service', r[1])
+                self.assertEqual(False, r[3])
+
+                found += 1
+
+            elif r[2] == 'some other fakes':
+                self.assertEqual(None, r[0].first_season_available)
+                self.assertEqual(None, r[0].last_season_available)
+                self.assertEqual('streaming_service_2', r[1])
+                self.assertEqual(True, r[3])
+
+                found += 1
+
+            elif r[2] == 'fakes':
+                self.assertEqual(None, r[0].first_season_available)
+                self.assertEqual(None, r[0].last_season_available)
+                self.assertEqual('streaming_service_2', r[1])
+                self.assertEqual(True, r[3])
+
+                found += 1
+
+        self.assertEqual(4, found)
 
         # Clean up the DB
         self.session.delete(ss_show)
-        self.session.commit()
-
         self.session.delete(ss_show_2)
-        self.session.commit()
-
         self.session.delete(ss_show_3)
-        self.session.commit()
-
         self.session.delete(ss_show_4)
-        self.session.commit()
-
         self.session.delete(ss_show_5)
+
         self.session.commit()
 
         self.session.delete(show_data)
-        self.session.commit()
-
         self.session.delete(show_data_2)
-        self.session.commit()
-
         self.session.delete(show_data_3)
-        self.session.commit()
-
         self.session.delete(show_data_4)
-        self.session.commit()
-
         self.session.delete(show_data_5)
-        self.session.commit()
-
         self.session.delete(show_data_6)
+
         self.session.commit()
 
         self.session.delete(streaming_service)
-        self.session.commit()
-
         self.session.delete(streaming_service_2)
+
         self.session.commit()
 
     def test_search_streaming_service_shows_data_02(self) -> None:
@@ -974,18 +924,18 @@ class TestDBCalls(unittest.TestCase):
         show_data_5.is_movie = True
 
         show_data_6 = db_calls.register_show_data(self.session, 'fakes')
-        self.assertIsNotNone(show_data_5)
+        self.assertIsNotNone(show_data_6)
         show_data_6.is_movie = True
 
         # This session is not a match because the title is not a match
         ss_show = db_calls.register_streaming_service_show(self.session, 5, 5, streaming_service.id, show_data.id)
         self.assertIsNotNone(ss_show)
 
-        # This session is a match
+        # This session is not a match because it is not a movie
         ss_show_2 = db_calls.register_streaming_service_show(self.session, 1, 1, streaming_service.id, show_data_3.id)
         self.assertIsNotNone(ss_show_2)
 
-        # This session is a match
+        # This session is not a match because it is not a movie
         ss_show_3 = db_calls.register_streaming_service_show(self.session, 1, 2, streaming_service.id, show_data_4.id)
         self.assertIsNotNone(ss_show_3)
 
@@ -994,7 +944,7 @@ class TestDBCalls(unittest.TestCase):
                                                              show_data_5.id)
         self.assertIsNotNone(ss_show_4)
 
-        # This session is a match
+        # This session is not a match because of the date
         ss_show_5 = db_calls.register_streaming_service_show(self.session, None, None, streaming_service_2.id,
                                                              show_data_6.id)
         self.assertIsNotNone(ss_show_5)
@@ -1011,45 +961,29 @@ class TestDBCalls(unittest.TestCase):
         self.assertEqual(None, actual_result[0][0].last_season_available)
         self.assertEqual('streaming_service_2', actual_result[0][1])
         self.assertEqual('some other fakes', actual_result[0][2])
+        self.assertEqual(True, actual_result[0][3])
 
         # Clean up the DB
         self.session.delete(ss_show)
-        self.session.commit()
-
         self.session.delete(ss_show_2)
-        self.session.commit()
-
         self.session.delete(ss_show_3)
-        self.session.commit()
-
         self.session.delete(ss_show_4)
-        self.session.commit()
-
         self.session.delete(ss_show_5)
+
         self.session.commit()
 
         self.session.delete(show_data)
-        self.session.commit()
-
         self.session.delete(show_data_2)
-        self.session.commit()
-
         self.session.delete(show_data_3)
-        self.session.commit()
-
         self.session.delete(show_data_4)
-        self.session.commit()
-
         self.session.delete(show_data_5)
-        self.session.commit()
-
         self.session.delete(show_data_6)
+
         self.session.commit()
 
         self.session.delete(streaming_service)
-        self.session.commit()
-
         self.session.delete(streaming_service_2)
+
         self.session.commit()
 
     def test_search_streaming_service_shows_data_03(self) -> None:
@@ -1083,14 +1017,14 @@ class TestDBCalls(unittest.TestCase):
         show_data_5.is_movie = True
 
         show_data_6 = db_calls.register_show_data(self.session, 'fakes')
-        self.assertIsNotNone(show_data_5)
+        self.assertIsNotNone(show_data_6)
         show_data_6.is_movie = True
 
         # This session is not a match because the title is not a match
         ss_show = db_calls.register_streaming_service_show(self.session, 5, 5, streaming_service.id, show_data.id)
         self.assertIsNotNone(ss_show)
 
-        # This session is a match
+        # This session is not a match because it has the wrong episode
         ss_show_2 = db_calls.register_streaming_service_show(self.session, 1, 1, streaming_service.id, show_data_3.id)
         self.assertIsNotNone(ss_show_2)
 
@@ -1098,12 +1032,12 @@ class TestDBCalls(unittest.TestCase):
         ss_show_3 = db_calls.register_streaming_service_show(self.session, 1, 2, streaming_service.id, show_data_4.id)
         self.assertIsNotNone(ss_show_3)
 
-        # This session is a match
+        # This session is not a match because it has the wrong episode
         ss_show_4 = db_calls.register_streaming_service_show(self.session, None, None, streaming_service_2.id,
                                                              show_data_5.id)
         self.assertIsNotNone(ss_show_4)
 
-        # This session is a match
+        # This session is not a match because it has the wrong episode
         ss_show_5 = db_calls.register_streaming_service_show(self.session, None, None, streaming_service_2.id,
                                                              show_data_6.id)
         self.assertIsNotNone(ss_show_5)
@@ -1119,43 +1053,27 @@ class TestDBCalls(unittest.TestCase):
         self.assertEqual(2, actual_result[0][0].last_season_available)
         self.assertEqual('streaming_service', actual_result[0][1])
         self.assertEqual('other fakes', actual_result[0][2])
+        self.assertEqual(False, actual_result[0][3])
 
         # Clean up the DB
         self.session.delete(ss_show)
-        self.session.commit()
-
         self.session.delete(ss_show_2)
-        self.session.commit()
-
         self.session.delete(ss_show_3)
-        self.session.commit()
-
         self.session.delete(ss_show_4)
-        self.session.commit()
-
         self.session.delete(ss_show_5)
+
         self.session.commit()
 
         self.session.delete(show_data)
-        self.session.commit()
-
         self.session.delete(show_data_2)
-        self.session.commit()
-
         self.session.delete(show_data_3)
-        self.session.commit()
-
         self.session.delete(show_data_4)
-        self.session.commit()
-
         self.session.delete(show_data_5)
-        self.session.commit()
-
         self.session.delete(show_data_6)
+
         self.session.commit()
 
         self.session.delete(streaming_service)
-        self.session.commit()
-
         self.session.delete(streaming_service_2)
+
         self.session.commit()

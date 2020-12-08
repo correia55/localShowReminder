@@ -9,7 +9,7 @@ import dns.resolver as dnsr
 import jinja2
 
 import configuration
-import models
+import response_models
 
 LOCALES_DIR = os.path.join(configuration.base_dir, 'locales')
 
@@ -191,7 +191,7 @@ def send_change_email_new(destination: str, token: str, old_email: str) -> bool:
     return send_email(content, subject, destination)
 
 
-def send_alarms_email(destination: str, results: List[models.ShowSession]) -> bool:
+def send_alarms_email(destination: str, results: List[response_models.LocalShowResult]) -> bool:
     """
     Send an email with the results found for the alarms created.
 

@@ -5,8 +5,6 @@ from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, Date, DateT
 from sqlalchemy.ext.declarative import declarative_base
 
 # Base class for DB Classes
-import auxiliary
-
 Base = declarative_base()
 
 
@@ -108,25 +106,6 @@ class ShowSession(Base):
     def __str__(self):
         return 'id: %d; show_id: %d; season: %s; episode: %s; date_time: %s; channel_id: %d' % \
                (self.id, self.show_id, str(self.season), str(self.episode), str(self.date_time), self.channel_id)
-
-    def to_dict(self, date_with_t_format=True) -> dict:
-        """
-        Create a dictionary with all the information being sent in the responses to the API.
-
-        :return: the corresponding dictionary.
-        """
-
-        session_dict = {'id': self.id, 'season': self.season, 'episode': self.episode}
-
-        if date_with_t_format:
-            # Converts the date_time to UTC and formats it
-            session_dict['date_time'] = auxiliary.convert_datetime_to_utc(
-                auxiliary.get_datetime_with_tz_offset(self.date_time)).strftime("%Y-%m-%dT%H:%M:%S")
-        else:
-            session_dict['date_time'] = auxiliary.convert_datetime_to_utc(
-                auxiliary.get_datetime_with_tz_offset(self.date_time))
-
-        return session_dict
 
 
 class StreamingService(Base):
