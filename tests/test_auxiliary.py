@@ -132,7 +132,3 @@ class TestAuxiliary(unittest.TestCase):
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
-
-
-if __name__ == '__main__':
-    unittest.main()

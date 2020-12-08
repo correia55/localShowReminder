@@ -447,7 +447,3 @@ class TestAuthentication(unittest.TestCase):
         # Verify the result
         self.assertEqual(expected_result, actual_result)
         db_calls_mock.get_token.assert_called()
-
-
-if __name__ == '__main__':
-    unittest.main()

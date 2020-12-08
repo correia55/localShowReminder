@@ -770,7 +770,7 @@ def search_streaming_service_shows_data(session: sqlalchemy.orm.Session, search_
         .filter(models.ShowData.search_title.op(regex_operation)(search_pattern))
 
     if is_movie:
-        query = query.filter(models.StreamingServiceShow.first_season_available.is_(None))
+        query = query.filter(models.ShowData.is_movie.is_(True))
     else:
         if season is not None:
             query = query.filter(models.StreamingServiceShow.first_season_available <= season)
