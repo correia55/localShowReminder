@@ -117,6 +117,7 @@ class MEPG:
                 show_datetime = '%s %s' % (show_date, s['timeIni'])
 
                 program_title = str(s['name'])
+                is_movie = None
                 series = re.search('(.+) T([0-9]+) - Ep\. ([0-9]+)', program_title)
 
                 # If it is an episode of a series with season and episode
@@ -125,6 +126,7 @@ class MEPG:
 
                     show_season = int(series.group(2))
                     show_episode = int(series.group(3))
+                    is_movie = False
                 else:
                     series = re.search('(.+) - Ep\. ([0-9]+)', program_title)
 
@@ -134,6 +136,7 @@ class MEPG:
 
                         show_season = 1
                         show_episode = int(series.group(2))
+                        is_movie = False
                     else:
                         show_title = program_title
 
@@ -141,7 +144,7 @@ class MEPG:
                         show_episode = None
 
                 # Add the show to the db
-                show_data = db_calls.insert_if_missing_show_data(session, show_title.strip())
+                show_data = db_calls.insert_if_missing_show_data(session, show_title.strip(), is_movie=is_movie)
 
                 if show_data is None:
                     print('ERROR: The registration of the show %s failed!' % show_title)

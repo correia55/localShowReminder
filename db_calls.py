@@ -427,7 +427,7 @@ def search_show_data_by_search_title_and_everything_else_empty(session: sqlalche
 def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, original_title: str = None,
                        duration: int = None, synopsis: str = None, year: int = None, show_type: str = None,
                        director: str = None, cast: str = None, audio_languages: str = None, countries: str = None,
-                       age_classification: str = None) -> Optional[models.ShowData]:
+                       age_classification: str = None, is_movie: Optional[bool] = None) -> Optional[models.ShowData]:
     """
     Register an entry of ShowData.
 
@@ -443,6 +443,7 @@ def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, o
     :param audio_languages: the languages of the audio.
     :param countries: the countries.
     :param age_classification: the age classification.
+    :param is_movie: True if it is a movie, False if it is TV.
     :return: the created show data.
     """
 
@@ -480,6 +481,9 @@ def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, o
     if age_classification is not None:
         show_data.age_classification = age_classification
 
+    if is_movie is not None:
+        show_data.is_movie = is_movie
+
     session.add(show_data)
 
     try:
@@ -493,7 +497,8 @@ def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, o
 def insert_if_missing_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, original_title: str = None,
                                 duration: int = None, synopsis: str = None, year: int = None, show_type: str = None,
                                 director: str = None, cast: str = None, audio_languages: str = None,
-                                countries: str = None, age_classification: str = None) -> Optional[models.ShowData]:
+                                countries: str = None, age_classification: str = None, is_movie: Optional[bool] = None)\
+        -> Optional[models.ShowData]:
     """
     Check, and return, if there's a matching entry of ShowData and, if not add it.
 
@@ -509,6 +514,7 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, portuguese_titl
     :param audio_languages: the languages of the audio.
     :param countries: the countries.
     :param age_classification: the age classification.
+    :param is_movie: True if it is a movie, False if it is TV.
     :return: the corresponding show data.
     """
 
@@ -523,7 +529,7 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, portuguese_titl
 
     # If not, then add it
     return register_show_data(session, portuguese_title, original_title, duration, synopsis, year, show_type, director,
-                              cast, audio_languages, countries, age_classification)
+                              cast, audio_languages, countries, age_classification, is_movie)
 
 
 def register_cache(session: sqlalchemy.orm.Session, key: str,
