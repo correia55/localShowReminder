@@ -54,7 +54,6 @@ class TVCine:
             date_time = date.replace(hour=time.hour, minute=time.minute)
 
             # Check if it matches the regex of a series
-            is_movie = None
             series = re.search('(.+) T([0-9]+),[ ]+([0-9]+)', title.strip())
 
             # If it is a series, extract it's season and episode
@@ -72,7 +71,6 @@ class TVCine:
 
                 if series:
                     original_title = series.group(1)
-                    is_movie = False
             else:
                 season = None
                 episode = None
@@ -84,7 +82,7 @@ class TVCine:
             # Insert the ShowData, if necessary
             show_data = db_calls.insert_if_missing_show_data(db_session, title, original_title, duration, synopsis,
                                                              year, show_type, director, cast, languages, countries,
-                                                             age_classification, is_movie)
+                                                             age_classification, not series)
 
             if show_data is None:
                 print('Insertion of Show Data failed!')
