@@ -28,6 +28,23 @@ class ChangeType(Enum):
     LANGUAGE = 'language'
 
 
+def get_hash(text: str) -> str:
+    """
+    Get the hash of a text, ensuring the result is a string.
+    (Some versions of flask_bcrypt's function return bytes, while others return string)
+
+    :param text: the input text.
+    :return: the resulting hash.
+    """
+
+    text_hash = fb.generate_password_hash(text, configuration.bcrypt_rounds)
+
+    if isinstance(text_hash, bytes):
+        return text_hash.decode()
+    else:
+        return text_hash
+
+
 def clear_show_list(session):
     """Delete entries with more than 7 days old, from the DB."""
 
@@ -429,9 +446,7 @@ def register_user(session, email: str, password: str, language: str) -> bool:
     :param language: the user's language of choice.
     """
 
-    password = fb.generate_password_hash(password, configuration.bcrypt_rounds).decode()
-
-    user = db_calls.register_user(session, email, password, language)
+    user = db_calls.register_user(session, email, get_hash(password), language)
 
     if user is not None:
         return send_verification_email(user)
@@ -719,8 +734,7 @@ def change_user_settings(session, changes: Mapping, user_id: str):
 
     if ChangeType.NEW_PASSWORD.value in changes:
         something_changed = True
-        user.password = fb.generate_password_hash(changes[ChangeType.NEW_PASSWORD.value],
-                                                  configuration.bcrypt_rounds).decode()
+        user.password = get_hash(changes[ChangeType.NEW_PASSWORD.value])
 
     if ChangeType.INCLUDE_ADULT_CHANNELS.value in changes:
         something_changed = True
