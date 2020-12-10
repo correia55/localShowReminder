@@ -596,8 +596,6 @@ class LocalShowsEP(fr.Resource):
     def get(self, args):
         """Get search results for the search_text in the listings and streaming services."""
 
-        # TODO: DO SOME MORE TESTING
-
         search_text: str = args['search_text'].strip()
 
         with session_scope() as session:
@@ -614,9 +612,9 @@ class LocalShowsEP(fr.Resource):
                 user = session.query(models.User).filter(models.User.id == user_id).first()
                 search_adult = user.show_adult if user is not None else False
 
-            db_shows = processing.search_sessions_db(session, [search_text], search_adult=search_adult)
+            db_shows = processing.search_streaming_services_shows_db(session, [search_text], search_adult=search_adult)
 
-            db_shows += processing.search_streaming_services_shows_db(session, [search_text], search_adult=search_adult)
+            db_shows += processing.search_sessions_db(session, [search_text], search_adult=search_adult)
 
             if len(db_shows) != 0:
                 return flask.make_response(flask.jsonify({'show_list': auxiliary.list_to_json(db_shows)}), 200)

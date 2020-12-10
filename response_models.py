@@ -177,22 +177,23 @@ class LocalShowResult:
             local_show_dict['is_movie'] = self.is_movie
 
         # TV
-        if self.season:
-            local_show_dict['season'] = self.season
+        if self.type == LocalShowResultType.TV:
+            if self.season:
+                local_show_dict['season'] = self.season
 
-        if self.season:
-            local_show_dict['episode'] = self.episode
+            if self.season:
+                local_show_dict['episode'] = self.episode
 
-        if self.date_time:
-            # Converts the date_time to UTC and formats it
-            date_time = auxiliary.convert_datetime_to_utc(auxiliary.get_datetime_with_tz_offset(self.date_time))
-            local_show_dict['date_time'] = date_time.strftime("%Y-%m-%dT%H:%M:%S")
-
+            if self.date_time:
+                # Converts the date_time to UTC and formats it
+                date_time = auxiliary.convert_datetime_to_utc(auxiliary.get_datetime_with_tz_offset(self.date_time))
+                local_show_dict['date_time'] = date_time.strftime("%Y-%m-%dT%H:%M:%S")
         # Streaming
-        if self.first_season_available:
-            local_show_dict['first_season_available'] = self.first_season_available
+        else:
+            if self.first_season_available:
+                local_show_dict['first_season_available'] = self.first_season_available
 
-        if self.last_season_available:
-            local_show_dict['last_season_available'] = self.last_season_available
+            if self.last_season_available:
+                local_show_dict['last_season_available'] = self.last_season_available
 
         return local_show_dict
