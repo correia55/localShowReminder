@@ -173,7 +173,7 @@ class LocalShowResult:
         local_show_dict = {'id': self.id, 'type': self.type.value, 'title': self.show_name,
                            'service': self.service_name}
 
-        if self.is_movie:
+        if self.is_movie is not None:
             local_show_dict['is_movie'] = self.is_movie
 
         # TV
