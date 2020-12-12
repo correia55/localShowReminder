@@ -144,6 +144,10 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
         # Split the search text into a list of words
         search_words = auxiliary.get_words(search_text)
 
+        # Has no words
+        if search_words == ['']:
+            return []
+
         print('List of words obtained from the search text: %s' % str(search_words))
 
         # Create a search pattern to search the DB
@@ -201,6 +205,10 @@ def search_streaming_services_shows_db(session: sqlalchemy.orm.Session, search_l
 
         # Split the search text into a list of words
         search_words = auxiliary.get_words(search_text)
+
+        # Has no words
+        if search_words == ['']:
+            return []
 
         print('List of words obtained from the search text: %s' % str(search_words))
 
