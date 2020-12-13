@@ -5,7 +5,9 @@ import unittest
 import sqlalchemy.orm
 
 # To prevent the error from the import of configuration
-if os.environ.get('DATABASE_URL', None) is None:
+import models
+
+if os.environ.get('DATABASE_URL', None) is None or 'Test' not in os.environ.get('DATABASE_URL', None):
     import pytest
 
     pytest.skip("Skipping DB tests", allow_module_level=True)
@@ -19,6 +21,22 @@ class TestDBCalls(unittest.TestCase):
 
     def setUp(self) -> None:
         self.session = configuration.Session()
+
+    def tearDown(self) -> None:
+        self.session.query(models.Reminder).delete()
+        self.session.query(models.ShowSession).delete()
+        self.session.query(models.StreamingServiceShow).delete()
+        self.session.query(models.ShowData).delete()
+        self.session.query(models.Channel).delete()
+        self.session.query(models.StreamingService).delete()
+        self.session.query(models.Alarm).delete()
+        self.session.query(models.User).delete()
+        self.session.query(models.Token).delete()
+        self.session.query(models.Cache).delete()
+        self.session.query(models.LastUpdate).delete()
+        self.session.query(models.ShowTitles).delete()
+
+        self.session.commit()
 
     def test_get_user_id_error(self) -> None:
         """ Test the function get_user_id without user. """
@@ -45,10 +63,6 @@ class TestDBCalls(unittest.TestCase):
         # Verify the result
         self.assertEqual(expected_result, actual_result)
 
-        # Clean up the DB
-        self.session.delete(expected_result)
-        self.session.commit()
-
     def test_get_user_email_error(self) -> None:
         """ Test the function get_user_email without user. """
 
@@ -74,10 +88,6 @@ class TestDBCalls(unittest.TestCase):
         # Verify the result
         self.assertEqual(expected_result, actual_result)
 
-        # Clean up the DB
-        self.session.delete(expected_result)
-        self.session.commit()
-
     def test_register_user_error(self) -> None:
         """ Test the function register_user with error due to same email already registered. """
 
@@ -94,10 +104,6 @@ class TestDBCalls(unittest.TestCase):
         # Verify the result
         self.assertEqual(expected_result, actual_result)
 
-        # Clean up the DB
-        self.session.delete(user)
-        self.session.commit()
-
     def test_register_user_ok_01(self) -> None:
         """ Test the function register_user with success, but without language. """
 
@@ -111,10 +117,6 @@ class TestDBCalls(unittest.TestCase):
         self.assertEqual(False, actual_result.show_adult)
         self.assertEqual(False, actual_result.verified)
 
-        # Clean up the DB
-        self.session.delete(actual_result)
-        self.session.commit()
-
     def test_register_user_ok_02(self) -> None:
         """ Test the function register_user with success, with language. """
 
@@ -127,10 +129,6 @@ class TestDBCalls(unittest.TestCase):
         self.assertEqual('en', actual_result.language)
         self.assertEqual(False, actual_result.show_adult)
         self.assertEqual(False, actual_result.verified)
-
-        # Clean up the DB
-        self.session.delete(actual_result)
-        self.session.commit()
 
     def test_get_reminders_error(self) -> None:
         """ Test the function get_reminders without results. """
@@ -147,10 +145,6 @@ class TestDBCalls(unittest.TestCase):
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
-
-        # Clean up the DB
-        self.session.delete(user)
-        self.session.commit()
 
     def test_get_reminders_ok(self) -> None:
         """ Test the function get_reminders with results. """
@@ -181,22 +175,6 @@ class TestDBCalls(unittest.TestCase):
         self.assertEqual(show_session.id, actual_result[0].session_id)
         self.assertEqual(user.id, actual_result[0].user_id)
 
-        # Clean up the DB
-        self.session.delete(reminder)
-        self.session.commit()
-
-        self.session.delete(show_session)
-        self.session.commit()
-
-        self.session.delete(show_data)
-        self.session.commit()
-
-        self.session.delete(channel)
-        self.session.commit()
-
-        self.session.delete(user)
-        self.session.commit()
-
     def test_register_streaming_service_error(self) -> None:
         """ Test the function register_streaming_service with error due to same name already registered. """
 
@@ -213,10 +191,6 @@ class TestDBCalls(unittest.TestCase):
         # Verify the result
         self.assertEqual(expected_result, actual_result)
 
-        # Clean up the DB
-        self.session.delete(streaming_service)
-        self.session.commit()
-
     def test_register_streaming_service_ok(self) -> None:
         """ Test the function register_streaming_service with success. """
 
@@ -225,10 +199,6 @@ class TestDBCalls(unittest.TestCase):
 
         # Verify the result
         self.assertEqual('streaming_service', actual_result.name)
-
-        # Clean up the DB
-        self.session.delete(actual_result)
-        self.session.commit()
 
     def test_get_streaming_service_id_error(self) -> None:
         """ Test the function get_streaming_service_id without streaming service. """
@@ -254,10 +224,6 @@ class TestDBCalls(unittest.TestCase):
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
-
-        # Clean up the DB
-        self.session.delete(expected_result)
-        self.session.commit()
 
     def test_register_streaming_service_show_error_01(self) -> None:
         """ Test the function register_streaming_service_show with error due to same show id and ss id already
@@ -285,16 +251,6 @@ class TestDBCalls(unittest.TestCase):
         # Verify the result
         self.assertEqual(expected_result, actual_result)
 
-        # Clean up the DB
-        self.session.delete(streaming_service_show)
-        self.session.commit()
-
-        self.session.delete(show_data)
-        self.session.commit()
-
-        self.session.delete(streaming_service)
-        self.session.commit()
-
     def test_register_streaming_service_show_error_02(self) -> None:
         """ Test the function register_streaming_service_show with error due to last season being inferior to first. """
 
@@ -315,13 +271,6 @@ class TestDBCalls(unittest.TestCase):
         # Verify the result
         self.assertEqual(expected_result, actual_result)
 
-        # Clean up the DB
-        self.session.delete(show_data)
-        self.session.commit()
-
-        self.session.delete(streaming_service)
-        self.session.commit()
-
     def test_register_streaming_service_show_ok(self) -> None:
         """ Test the function register_streaming_service_show with success. """
 
@@ -341,16 +290,6 @@ class TestDBCalls(unittest.TestCase):
         self.assertEqual(5, actual_result.last_season_available)
         self.assertEqual(show_data.id, actual_result.show_data_id)
         self.assertEqual(streaming_service.id, actual_result.streaming_service_id)
-
-        # Clean up the DB
-        self.session.delete(actual_result)
-        self.session.commit()
-
-        self.session.delete(show_data)
-        self.session.commit()
-
-        self.session.delete(streaming_service)
-        self.session.commit()
 
     def test_get_streaming_service_show_error(self) -> None:
         """ Test the function get_streaming_service_show without streaming service show. """
@@ -383,16 +322,6 @@ class TestDBCalls(unittest.TestCase):
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
-
-        # Clean up the DB
-        self.session.delete(expected_result)
-        self.session.commit()
-
-        self.session.delete(show_data)
-        self.session.commit()
-
-        self.session.delete(streaming_service)
-        self.session.commit()
 
     def test_get_regex_operation_01(self) -> None:
         """ Test the function get_regex_operation with a Mysql DB. """
@@ -504,58 +433,49 @@ class TestDBCalls(unittest.TestCase):
         self.assertIsNotNone(show_session_6)
 
         # Call the function
-        actual_result = db_calls.search_show_sessions_data(self.session, '_fakes?_$', None, None, None, False, None)
+        actual_result = db_calls.search_show_sessions_data(self.session, '_fakes?_$', None, None, None, False, False)
 
         # Verify the result
         self.assertEqual(4, len(actual_result))
 
-        self.assertEqual(1, actual_result[0][0].season)
-        self.assertEqual(1, actual_result[0][0].episode)
-        self.assertEqual('TEST_CHANNEL', actual_result[0][1])
-        self.assertEqual('other fake', actual_result[0][2])
-        self.assertEqual(None, actual_result[0][3])
+        found = [False] * 4
 
-        self.assertEqual(2, actual_result[1][0].season)
-        self.assertEqual(1, actual_result[1][0].episode)
-        self.assertEqual('TEST_CHANNEL', actual_result[1][1])
-        self.assertEqual('other fakes', actual_result[1][2])
-        self.assertEqual(False, actual_result[1][3])
+        # Can't ensure order
+        for r in actual_result:
+            if r[2] == 'other fake':
+                self.assertEqual(1, actual_result[0][0].season)
+                self.assertEqual(1, actual_result[0][0].episode)
+                self.assertEqual('TEST_CHANNEL', actual_result[0][1])
+                self.assertEqual(None, actual_result[0][3])
 
-        self.assertEqual(None, actual_result[2][0].season)
-        self.assertEqual(None, actual_result[2][0].episode)
-        self.assertEqual('TEST_CHANNEL', actual_result[2][1])
-        self.assertEqual('some other fakes', actual_result[2][2])
-        self.assertEqual(True, actual_result[2][3])
+                found[0] = True
 
-        self.assertEqual(None, actual_result[3][0].season)
-        self.assertEqual(None, actual_result[3][0].episode)
-        self.assertEqual('TEST_CHANNEL', actual_result[3][1])
-        self.assertEqual('fakes', actual_result[3][2])
-        self.assertEqual(True, actual_result[3][3])
+            if r[2] == 'other fakes':
+                self.assertEqual(2, actual_result[1][0].season)
+                self.assertEqual(1, actual_result[1][0].episode)
+                self.assertEqual('TEST_CHANNEL', actual_result[1][1])
+                self.assertEqual(False, actual_result[1][3])
 
-        # Clean up the DB
-        self.session.delete(show_session)
-        self.session.delete(show_session_2)
-        self.session.delete(show_session_3)
-        self.session.delete(show_session_4)
-        self.session.delete(show_session_5)
-        self.session.delete(show_session_6)
+                found[1] = True
 
-        self.session.commit()
+            if r[2] == 'some other fakes':
+                self.assertEqual(None, actual_result[2][0].season)
+                self.assertEqual(None, actual_result[2][0].episode)
+                self.assertEqual('TEST_CHANNEL', actual_result[2][1])
+                self.assertEqual(True, actual_result[2][3])
 
-        self.session.delete(show_data)
-        self.session.delete(show_data_2)
-        self.session.delete(show_data_3)
-        self.session.delete(show_data_4)
-        self.session.delete(show_data_5)
-        self.session.delete(show_data_6)
+                found[2] = True
 
-        self.session.commit()
+            if r[2] == 'fakes':
+                self.assertEqual(None, actual_result[3][0].season)
+                self.assertEqual(None, actual_result[3][0].episode)
+                self.assertEqual('TEST_CHANNEL', actual_result[3][1])
+                self.assertEqual(True, actual_result[3][3])
 
-        self.session.delete(channel)
-        self.session.delete(channel_2)
+                found[3] = True
 
-        self.session.commit()
+        for f in found:
+            self.assertTrue(f)
 
     def test_search_show_sessions_data_02(self) -> None:
         """
@@ -623,8 +543,7 @@ class TestDBCalls(unittest.TestCase):
         self.assertIsNotNone(show_session_6)
 
         # Call the function
-        actual_result = db_calls.search_show_sessions_data(self.session, '_fakes?_$', True, None, None, True,
-                                                           now - datetime.timedelta(days=2))
+        actual_result = db_calls.search_show_sessions_data(self.session, '_fakes?_$', True, None, None, True, True)
 
         # Verify the result
         self.assertEqual(1, len(actual_result))
@@ -634,30 +553,6 @@ class TestDBCalls(unittest.TestCase):
         self.assertEqual('TEST_CHANNEL', actual_result[0][1])
         self.assertEqual('some other fakes', actual_result[0][2])
         self.assertEqual(True, actual_result[0][3])
-
-        # Clean up the DB
-        self.session.delete(show_session)
-        self.session.delete(show_session_2)
-        self.session.delete(show_session_3)
-        self.session.delete(show_session_4)
-        self.session.delete(show_session_5)
-        self.session.delete(show_session_6)
-
-        self.session.commit()
-
-        self.session.delete(show_data)
-        self.session.delete(show_data_2)
-        self.session.delete(show_data_3)
-        self.session.delete(show_data_4)
-        self.session.delete(show_data_5)
-        self.session.delete(show_data_6)
-
-        self.session.commit()
-
-        self.session.delete(channel)
-        self.session.delete(channel_2)
-
-        self.session.commit()
 
     def test_search_show_sessions_data_03(self) -> None:
         """Test the function search_show_sessions_data: only one matches everything and it is from an adult channel."""
@@ -722,7 +617,7 @@ class TestDBCalls(unittest.TestCase):
         self.assertIsNotNone(show_session_6)
 
         # Call the function
-        actual_result = db_calls.search_show_sessions_data(self.session, '_fakes?_$', False, 4, 4, True, None)
+        actual_result = db_calls.search_show_sessions_data(self.session, '_fakes?_$', False, 4, 4, True, False)
 
         # Verify the result
         self.assertEqual(1, len(actual_result))
@@ -732,30 +627,6 @@ class TestDBCalls(unittest.TestCase):
         self.assertEqual('TEST_CHANNEL_2', actual_result[0][1])
         self.assertEqual('other fake', actual_result[0][2])
         self.assertEqual(None, actual_result[0][3])
-
-        # Clean up the DB
-        self.session.delete(show_session)
-        self.session.delete(show_session_2)
-        self.session.delete(show_session_3)
-        self.session.delete(show_session_4)
-        self.session.delete(show_session_5)
-        self.session.delete(show_session_6)
-
-        self.session.commit()
-
-        self.session.delete(show_data)
-        self.session.delete(show_data_2)
-        self.session.delete(show_data_3)
-        self.session.delete(show_data_4)
-        self.session.delete(show_data_5)
-        self.session.delete(show_data_6)
-
-        self.session.commit()
-
-        self.session.delete(channel)
-        self.session.delete(channel_2)
-
-        self.session.commit()
 
     def test_search_streaming_service_shows_data_01(self) -> None:
         """
@@ -824,12 +695,12 @@ class TestDBCalls(unittest.TestCase):
 
         # Call the function
         actual_result = db_calls.search_streaming_service_shows_data(self.session, '_fakes?_$', None, None, None, False,
-                                                                     None)
+                                                                     False)
 
         # Verify the result
         self.assertEqual(4, len(actual_result))
 
-        found = 0
+        found = [False] * 4
 
         # Can't ensure order
         for r in actual_result:
@@ -839,7 +710,7 @@ class TestDBCalls(unittest.TestCase):
                 self.assertEqual('streaming_service', r[1])
                 self.assertEqual(None, r[3])
 
-                found += 1
+                found[0] = True
 
             elif r[2] == 'other fakes':
                 self.assertEqual(1, r[0].first_season_available)
@@ -847,7 +718,7 @@ class TestDBCalls(unittest.TestCase):
                 self.assertEqual('streaming_service', r[1])
                 self.assertEqual(False, r[3])
 
-                found += 1
+                found[1] = True
 
             elif r[2] == 'some other fakes':
                 self.assertEqual(None, r[0].first_season_available)
@@ -855,7 +726,7 @@ class TestDBCalls(unittest.TestCase):
                 self.assertEqual('streaming_service_2', r[1])
                 self.assertEqual(True, r[3])
 
-                found += 1
+                found[2] = True
 
             elif r[2] == 'fakes':
                 self.assertEqual(None, r[0].first_season_available)
@@ -863,32 +734,10 @@ class TestDBCalls(unittest.TestCase):
                 self.assertEqual('streaming_service_2', r[1])
                 self.assertEqual(True, r[3])
 
-                found += 1
+                found[3] = True
 
-        self.assertEqual(4, found)
-
-        # Clean up the DB
-        self.session.delete(ss_show)
-        self.session.delete(ss_show_2)
-        self.session.delete(ss_show_3)
-        self.session.delete(ss_show_4)
-        self.session.delete(ss_show_5)
-
-        self.session.commit()
-
-        self.session.delete(show_data)
-        self.session.delete(show_data_2)
-        self.session.delete(show_data_3)
-        self.session.delete(show_data_4)
-        self.session.delete(show_data_5)
-        self.session.delete(show_data_6)
-
-        self.session.commit()
-
-        self.session.delete(streaming_service)
-        self.session.delete(streaming_service_2)
-
-        self.session.commit()
+        for f in found:
+            self.assertTrue(f)
 
     def test_search_streaming_service_shows_data_02(self) -> None:
         """
@@ -952,7 +801,7 @@ class TestDBCalls(unittest.TestCase):
 
         # Call the function
         actual_result = db_calls.search_streaming_service_shows_data(self.session, '_fakes?_$', True, None, None, True,
-                                                                     now - datetime.timedelta(days=2))
+                                                                     True)
 
         # Verify the result
         self.assertEqual(1, len(actual_result))
@@ -962,29 +811,6 @@ class TestDBCalls(unittest.TestCase):
         self.assertEqual('streaming_service_2', actual_result[0][1])
         self.assertEqual('some other fakes', actual_result[0][2])
         self.assertEqual(True, actual_result[0][3])
-
-        # Clean up the DB
-        self.session.delete(ss_show)
-        self.session.delete(ss_show_2)
-        self.session.delete(ss_show_3)
-        self.session.delete(ss_show_4)
-        self.session.delete(ss_show_5)
-
-        self.session.commit()
-
-        self.session.delete(show_data)
-        self.session.delete(show_data_2)
-        self.session.delete(show_data_3)
-        self.session.delete(show_data_4)
-        self.session.delete(show_data_5)
-        self.session.delete(show_data_6)
-
-        self.session.commit()
-
-        self.session.delete(streaming_service)
-        self.session.delete(streaming_service_2)
-
-        self.session.commit()
 
     def test_search_streaming_service_shows_data_03(self) -> None:
         """ Test the function search_streaming_service_shows_data: only one matches everything. """
@@ -1044,7 +870,8 @@ class TestDBCalls(unittest.TestCase):
         ss_show_5.update_timestamp = now - datetime.timedelta(days=50)
 
         # Call the function
-        actual_result = db_calls.search_streaming_service_shows_data(self.session, '_fakes?_$', False, 2, 4, True, None)
+        actual_result = db_calls.search_streaming_service_shows_data(self.session, '_fakes?_$', False, 2, 4, True,
+                                                                     False)
 
         # Verify the result
         self.assertEqual(1, len(actual_result))
@@ -1054,26 +881,3 @@ class TestDBCalls(unittest.TestCase):
         self.assertEqual('streaming_service', actual_result[0][1])
         self.assertEqual('other fakes', actual_result[0][2])
         self.assertEqual(False, actual_result[0][3])
-
-        # Clean up the DB
-        self.session.delete(ss_show)
-        self.session.delete(ss_show_2)
-        self.session.delete(ss_show_3)
-        self.session.delete(ss_show_4)
-        self.session.delete(ss_show_5)
-
-        self.session.commit()
-
-        self.session.delete(show_data)
-        self.session.delete(show_data_2)
-        self.session.delete(show_data_3)
-        self.session.delete(show_data_4)
-        self.session.delete(show_data_5)
-        self.session.delete(show_data_6)
-
-        self.session.commit()
-
-        self.session.delete(streaming_service)
-        self.session.delete(streaming_service_2)
-
-        self.session.commit()

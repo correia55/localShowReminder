@@ -497,7 +497,7 @@ def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, o
 def insert_if_missing_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, original_title: str = None,
                                 duration: int = None, synopsis: str = None, year: int = None, show_type: str = None,
                                 director: str = None, cast: str = None, audio_languages: str = None,
-                                countries: str = None, age_classification: str = None, is_movie: Optional[bool] = None)\
+                                countries: str = None, age_classification: str = None, is_movie: Optional[bool] = None) \
         -> Optional[models.ShowData]:
     """
     Check, and return, if there's a matching entry of ShowData and, if not add it.
@@ -711,7 +711,7 @@ def get_streaming_service_show(session: sqlalchemy.orm.Session, show_id: int) ->
 
 def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: str, is_movie: Optional[bool],
                               season: Optional[int], episode: Optional[int], search_adult: bool,
-                              below_date: Optional[datetime.datetime]):
+                              only_new: bool):
     """
     Get the show sessions, and all associated data, that match a given search pattern and criteria.
 
@@ -721,7 +721,7 @@ def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: s
     :param season: to specify a season.
     :param episode: to specify an episode.
     :param search_adult: if it should also search in adult channels.
-    :param below_date: a date below to limit the search.
+    :param only_new: search only new shows (updated yesterday).
     :return: the streaming service show with a given id.
     """
 
@@ -743,8 +743,10 @@ def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: s
     if not search_adult:
         query = query.filter(models.Channel.adult.is_(False))
 
-    if below_date is not None:
-        query = query.filter(models.ShowSession.date_time > below_date)
+    if only_new:
+        query = query.filter(
+            models.ShowSession.update_timestamp > (datetime.date.today() - datetime.timedelta(days=1)))
+        query = query.filter(models.ShowSession.date_time > (datetime.date.today() - datetime.timedelta(days=1)))
 
     # Join channels
     query = query.join(models.Channel)
@@ -757,7 +759,7 @@ def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: s
 
 def search_streaming_service_shows_data(session: sqlalchemy.orm.Session, search_pattern: str, is_movie: Optional[bool],
                                         season: Optional[int], episode: Optional[int], search_adult: bool,
-                                        below_date: Optional[datetime.datetime]):
+                                        only_new: bool):
     """
     Get the streaming services' shows, and all associated data, that match a given search pattern and criteria.
 
@@ -767,7 +769,7 @@ def search_streaming_service_shows_data(session: sqlalchemy.orm.Session, search_
     :param season: to specify a season.
     :param episode: to specify an episode.
     :param search_adult: if it should also search in adult channels.
-    :param below_date: a date below to limit the search.
+    :param only_new: search only new shows (updated yesterday).
     :return: the streaming service show with a given id.
     """
 
@@ -788,8 +790,9 @@ def search_streaming_service_shows_data(session: sqlalchemy.orm.Session, search_
 
     # TODO: SEARCH ADULT IF NEEDED
 
-    if below_date is not None:
-        query = query.filter(models.StreamingServiceShow.update_timestamp > below_date)
+    if only_new:
+        query = query.filter(
+            models.StreamingServiceShow.update_timestamp > (datetime.date.today() - datetime.timedelta(days=1)))
 
     # Join channels
     query = query.join(models.StreamingService)

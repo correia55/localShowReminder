@@ -85,6 +85,7 @@ class ShowSession(Base):
 
     # Technical
     id = Column(Integer, primary_key=True, autoincrement=True)
+    update_timestamp = Column(DateTime, default=datetime.datetime.now())
 
     # Foreign key
     show_id = Column(Integer, ForeignKey('ShowData.id'))

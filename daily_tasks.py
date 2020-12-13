@@ -1,5 +1,3 @@
-import datetime
-
 import sqlalchemy.orm
 
 import configuration
@@ -26,9 +24,6 @@ def daily_tasks(db_session: sqlalchemy.orm.Session):
     # Update the list of channels
     get_webservice_data.update_channel_list(db_session)
 
-    # Get the date of the last update
-    last_update_date = processing.get_last_update(db_session)
-
     # Update the list of shows in the DB
     if get_webservice_data.configuration.selected_epg == 'MEPG':
         get_webservice_data.MEPG.update_show_list(db_session)
@@ -37,7 +32,7 @@ def daily_tasks(db_session: sqlalchemy.orm.Session):
 
     # Search the shows for the existing alarms
     # The date needs to be the day after because it is at 00:00
-    processing.process_alarms(db_session, last_update_date + datetime.timedelta(days=1))
+    processing.process_alarms(db_session)
     print('Alarms processed!')
 
 

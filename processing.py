@@ -120,7 +120,7 @@ def search_show_information(session: sqlalchemy.orm.Session, search_text: str, i
 
 
 def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], is_movie: bool = None,
-                       complete_title: bool = False, below_date: datetime.date = None, show_season: int = None,
+                       complete_title: bool = False, only_new: bool = False, show_season: int = None,
                        show_episode: int = None, search_adult: bool = False) -> List[response_models.LocalShowResult]:
     """
     Get the results of the search in the DB, using all the texts from the search list.
@@ -129,7 +129,7 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
     :param search_list: the list of texts to search for in the DB.
     :param is_movie: True if the search is only for movies.
     :param complete_title: true when we don't want to accept any other words.
-    :param below_date: a date below to limit the search.
+    :param only_new: search only new shows (updated yesterday).
     :param show_season: to specify a season.
     :param show_episode: to specify an episode.
     :param search_adult: if it should also search in adult channels.
@@ -165,7 +165,7 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
         print('Search pattern: %s' % search_pattern)
 
         db_shows = db_calls.search_show_sessions_data(session, search_pattern, is_movie, show_season, show_episode,
-                                                      search_adult, below_date)
+                                                      search_adult, only_new)
 
         for s in db_shows:
             show = response_models.LocalShowResult.create_from_show_session(s[0], s[2], s[3], s[1])
@@ -181,7 +181,7 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
 
 
 def search_streaming_services_shows_db(session: sqlalchemy.orm.Session, search_list: List[str], is_movie: bool = None,
-                                       complete_title: bool = False, below_date: datetime.date = None,
+                                       complete_title: bool = False, only_new: bool = False,
                                        show_season: int = None, show_episode: int = None, search_adult: bool = False) \
         -> List[response_models.LocalShowResult]:
     """
@@ -191,7 +191,7 @@ def search_streaming_services_shows_db(session: sqlalchemy.orm.Session, search_l
     :param search_list: the list of texts to search for in the DB.
     :param is_movie: True if the search is only for movies.
     :param complete_title: true when we don't want to accept any other words.
-    :param below_date: a date below to limit the search.
+    :param only_new: search only new shows (updated yesterday).
     :param show_season: to specify a season.
     :param show_episode: to specify an episode.
     :param search_adult: if it should also search in adult channels.
@@ -227,7 +227,7 @@ def search_streaming_services_shows_db(session: sqlalchemy.orm.Session, search_l
         print('Search pattern: %s' % search_pattern)
 
         db_shows = db_calls.search_streaming_service_shows_data(session, search_pattern, is_movie, show_season,
-                                                                show_episode, search_adult, below_date)
+                                                                show_episode, search_adult, only_new=only_new)
 
         for s in db_shows:
             show = response_models.LocalShowResult.create_from_streaming_service_show(s[0], s[2], s[3], s[1])
@@ -397,12 +397,11 @@ def remove_alarm(session, alarm_id, user_id):
         session.commit()
 
 
-def process_alarms(session: sqlalchemy.orm.Session, last_date: datetime.date):
+def process_alarms(session: sqlalchemy.orm.Session):
     """
     Process the alarms that exist in the DB.
 
     :param session: the db session.
-    :param last_date: the date of the last update.
     """
 
     alarms = db_calls.get_alarms(session)
@@ -412,16 +411,20 @@ def process_alarms(session: sqlalchemy.orm.Session, last_date: datetime.date):
         search_adult = user.show_adult if user is not None else False
 
         if r.alarm_type == response_models.AlarmType.LISTINGS.value:
-            db_shows = search_sessions_db(session, [r.show_name], r.is_movie, True, last_date, r.show_season,
-                                          r.show_episode, search_adult)
-            db_shows += search_streaming_services_shows_db(session, [r.show_name], r.is_movie, True, last_date,
-                                                           r.show_season, r.show_episode, search_adult)
+            db_shows = search_streaming_services_shows_db(session, [r.show_name], r.is_movie, complete_title=True,
+                                                          only_new=True, show_season=r.show_season,
+                                                          show_episode=r.show_episode, search_adult=search_adult)
+            db_shows += search_sessions_db(session, [r.show_name], r.is_movie, complete_title=True, only_new=True,
+                                           show_season=r.show_season, show_episode=r.show_episode,
+                                           search_adult=search_adult)
         else:
             titles = get_show_titles(session, r.trakt_id, r.is_movie)
-            db_shows = search_sessions_db(session, titles, r.is_movie, True, last_date, r.show_season, r.show_episode,
-                                          search_adult)
-            db_shows += search_streaming_services_shows_db(session, titles, r.is_movie, True, last_date, r.show_season,
-                                                           r.show_episode, search_adult)
+            db_shows = search_streaming_services_shows_db(session, titles, r.is_movie, complete_title=True,
+                                                          only_new=True, show_season=r.show_season,
+                                                          show_episode=r.show_episode, search_adult=search_adult)
+            db_shows += search_sessions_db(session, titles, r.is_movie, complete_title=True, only_new=True,
+                                           show_season=r.show_season, show_episode=r.show_episode,
+                                           search_adult=search_adult)
 
         if len(db_shows) > 0:
             process_emails.set_language(user.language)
