@@ -65,7 +65,7 @@ class Reminder:
         :param reminder: the DB reminder.
         """
 
-        reminder_session = db_calls.get_show_session(session, reminder.show_id)
+        reminder_session = db_calls.get_show_session(session, reminder.session_id)
 
         self.id = reminder.id
         self.title = reminder_session.title
