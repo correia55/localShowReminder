@@ -570,7 +570,7 @@ def get_cache(session: sqlalchemy.orm.Session, key: str) -> Optional[models.Cach
     if not cache_entry:
         return None
 
-    current_date = datetime.date.today()
+    current_date = datetime.datetime.now()
 
     # Check if the entry is still valid
     if current_date > cache_entry.date_time + datetime.timedelta(days=configuration.cache_validity_days):
