@@ -659,15 +659,16 @@ def get_streaming_service_id(session: sqlalchemy.orm.Session, ss_id: int) -> Opt
 
 
 def register_streaming_service_show(session: sqlalchemy.orm.Session, first_season_available: Optional[int],
-                                    last_season_available: Optional[int], streaming_service_id: int, show_id: int,
-                                    last_season_number_episodes: Optional[int] = None, should_commit: bool = True) \
-        -> Optional[models.StreamingServiceShow]:
+                                    last_season_available: Optional[int], original: bool, streaming_service_id: int,
+                                    show_id: int, last_season_number_episodes: Optional[int] = None,
+                                    should_commit: bool = True) -> Optional[models.StreamingServiceShow]:
     """
     Register a streaming service show.
 
     :param session: the db session.
     :param first_season_available: the first season available in the streaming service.
     :param last_season_available: the last season available in the streaming service.
+    :param original: if this show is original to this streaming service.
     :param streaming_service_id: the id of the streaming service.
     :param show_id: the id of the corresponding show data (technical).
     :param last_season_number_episodes: the number of episodes available in the streaming service.
@@ -680,8 +681,8 @@ def register_streaming_service_show(session: sqlalchemy.orm.Session, first_seaso
             print('WARNING: First season must be equals or inferior to the last season!')
             return None
 
-    ss_show = models.StreamingServiceShow(first_season_available, last_season_available, show_id, streaming_service_id,
-                                          last_season_number_episodes)
+    ss_show = models.StreamingServiceShow(first_season_available, last_season_available, original, show_id,
+                                          streaming_service_id, last_season_number_episodes)
     session.add(ss_show)
 
     if should_commit:
@@ -693,6 +694,44 @@ def register_streaming_service_show(session: sqlalchemy.orm.Session, first_seaso
             return None
     else:
         return ss_show
+
+
+def update_streaming_service_show(session: sqlalchemy.orm.Session, ss_show_id: int,
+                                  first_season_available: Optional[int], last_season_available: Optional[int],
+                                  should_commit: bool = True) -> bool:
+    """
+    Update a streaming service show.
+
+    :param session: the db session.
+    :param ss_show_id: the id of the streaming service show to be updated.
+    :param first_season_available: the first season available in the streaming service.
+    :param last_season_available: the last season available in the streaming service.
+    :param should_commit: True it the data should be committed right away.
+    :return: True if the operation was a success.
+    """
+
+    ss_show = get_streaming_service_show(session, ss_show_id)
+
+    if ss_show is None:
+        return False
+
+    # Update the previous values with the current ones
+    ss_show.prev_first_season_available = ss_show.first_season_available
+    ss_show.prev_last_season_available = ss_show.last_season_available
+
+    # Set the new values
+    ss_show.first_season_available = first_season_available
+    ss_show.last_season_available = last_season_available
+
+    if should_commit:
+        try:
+            session.commit()
+            return True
+        except (IntegrityError, InvalidRequestError):
+            session.rollback()
+            return False
+    else:
+        return True
 
 
 def get_streaming_service_show(session: sqlalchemy.orm.Session, show_id: int) -> Optional[models.StreamingServiceShow]:
@@ -784,6 +823,10 @@ def search_streaming_service_shows_data(session: sqlalchemy.orm.Session, search_
         if season is not None:
             query = query.filter(models.StreamingServiceShow.first_season_available <= season)
             query = query.filter(models.StreamingServiceShow.last_season_available >= season)
+
+            query = query.filter(sqlalchemy.or_(models.StreamingServiceShow.prev_first_season_available.is_(None),
+                                                models.StreamingServiceShow.prev_first_season_available > season,
+                                                models.StreamingServiceShow.prev_last_season_available < season))
 
         # TODO: FILTER THE EPISODE WHEN WE'RE SETTING THE NUMBER OF EPISODES OF THE LAST SEASON
 

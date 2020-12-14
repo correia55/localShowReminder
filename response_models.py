@@ -106,6 +106,7 @@ class LocalShowResult:
     # Streaming
     first_season_available: Optional[int]
     last_season_available: Optional[int]
+    original: bool
 
     @staticmethod
     def create_from_show_session(show_session: models.ShowSession, show_name: str, is_movie: Optional[bool],
@@ -160,6 +161,7 @@ class LocalShowResult:
 
         local_show_result.first_season_available = ss_show.first_season_available
         local_show_result.last_season_available = ss_show.last_season_available
+        local_show_result.original = ss_show.original
 
         return local_show_result
 
@@ -195,5 +197,7 @@ class LocalShowResult:
 
             if self.last_season_available:
                 local_show_dict['last_season_available'] = self.last_season_available
+
+            local_show_dict['original'] = self.original
 
         return local_show_dict

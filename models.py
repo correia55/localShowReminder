@@ -131,20 +131,25 @@ class StreamingServiceShow(Base):
     # Technical
     id = Column(Integer, primary_key=True, autoincrement=True)
     update_timestamp = Column(DateTime, default=datetime.datetime.now())
+    prev_first_season_available = Column(Integer)  # Used to store the previous first season, needed for the alarms
+    prev_last_season_available = Column(Integer)  # Used to store the previous last season, needed for the alarms
 
     # Most important data
     first_season_available = Column(Integer)
     last_season_available = Column(Integer)
     last_season_number_episodes = Column(Integer)
+    original = Column(Boolean)
 
     # Foreign keys
     show_data_id = Column(Integer, ForeignKey('ShowData.id'))
     streaming_service_id = Column(Integer, ForeignKey('StreamingService.id'))
 
-    def __init__(self, first_season_available: int, last_season_available: int, show_data_id: int,
+    def __init__(self, first_season_available: int, last_season_available: int, original: bool, show_data_id: int,
                  streaming_service_id: int, last_season_number_episodes: int = None):
         self.first_season_available = first_season_available
         self.last_season_available = last_season_available
+        self.original = original
+
         self.last_season_number_episodes = last_season_number_episodes
 
         self.show_data_id = show_data_id

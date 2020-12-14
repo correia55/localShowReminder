@@ -239,13 +239,13 @@ class TestDBCalls(unittest.TestCase):
         show_data = db_calls.register_show_data(self.session, 'test_title')
         self.assertIsNotNone(show_data)
 
-        streaming_service_show = db_calls.register_streaming_service_show(self.session, None, None,
+        streaming_service_show = db_calls.register_streaming_service_show(self.session, None, None, False,
                                                                           streaming_service.id, show_data.id,
                                                                           should_commit=True)
         self.assertIsNotNone(streaming_service_show)
 
         # Call the function
-        actual_result = db_calls.register_streaming_service_show(self.session, None, None, streaming_service.id,
+        actual_result = db_calls.register_streaming_service_show(self.session, None, None, False, streaming_service.id,
                                                                  show_data.id, should_commit=True)
 
         # Verify the result
@@ -265,7 +265,7 @@ class TestDBCalls(unittest.TestCase):
         self.assertIsNotNone(show_data)
 
         # Call the function
-        actual_result = db_calls.register_streaming_service_show(self.session, 5, 1, streaming_service.id,
+        actual_result = db_calls.register_streaming_service_show(self.session, 5, 1, False, streaming_service.id,
                                                                  show_data.id, should_commit=True)
 
         # Verify the result
@@ -282,7 +282,7 @@ class TestDBCalls(unittest.TestCase):
         self.assertIsNotNone(show_data)
 
         # Call the function
-        actual_result = db_calls.register_streaming_service_show(self.session, 1, 5, streaming_service.id,
+        actual_result = db_calls.register_streaming_service_show(self.session, 1, 5, False, streaming_service.id,
                                                                  show_data.id, should_commit=True)
 
         # Verify the result
@@ -313,7 +313,8 @@ class TestDBCalls(unittest.TestCase):
         show_data = db_calls.register_show_data(self.session, 'test_title')
         self.assertIsNotNone(show_data)
 
-        expected_result = db_calls.register_streaming_service_show(self.session, None, None, streaming_service.id,
+        expected_result = db_calls.register_streaming_service_show(self.session, None, None, False,
+                                                                   streaming_service.id,
                                                                    show_data.id, should_commit=True)
         self.assertIsNotNone(expected_result)
 
@@ -443,34 +444,34 @@ class TestDBCalls(unittest.TestCase):
         # Can't ensure order
         for r in actual_result:
             if r[2] == 'other fake':
-                self.assertEqual(1, actual_result[0][0].season)
-                self.assertEqual(1, actual_result[0][0].episode)
-                self.assertEqual('TEST_CHANNEL', actual_result[0][1])
-                self.assertEqual(None, actual_result[0][3])
+                self.assertEqual(1, r[0].season)
+                self.assertEqual(1, r[0].episode)
+                self.assertEqual('TEST_CHANNEL', r[1])
+                self.assertEqual(None, r[3])
 
                 found[0] = True
 
             if r[2] == 'other fakes':
-                self.assertEqual(2, actual_result[1][0].season)
-                self.assertEqual(1, actual_result[1][0].episode)
-                self.assertEqual('TEST_CHANNEL', actual_result[1][1])
-                self.assertEqual(False, actual_result[1][3])
+                self.assertEqual(2, r[0].season)
+                self.assertEqual(1, r[0].episode)
+                self.assertEqual('TEST_CHANNEL', r[1])
+                self.assertEqual(False, r[3])
 
                 found[1] = True
 
             if r[2] == 'some other fakes':
-                self.assertEqual(None, actual_result[2][0].season)
-                self.assertEqual(None, actual_result[2][0].episode)
-                self.assertEqual('TEST_CHANNEL', actual_result[2][1])
-                self.assertEqual(True, actual_result[2][3])
+                self.assertEqual(None, r[0].season)
+                self.assertEqual(None, r[0].episode)
+                self.assertEqual('TEST_CHANNEL', r[1])
+                self.assertEqual(True, r[3])
 
                 found[2] = True
 
             if r[2] == 'fakes':
-                self.assertEqual(None, actual_result[3][0].season)
-                self.assertEqual(None, actual_result[3][0].episode)
-                self.assertEqual('TEST_CHANNEL', actual_result[3][1])
-                self.assertEqual(True, actual_result[3][3])
+                self.assertEqual(None, r[0].season)
+                self.assertEqual(None, r[0].episode)
+                self.assertEqual('TEST_CHANNEL', r[1])
+                self.assertEqual(True, r[3])
 
                 found[3] = True
 
@@ -673,24 +674,27 @@ class TestDBCalls(unittest.TestCase):
         show_data_6.is_movie = True
 
         # This session is not a match because the title is not a match
-        ss_show = db_calls.register_streaming_service_show(self.session, 5, 5, streaming_service.id, show_data.id)
+        ss_show = db_calls.register_streaming_service_show(self.session, 5, 5, False, streaming_service.id,
+                                                           show_data.id)
         self.assertIsNotNone(ss_show)
 
         # This session is a match
-        ss_show_2 = db_calls.register_streaming_service_show(self.session, 1, 1, streaming_service.id, show_data_3.id)
+        ss_show_2 = db_calls.register_streaming_service_show(self.session, 1, 1, False, streaming_service.id,
+                                                             show_data_3.id)
         self.assertIsNotNone(ss_show_2)
 
         # This session is a match
-        ss_show_3 = db_calls.register_streaming_service_show(self.session, 1, 2, streaming_service.id, show_data_4.id)
+        ss_show_3 = db_calls.register_streaming_service_show(self.session, 1, 2, False, streaming_service.id,
+                                                             show_data_4.id)
         self.assertIsNotNone(ss_show_3)
 
         # This session is a match
-        ss_show_4 = db_calls.register_streaming_service_show(self.session, None, None, streaming_service_2.id,
+        ss_show_4 = db_calls.register_streaming_service_show(self.session, None, None, False, streaming_service_2.id,
                                                              show_data_5.id)
         self.assertIsNotNone(ss_show_4)
 
         # This session is a match
-        ss_show_5 = db_calls.register_streaming_service_show(self.session, None, None, streaming_service_2.id,
+        ss_show_5 = db_calls.register_streaming_service_show(self.session, None, None, False, streaming_service_2.id,
                                                              show_data_6.id)
         self.assertIsNotNone(ss_show_5)
         ss_show_5.update_timestamp = now - datetime.timedelta(days=50)
@@ -779,24 +783,27 @@ class TestDBCalls(unittest.TestCase):
         show_data_6.is_movie = True
 
         # This session is not a match because the title is not a match
-        ss_show = db_calls.register_streaming_service_show(self.session, 5, 5, streaming_service.id, show_data.id)
+        ss_show = db_calls.register_streaming_service_show(self.session, 5, 5, False, streaming_service.id,
+                                                           show_data.id)
         self.assertIsNotNone(ss_show)
 
         # This session is not a match because it is not a movie
-        ss_show_2 = db_calls.register_streaming_service_show(self.session, 1, 1, streaming_service.id, show_data_3.id)
+        ss_show_2 = db_calls.register_streaming_service_show(self.session, 1, 1, False, streaming_service.id,
+                                                             show_data_3.id)
         self.assertIsNotNone(ss_show_2)
 
         # This session is not a match because it is not a movie
-        ss_show_3 = db_calls.register_streaming_service_show(self.session, 1, 2, streaming_service.id, show_data_4.id)
+        ss_show_3 = db_calls.register_streaming_service_show(self.session, 1, 2, False, streaming_service.id,
+                                                             show_data_4.id)
         self.assertIsNotNone(ss_show_3)
 
         # This session is a match
-        ss_show_4 = db_calls.register_streaming_service_show(self.session, None, None, streaming_service_2.id,
+        ss_show_4 = db_calls.register_streaming_service_show(self.session, None, None, False, streaming_service_2.id,
                                                              show_data_5.id)
         self.assertIsNotNone(ss_show_4)
 
         # This session is not a match because of the date
-        ss_show_5 = db_calls.register_streaming_service_show(self.session, None, None, streaming_service_2.id,
+        ss_show_5 = db_calls.register_streaming_service_show(self.session, None, None, False, streaming_service_2.id,
                                                              show_data_6.id)
         self.assertIsNotNone(ss_show_5)
         ss_show_5.update_timestamp = now - datetime.timedelta(days=50)
@@ -815,7 +822,7 @@ class TestDBCalls(unittest.TestCase):
         self.assertEqual(True, actual_result[0][3])
 
     def test_search_streaming_service_shows_data_03(self) -> None:
-        """ Test the function search_streaming_service_shows_data: only one matches everything. """
+        """ Test the function search_streaming_service_shows_data: only two match everything. """
 
         # Prepare the DB
         now = datetime.datetime.utcnow()
@@ -848,37 +855,140 @@ class TestDBCalls(unittest.TestCase):
         self.assertIsNotNone(show_data_6)
         show_data_6.is_movie = True
 
+        show_data_7 = db_calls.register_show_data(self.session, 'yet another fakes')
+        self.assertIsNotNone(show_data_7)
+        show_data_7.is_movie = False
+
         # This session is not a match because the title is not a match
-        ss_show = db_calls.register_streaming_service_show(self.session, 5, 5, streaming_service.id, show_data.id)
+        ss_show = db_calls.register_streaming_service_show(self.session, 5, 5, False, streaming_service.id,
+                                                           show_data.id)
         self.assertIsNotNone(ss_show)
 
         # This session is not a match because it has the wrong episode
-        ss_show_2 = db_calls.register_streaming_service_show(self.session, 1, 1, streaming_service.id, show_data_3.id)
+        ss_show_2 = db_calls.register_streaming_service_show(self.session, 1, 1, False, streaming_service.id,
+                                                             show_data_3.id)
         self.assertIsNotNone(ss_show_2)
 
         # This session is a match
-        ss_show_3 = db_calls.register_streaming_service_show(self.session, 1, 2, streaming_service.id, show_data_4.id)
+        ss_show_3 = db_calls.register_streaming_service_show(self.session, 1, 2, False, streaming_service.id,
+                                                             show_data_4.id)
         self.assertIsNotNone(ss_show_3)
 
         # This session is not a match because it has the wrong episode
-        ss_show_4 = db_calls.register_streaming_service_show(self.session, None, None, streaming_service_2.id,
+        ss_show_4 = db_calls.register_streaming_service_show(self.session, None, None, False, streaming_service_2.id,
                                                              show_data_5.id)
         self.assertIsNotNone(ss_show_4)
 
         # This session is not a match because it has the wrong episode
-        ss_show_5 = db_calls.register_streaming_service_show(self.session, None, None, streaming_service_2.id,
+        ss_show_5 = db_calls.register_streaming_service_show(self.session, None, None, False, streaming_service_2.id,
                                                              show_data_6.id)
         self.assertIsNotNone(ss_show_5)
         ss_show_5.update_timestamp = now - datetime.timedelta(days=50)
+
+        # This session is a match
+        ss_show_6 = db_calls.register_streaming_service_show(self.session, 1, 2, False, streaming_service_2.id,
+                                                             show_data_3.id)
+        self.assertIsNotNone(ss_show_6)
+        ss_show_6.prev_first_season_available = 1
+        ss_show_6.prev_last_season_available = 1
+
+        # This session is not a match because the previous update already was a match
+        ss_show_7 = db_calls.register_streaming_service_show(self.session, 1, 2, False, streaming_service.id,
+                                                             show_data_7.id)
+        self.assertIsNotNone(ss_show_7)
+        ss_show_7.prev_first_season_available = 1
+        ss_show_7.prev_last_season_available = 2
 
         # Call the function
         actual_result = db_calls.search_streaming_service_shows_data(self.session, '_fakes?_$', False, 2, 4, True, None)
 
         # Verify the result
-        self.assertEqual(1, len(actual_result))
+        self.assertEqual(2, len(actual_result))
 
-        self.assertEqual(1, actual_result[0][0].first_season_available)
-        self.assertEqual(2, actual_result[0][0].last_season_available)
-        self.assertEqual('streaming_service', actual_result[0][1])
-        self.assertEqual('other fakes', actual_result[0][2])
-        self.assertEqual(False, actual_result[0][3])
+        found = [False] * 2
+
+        # Can't ensure order
+        for r in actual_result:
+            if r[2] == 'other fakes':
+                self.assertEqual(1, r[0].first_season_available)
+                self.assertEqual(2, r[0].last_season_available)
+                self.assertEqual('streaming_service', r[1])
+                self.assertEqual(False, r[3])
+
+                found[0] = True
+            elif r[2] == 'other fake':
+                self.assertEqual(1, r[0].first_season_available)
+                self.assertEqual(2, r[0].last_season_available)
+                self.assertEqual('streaming_service_2', r[1])
+                self.assertEqual(None, r[3])
+
+                found[1] = True
+
+        for f in found:
+            self.assertTrue(f)
+
+    def test_update_streaming_service_show_error(self):
+        """ Test the update of a streaming service show with an nonexistent id. """
+
+        # The expected result
+        expected_result = False
+
+        # Call the function
+        actual_result = db_calls.update_streaming_service_show(self.session, -1, None, None, True)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_update_streaming_service_show_ok_01(self):
+        """ Test the update of a streaming service show with a movie. """
+
+        # The expected result
+        expected_result = True
+
+        # Prepare the DB
+        streaming_service = db_calls.register_streaming_service(self.session, 'streaming_service')
+        self.assertIsNotNone(streaming_service)
+
+        show_data = db_calls.register_show_data(self.session, 'fake')
+        self.assertIsNotNone(show_data)
+        show_data.is_movie = False
+
+        ss_show = db_calls.register_streaming_service_show(self.session, None, None, False, streaming_service.id,
+                                                           show_data.id)
+        self.assertIsNotNone(ss_show)
+
+        # Call the function
+        actual_result = db_calls.update_streaming_service_show(self.session, ss_show.id, None, None, True)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+        self.assertEqual(None, ss_show.prev_first_season_available)
+        self.assertEqual(None, ss_show.prev_last_season_available)
+
+    def test_update_streaming_service_show_ok_02(self):
+        """ Test the update of a streaming service show with a tv show. """
+
+        # The expected result
+        expected_result = True
+
+        # Prepare the DB
+        streaming_service = db_calls.register_streaming_service(self.session, 'streaming_service')
+        self.assertIsNotNone(streaming_service)
+
+        show_data = db_calls.register_show_data(self.session, 'fake')
+        self.assertIsNotNone(show_data)
+        show_data.is_movie = True
+
+        ss_show = db_calls.register_streaming_service_show(self.session, 1, 2, False, streaming_service.id,
+                                                           show_data.id)
+        self.assertIsNotNone(ss_show)
+
+        # Call the function
+        actual_result = db_calls.update_streaming_service_show(self.session, ss_show.id, 3, 4, True)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+        self.assertEqual(1, ss_show.prev_first_season_available)
+        self.assertEqual(2, ss_show.prev_last_season_available)
