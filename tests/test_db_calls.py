@@ -433,7 +433,7 @@ class TestDBCalls(unittest.TestCase):
         self.assertIsNotNone(show_session_6)
 
         # Call the function
-        actual_result = db_calls.search_show_sessions_data(self.session, '_fakes?_$', None, None, None, False, False)
+        actual_result = db_calls.search_show_sessions_data(self.session, '_fakes?_$', None, None, None, False, None)
 
         # Verify the result
         self.assertEqual(4, len(actual_result))
@@ -534,7 +534,8 @@ class TestDBCalls(unittest.TestCase):
         self.assertIsNotNone(show_session_4)
 
         # This session is a match
-        show_session_5 = db_calls.register_show_session(self.session, None, None, now, channel.id, show_data_5.id)
+        show_session_5 = db_calls.register_show_session(self.session, None, None, now + datetime.timedelta(days=1),
+                                                        channel.id, show_data_5.id)
         self.assertIsNotNone(show_session_5)
 
         # This session is not a match because of the date
@@ -543,7 +544,8 @@ class TestDBCalls(unittest.TestCase):
         self.assertIsNotNone(show_session_6)
 
         # Call the function
-        actual_result = db_calls.search_show_sessions_data(self.session, '_fakes?_$', True, None, None, True, True)
+        actual_result = db_calls.search_show_sessions_data(self.session, '_fakes?_$', True, None, None, True,
+                                                           now - datetime.timedelta(days=2))
 
         # Verify the result
         self.assertEqual(1, len(actual_result))
@@ -617,7 +619,7 @@ class TestDBCalls(unittest.TestCase):
         self.assertIsNotNone(show_session_6)
 
         # Call the function
-        actual_result = db_calls.search_show_sessions_data(self.session, '_fakes?_$', False, 4, 4, True, False)
+        actual_result = db_calls.search_show_sessions_data(self.session, '_fakes?_$', False, 4, 4, True, None)
 
         # Verify the result
         self.assertEqual(1, len(actual_result))
@@ -695,7 +697,7 @@ class TestDBCalls(unittest.TestCase):
 
         # Call the function
         actual_result = db_calls.search_streaming_service_shows_data(self.session, '_fakes?_$', None, None, None, False,
-                                                                     False)
+                                                                     None)
 
         # Verify the result
         self.assertEqual(4, len(actual_result))
@@ -801,7 +803,7 @@ class TestDBCalls(unittest.TestCase):
 
         # Call the function
         actual_result = db_calls.search_streaming_service_shows_data(self.session, '_fakes?_$', True, None, None, True,
-                                                                     True)
+                                                                     now - datetime.timedelta(days=2))
 
         # Verify the result
         self.assertEqual(1, len(actual_result))
@@ -870,8 +872,7 @@ class TestDBCalls(unittest.TestCase):
         ss_show_5.update_timestamp = now - datetime.timedelta(days=50)
 
         # Call the function
-        actual_result = db_calls.search_streaming_service_shows_data(self.session, '_fakes?_$', False, 2, 4, True,
-                                                                     False)
+        actual_result = db_calls.search_streaming_service_shows_data(self.session, '_fakes?_$', False, 2, 4, True, None)
 
         # Verify the result
         self.assertEqual(1, len(actual_result))

@@ -1,7 +1,7 @@
 import datetime
 
 import sqlalchemy
-from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, Date, DateTime
+from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 
 # Base class for DB Classes
@@ -9,7 +9,7 @@ Base = declarative_base()
 
 
 class ShowData(Base):
-    """Used to store all the date associated with a show."""
+    """Used to store all the data associated with a show."""
 
     __tablename__ = 'ShowData'
     __table_args__ = (
@@ -240,15 +240,15 @@ class Token(Base):
 
 
 class LastUpdate(Base):
-    """Used to know the last date of the data collected."""
+    """Used to know the last datetime of the data collected."""
 
     __tablename__ = 'LastUpdate'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    date = Column(Date)
+    date_time = Column(DateTime)
 
-    def __init__(self, date: datetime.date):
-        self.date = date
+    def __init__(self, date_time: datetime.datetime):
+        self.date_time = date_time
 
 
 class Cache(Base):
@@ -258,12 +258,8 @@ class Cache(Base):
 
     key = Column(String(100), primary_key=True)
     result = Column(String(100000))
-    date = Column(Date)
+    date_time = Column(DateTime, default=datetime.datetime.now())
 
     def __init__(self, key: str, result: str):
         self.key = key
         self.result = result
-        self.date = datetime.datetime.today()
-
-    def __repr__(self):
-        return 'key: %s; date: %s' % (self.key, str(self.date))

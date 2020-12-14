@@ -187,14 +187,14 @@ class MEPG:
 
         # Make sure the variable's date is at least as recent as today
         # so that it does not make requests for older dates that are no longer relevant
-        if db_last_update.date < datetime.date.today():
-            db_last_update.date = datetime.date.today() - datetime.timedelta(1)
+        if db_last_update.date_time < datetime.date.today():
+            db_last_update.date_time = datetime.date.today() - datetime.timedelta(1)
 
         max_channels_request = int(configuration.max_channels_request)
 
         # For each day until six days from today
-        while db_last_update.date < datetime.date.today() + datetime.timedelta(6):
-            db_last_update.date += datetime.timedelta(1)
+        while db_last_update.date_time < datetime.date.today() + datetime.timedelta(6):
+            db_last_update.date_time += datetime.timedelta(1)
 
             # It is necessary to split the number of channels in a request in order for it to succeed
             current = []
@@ -203,9 +203,9 @@ class MEPG:
                 current.append(db_channels[i])
 
                 if i % max_channels_request == 0 and i > 0:
-                    MEPG.update_show_list_day(session, current, db_last_update.date)
+                    MEPG.update_show_list_day(session, current, db_last_update.date_time)
 
                     current = []
 
             if len(current) != 0:
-                MEPG.update_show_list_day(session, current, db_last_update.date)
+                MEPG.update_show_list_day(session, current, db_last_update.date_time)

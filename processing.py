@@ -136,6 +136,11 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
     :return: results of the search in the DB.
     """
 
+    if only_new:
+        below_datetime = get_last_update_datetime(session)
+    else:
+        below_datetime = None
+
     results = dict()
 
     for search_text in search_list:
@@ -165,7 +170,7 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
         print('Search pattern: %s' % search_pattern)
 
         db_shows = db_calls.search_show_sessions_data(session, search_pattern, is_movie, show_season, show_episode,
-                                                      search_adult, only_new)
+                                                      search_adult, below_datetime=below_datetime)
 
         for s in db_shows:
             show = response_models.LocalShowResult.create_from_show_session(s[0], s[2], s[3], s[1])
@@ -198,6 +203,11 @@ def search_streaming_services_shows_db(session: sqlalchemy.orm.Session, search_l
     :return: results of the search in the DB.
     """
 
+    if only_new:
+        below_datetime = get_last_update_datetime(session)
+    else:
+        below_datetime = None
+
     results = dict()
 
     for search_text in search_list:
@@ -227,7 +237,8 @@ def search_streaming_services_shows_db(session: sqlalchemy.orm.Session, search_l
         print('Search pattern: %s' % search_pattern)
 
         db_shows = db_calls.search_streaming_service_shows_data(session, search_pattern, is_movie, show_season,
-                                                                show_episode, search_adult, only_new=only_new)
+                                                                show_episode, search_adult,
+                                                                below_datetime=below_datetime)
 
         for s in db_shows:
             show = response_models.LocalShowResult.create_from_streaming_service_show(s[0], s[2], s[3], s[1])
@@ -289,8 +300,8 @@ def get_show_titles(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: boo
 
     # Titles in the DB are still valid
     if show_titles is not None \
-            and show_titles.insertion_datetime + datetime.timedelta(
-        days=configuration.cache_validity_days) > datetime.datetime.now():
+            and show_titles.insertion_datetime + datetime.timedelta(days=configuration.cache_validity_days) \
+            > datetime.datetime.now():
         return show_titles.titles.split('|')
 
     # Collect all titles for a show
@@ -431,7 +442,7 @@ def process_alarms(session: sqlalchemy.orm.Session):
             process_emails.send_alarms_email(user.email, db_shows)
 
 
-def get_last_update(session) -> datetime.date:
+def get_last_update_datetime(session: sqlalchemy.orm.Session) -> datetime.datetime:
     """
     Get the date of the last update.
 
@@ -439,12 +450,12 @@ def get_last_update(session) -> datetime.date:
     :return: the date of the last update.
     """
 
-    last_update = session.query(models.LastUpdate).first()
+    last_update = db_calls.get_last_update(session)
 
     if last_update is None:
         return datetime.datetime.now() - datetime.timedelta(days=10)
 
-    return last_update.date
+    return last_update.date_time
 
 
 def register_user(session, email: str, password: str, language: str) -> bool:
