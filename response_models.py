@@ -60,17 +60,17 @@ class Reminder:
 
     def __init__(self, session: sqlalchemy.orm.Session, reminder: models.Reminder):
         """
-        Create an instance using a DB reminder.
+        Create an instance using a reminder.
 
         :param reminder: the DB reminder.
         """
 
-        reminder_session = db_calls.get_show_session(session, reminder.session_id)
+        reminder_session_tuple = db_calls.get_show_session_complete(session, reminder.session_id)
 
         self.id = reminder.id
-        self.title = reminder_session.title
-        self.date_time = reminder_session.date_time
         self.anticipation_minutes = reminder.anticipation_minutes
+        self.date_time = reminder_session_tuple[0].date_time
+        self.title = reminder_session_tuple[2]
 
     def to_dict(self):
         """
@@ -138,8 +138,7 @@ class LocalShowResult:
 
     @staticmethod
     def create_from_streaming_service_show(ss_show: models.StreamingServiceShow, show_name: str,
-                                           is_movie: Optional[bool],
-                                           channel_name: str):
+                                           is_movie: Optional[bool], channel_name: str):
         """
         Create local show result from the a show session, the name of the show, whether it is a movie or not and the
         name of the channel.
