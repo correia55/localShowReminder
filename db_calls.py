@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 import sqlalchemy.orm
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
@@ -227,6 +227,20 @@ def get_reminders_user(session: sqlalchemy.orm.Session, user_id: int) -> List[mo
         .all()
 
 
+def get_reminders_session(session: sqlalchemy.orm.Session, session_id: int) -> List[models.Reminder]:
+    """
+    Get a list of reminders for a given session.
+
+    :param session: the db session.
+    :param session_id: the id of the session.
+    :return: a list of reminders for the user who's id is user_id.
+    """
+
+    return session.query(models.Reminder) \
+        .filter(models.Reminder.session_id == session_id) \
+        .all()
+
+
 def get_sessions_reminders(session: sqlalchemy.orm.Session) -> List:
     """
     Get all reminders and the corresponding sessions.
@@ -370,6 +384,28 @@ def get_show_sessions_channel(session: sqlalchemy.orm.Session, channel_id: int) 
     return session.query(models.ShowSession) \
         .filter(models.ShowSession.channel_id == channel_id) \
         .all()
+
+
+def get_show_session_complete(session: sqlalchemy.orm.Session, show_id: int) \
+        -> Optional[Tuple[models.ShowSession, str, str, bool]]:
+    """
+    Get the show session, and all associated data, with a given id.
+
+    :param session: the db session.
+    :param show_id: the id of the show session.
+    :return: the show session, and all associated data, with a given id.
+    """
+
+    query = session.query(models.ShowSession, models.Channel.name, models.ShowData.portuguese_title,
+                          models.ShowData.is_movie).filter(models.ShowSession.id == show_id)
+
+    # Join channels
+    query = query.join(models.Channel)
+
+    # Join show data
+    query = query.join(models.ShowData)
+
+    return query.first()
 
 
 def get_show_session(session: sqlalchemy.orm.Session, show_id: int) -> Optional[models.ShowSession]:

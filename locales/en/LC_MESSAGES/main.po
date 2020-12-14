@@ -115,3 +115,9 @@ msgstr "available"
 
 msgid "available_plural"
 msgstr "available"
+
+msgid "subject_deleted_sessions"
+msgstr "Deleted Sessions"
+
+msgid "deleted_sessions_intro"
+msgstr "A set of sessions was deleted due to an update on the channels' listings. These are the deleted sessions, associated with reminders you had created:"

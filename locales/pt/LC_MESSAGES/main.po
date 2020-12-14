@@ -115,3 +115,9 @@ msgstr "disponível"
 
 msgid "available_plural"
 msgstr "disponíveis"
+
+msgid "subject_deleted_sessions"
+msgstr "Sessões Apagadas"
+
+msgid "deleted_sessions_intro"
+msgstr "Algumas sessões foram apagadas devido a actualizações na programação do canal. Estas foram as sessões apagadas, para as quais tinha criado lembretes:"

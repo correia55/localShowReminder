@@ -16,10 +16,10 @@ LOCALES_DIR = os.path.join(configuration.base_dir, 'locales')
 pt = gettext.translation('main', localedir=LOCALES_DIR, languages=['pt'])
 en = gettext.translation('main', localedir=LOCALES_DIR, languages=['en'])
 
-TEMPLATES_DIR = os.path.join(configuration.base_dir, 'templates')
+EMAIL_TEMPLATES_DIR = os.path.join(configuration.base_dir, 'email_templates')
 
 extensions = ['jinja2.ext.i18n']
-env = jinja2.Environment(loader=jinja2.FileSystemLoader(TEMPLATES_DIR), extensions=extensions)
+env = jinja2.Environment(loader=jinja2.FileSystemLoader(EMAIL_TEMPLATES_DIR), extensions=extensions)
 
 current = pt
 env.install_gettext_callables(gettext=current.gettext, ngettext=current.ngettext, newstyle=True)
@@ -204,6 +204,24 @@ def send_alarms_email(destination: str, results: List[response_models.LocalShowR
     content = env.get_template('alarms_email.html').render(application_name=configuration.application_name,
                                                            application_link=configuration.application_link,
                                                            username=destination, results=results, title=subject)
+
+    return send_email(content, subject, destination)
+
+
+def send_deleted_sessions_email(destination: str, sessions: List[response_models.LocalShowResult]) -> bool:
+    """
+    Send an email with a list of the show sessions that were deleted and were associated to a user's reminder.
+
+    :param str destination: the destination address.
+    :param list sessions: the list of sessions.
+    """
+
+    subject = current.gettext('subject_deleted_sessions')
+
+    content = env.get_template('deleted_sessions_email.html').render(application_name=configuration.application_name,
+                                                                     application_link=configuration.application_link,
+                                                                     username=destination, results=sessions,
+                                                                     title=subject)
 
     return send_email(content, subject, destination)
 

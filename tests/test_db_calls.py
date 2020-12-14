@@ -130,6 +130,41 @@ class TestDBCalls(unittest.TestCase):
         self.assertEqual(False, actual_result.show_adult)
         self.assertEqual(False, actual_result.verified)
 
+    def test_get_show_session_complete_error(self) -> None:
+        """ Test the function get all of the information associated with a show session without results. """
+
+        # The expected result
+        expected_result = None
+
+        # Call the function
+        actual_result = db_calls.get_show_session_complete(self.session, -1)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_get_show_session_complete_ok(self) -> None:
+        """ Test the function get all of the information associated with a show session with results. """
+
+        # Prepare the DB
+        channel = db_calls.register_channel(self.session, 'TC', 'TEST_CHANNEL')
+        self.assertIsNotNone(channel)
+
+        show_data = db_calls.register_show_data(self.session, 'test_title')
+        self.assertIsNotNone(show_data)
+
+        show_session = db_calls.register_show_session(self.session, 1, 1, datetime.datetime.utcnow(), channel.id,
+                                                      show_data.id, True)
+        self.assertIsNotNone(show_session)
+
+        # Call the function
+        actual_result = db_calls.get_show_session_complete(self.session, show_session.id)
+
+        # Verify the result
+        self.assertEqual(show_session, actual_result[0])
+        self.assertEqual('TEST_CHANNEL', actual_result[1])
+        self.assertEqual('test_title', actual_result[2])
+        self.assertEqual(None, actual_result[3])
+
     def test_get_reminders_error(self) -> None:
         """ Test the function get_reminders without results. """
 
@@ -168,6 +203,47 @@ class TestDBCalls(unittest.TestCase):
 
         # Call the function
         actual_result = db_calls.get_reminders_user(self.session, user.id)
+
+        # Verify the result
+        self.assertEqual(1, len(actual_result))
+        self.assertEqual(10, actual_result[0].anticipation_minutes)
+        self.assertEqual(show_session.id, actual_result[0].session_id)
+        self.assertEqual(user.id, actual_result[0].user_id)
+
+    def test_get_reminders_session_error(self) -> None:
+        """ Test the function get reminders associated with a session without results. """
+
+        # The expected result
+        expected_result = []
+
+        # Call the function
+        actual_result = db_calls.get_reminders_session(self.session, -1)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_get_reminders_session_ok(self) -> None:
+        """ Test the function get reminders associated with a session with results. """
+
+        # Prepare the DB
+        user = db_calls.register_user(self.session, 'test_email', 'test_password')
+        self.assertIsNotNone(user)
+
+        channel = db_calls.register_channel(self.session, 'TC', 'TEST_CHANNEL')
+        self.assertIsNotNone(channel)
+
+        show_data = db_calls.register_show_data(self.session, 'test_title')
+        self.assertIsNotNone(show_data)
+
+        show_session = db_calls.register_show_session(self.session, 1, 1, datetime.datetime.utcnow(), channel.id,
+                                                      show_data.id, True)
+        self.assertIsNotNone(show_session)
+
+        reminder = db_calls.register_reminder(self.session, show_session.id, 10, user.id)
+        self.assertIsNotNone(reminder)
+
+        # Call the function
+        actual_result = db_calls.get_reminders_session(self.session, show_session.id)
 
         # Verify the result
         self.assertEqual(1, len(actual_result))
