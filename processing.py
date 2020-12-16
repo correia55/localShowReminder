@@ -1,6 +1,6 @@
 import datetime
 from enum import Enum
-from typing import List, Tuple, Mapping
+from typing import List, Tuple, Mapping, Optional
 
 import flask_bcrypt as fb
 import sqlalchemy.orm
@@ -137,7 +137,7 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
     """
 
     if only_new:
-        below_datetime = get_last_update_datetime(session)
+        below_datetime = get_last_update_alarms_datetime(session)
     else:
         below_datetime = None
 
@@ -204,7 +204,7 @@ def search_streaming_services_shows_db(session: sqlalchemy.orm.Session, search_l
     """
 
     if only_new:
-        below_datetime = get_last_update_datetime(session)
+        below_datetime = get_last_update_alarms_datetime(session)
     else:
         below_datetime = None
 
@@ -441,21 +441,26 @@ def process_alarms(session: sqlalchemy.orm.Session):
             process_emails.set_language(user.language)
             process_emails.send_alarms_email(user.email, db_shows)
 
+    # Update the datetime of the last processing of the alarms
+    last_update = db_calls.get_last_update(session)
+    last_update.alarms_datetime = datetime.datetime.now()
+    db_calls.commit(session)
 
-def get_last_update_datetime(session: sqlalchemy.orm.Session) -> datetime.datetime:
+
+def get_last_update_alarms_datetime(session: sqlalchemy.orm.Session) -> Optional[datetime.datetime]:
     """
-    Get the date of the last update.
+    Get the datetime of the last processing of the alarms.
 
     :param session: the db session.
-    :return: the date of the last update.
+    :return: the datetime of the last processing of the alarms.
     """
 
     last_update = db_calls.get_last_update(session)
 
     if last_update is None:
-        return datetime.datetime.now() - datetime.timedelta(days=10)
+        return None
 
-    return last_update.date_time
+    return last_update.alarms_datetime
 
 
 def register_user(session, email: str, password: str, language: str) -> bool:

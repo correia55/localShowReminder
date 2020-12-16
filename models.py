@@ -1,7 +1,7 @@
 import datetime
 
 import sqlalchemy
-from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, DateTime
+from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, DateTime, Date
 from sqlalchemy.ext.declarative import declarative_base
 
 # Base class for DB Classes
@@ -245,15 +245,17 @@ class Token(Base):
 
 
 class LastUpdate(Base):
-    """Used to know the last datetime of the data collected."""
+    """Used to store the data from the last update."""
 
     __tablename__ = 'LastUpdate'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    date_time = Column(DateTime)
+    epg_date = Column(Date)
+    alarms_datetime = Column(Date)
 
-    def __init__(self, date_time: datetime.datetime):
-        self.date_time = date_time
+    def __init__(self, epg_date: datetime.date, reminders_datetime: datetime.datetime):
+        self.epg_date = epg_date
+        self.alarms_datetime = reminders_datetime
 
 
 class Cache(Base):

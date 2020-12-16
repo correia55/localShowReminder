@@ -4,13 +4,14 @@ import os
 import re
 
 import requests
+import sqlalchemy.orm
 
 import configuration
 import db_calls
 import models
 
 
-def update_channel_list(session):
+def update_channel_list(session: sqlalchemy.orm.Session):
     """
     Parse the file with the channel data and update the DB.
 
@@ -59,7 +60,8 @@ def update_channel_list(session):
 
 class MEPG:
     @staticmethod
-    def update_show_list_day(session, db_channels: [models.Channel], last_update_date: datetime.date):
+    def update_show_list_day(session: sqlalchemy.orm.Session, db_channels: [models.Channel],
+                             last_update_date: datetime.date):
         """
         Make the request for the shows of a set of channels on a given day, and add them to the database.
 
@@ -166,7 +168,7 @@ class MEPG:
             print('No shows were added!')
 
     @staticmethod
-    def update_show_list(session):
+    def update_show_list(session: sqlalchemy.orm.Session):
         """
         Make a request for the show list and update the DB.
 
@@ -181,20 +183,20 @@ class MEPG:
 
         # If this is the first update set yesterday's date as the last update
         if db_last_update is None:
-            db_last_update = models.LastUpdate(datetime.date.today() - datetime.timedelta(1))
+            db_last_update = models.LastUpdate(datetime.date.today() - datetime.timedelta(1), datetime.datetime.now())
 
             session.add(db_last_update)
 
         # Make sure the variable's date is at least as recent as today
         # so that it does not make requests for older dates that are no longer relevant
-        if db_last_update.date_time < datetime.date.today():
-            db_last_update.date_time = datetime.date.today() - datetime.timedelta(1)
+        if db_last_update.epg_date < datetime.date.today():
+            db_last_update.epg_date = datetime.date.today() - datetime.timedelta(1)
 
         max_channels_request = int(configuration.max_channels_request)
 
         # For each day until six days from today
-        while db_last_update.date_time < datetime.date.today() + datetime.timedelta(6):
-            db_last_update.date_time += datetime.timedelta(1)
+        while db_last_update.epg_date < datetime.date.today() + datetime.timedelta(6):
+            db_last_update.epg_date += datetime.timedelta(1)
 
             # It is necessary to split the number of channels in a request in order for it to succeed
             current = []
@@ -203,9 +205,11 @@ class MEPG:
                 current.append(db_channels[i])
 
                 if i % max_channels_request == 0 and i > 0:
-                    MEPG.update_show_list_day(session, current, db_last_update.date_time)
+                    MEPG.update_show_list_day(session, current, db_last_update.epg_date)
 
                     current = []
 
             if len(current) != 0:
-                MEPG.update_show_list_day(session, current, db_last_update.date_time)
+                MEPG.update_show_list_day(session, current, db_last_update.epg_date)
+
+        db_calls.commit(session)
