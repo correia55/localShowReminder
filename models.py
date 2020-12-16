@@ -251,7 +251,7 @@ class LastUpdate(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     epg_date = Column(Date)
-    alarms_datetime = Column(Date)
+    alarms_datetime = Column(DateTime)
 
     def __init__(self, epg_date: datetime.date, reminders_datetime: datetime.datetime):
         self.epg_date = epg_date
