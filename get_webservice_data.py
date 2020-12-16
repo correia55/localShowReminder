@@ -100,7 +100,8 @@ class MEPG:
         print(payload)
 
         # Get the shows info for our list of channels
-        response_json = requests.post(shows_url, data=payload, headers={'Content-Type': 'application/json'}).json()
+        response_json = requests.post(shows_url, data=payload, headers={'Content-Type': 'application/json'},
+                                      verify=False).json()
 
         shows_added = False
 
