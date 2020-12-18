@@ -241,7 +241,8 @@ def get_reminders_session(session: sqlalchemy.orm.Session, session_id: int) -> L
         .all()
 
 
-def get_sessions_reminders(session: sqlalchemy.orm.Session) -> List:
+# TODO: IT ISN'T A TUPLE, BUT A sqlalchemy._util._collections.result
+def get_sessions_reminders(session: sqlalchemy.orm.Session) -> List[Tuple[models.Reminder, models.ShowSession]]:
     """
     Get all reminders and the corresponding sessions.
 
@@ -386,6 +387,7 @@ def get_show_sessions_channel(session: sqlalchemy.orm.Session, channel_id: int) 
         .all()
 
 
+# TODO: IT ISN'T A TUPLE, BUT A sqlalchemy._util._collections.result
 def get_show_session_complete(session: sqlalchemy.orm.Session, show_id: int) \
         -> Optional[Tuple[models.ShowSession, str, str, bool]]:
     """

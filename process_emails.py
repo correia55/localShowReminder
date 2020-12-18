@@ -91,6 +91,7 @@ def send_email(content: str, subject: str, destination: str) -> bool:
         print('Invalid email configuration!')
         return False
 
+    # TODO: THIS VERIFICATION SHOULD NOT BE DONE HERE, IT SHOULD BE DONE FOR EVERY POSSIBLE ENTRY OF AN EMAIL
     if not verify_email(destination):
         return False
 

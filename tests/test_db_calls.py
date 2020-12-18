@@ -38,6 +38,8 @@ class TestDBCalls(unittest.TestCase):
 
         self.session.commit()
 
+        self.session.close()
+
     def test_get_user_id_error(self) -> None:
         """ Test the function get_user_id without user. """
 

@@ -1,7 +1,7 @@
 import sqlalchemy.orm
 
 import configuration
-import processing
+import reminders
 
 
 def hourly_tasks(db_session: sqlalchemy.orm.Session):
@@ -11,7 +11,7 @@ def hourly_tasks(db_session: sqlalchemy.orm.Session):
     :param db_session: the db session.
     """
 
-    processing.process_reminders(db_session)
+    reminders.process_reminders(db_session)
     print('Reminders processed!')
 
 

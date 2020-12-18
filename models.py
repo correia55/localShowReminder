@@ -1,4 +1,5 @@
 import datetime
+from typing import Optional
 
 import sqlalchemy
 from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, DateTime, Date
@@ -96,7 +97,8 @@ class ShowSession(Base):
     episode = Column(Integer)
     date_time = Column(DateTime)
 
-    def __init__(self, season: int, episode: int, date_time: datetime.datetime, channel_id: int, show_id: int):
+    def __init__(self, season: Optional[int], episode: Optional[int], date_time: datetime.datetime, channel_id: int,
+                 show_id: int):
         self.channel_id = channel_id
         self.show_id = show_id
 

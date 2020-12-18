@@ -15,6 +15,7 @@ import configuration
 import db_calls
 import models
 import processing
+import reminders
 from processing import ChangeType
 from response_models import AlarmType
 
@@ -184,14 +185,15 @@ class RemindersEP(fr.Resource):
             token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
             user_id = authentication.get_token_field(token.encode(), 'user')
 
-            reminders = processing.get_reminders(session, user_id)
+            reminder_list = reminders.get_reminders(session, user_id)
 
-            return flask.make_response(flask.jsonify({'reminder_list': auxiliary.list_to_json(reminders)}), 200)
+            return flask.make_response(flask.jsonify({'reminder_list': auxiliary.list_to_json(reminder_list)}), 200)
 
     register_args = \
         {
             'show_session_id': webargs.fields.Int(required=True),
-            'anticipation_minutes': webargs.fields.Int(required=True)
+            'anticipation_minutes': webargs.fields.Int(required=True,
+                                                       validate=[webargs.validate.Range(min=60, max=1440)])
         }
 
     @fp.use_args(register_args)
@@ -206,10 +208,10 @@ class RemindersEP(fr.Resource):
             token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
             user_id = authentication.get_token_field(token.encode(), 'user')
 
-            if db_calls.register_reminder(session, show_session_id, anticipation_minutes, user_id) is not None:
+            if reminders.register_reminder(session, show_session_id, anticipation_minutes, user_id) is not None:
                 return flask.make_response(
                     flask.jsonify({
-                        'reminder_list': auxiliary.list_to_json(processing.get_reminders(session, user_id))
+                        'reminder_list': auxiliary.list_to_json(reminders.get_reminders(session, user_id))
                     }), 201)
             else:
                 return flask.make_response('Invalid reminder', 400)
@@ -235,7 +237,7 @@ class RemindersEP(fr.Resource):
             if db_calls.update_reminder(session, reminder_id, anticipation_minutes, user_id):
                 return flask.make_response(
                     flask.jsonify({
-                        'reminder_list': auxiliary.list_to_json(processing.get_reminders(session, user_id))
+                        'reminder_list': auxiliary.list_to_json(reminders.get_reminders(session, user_id))
                     }), 201)
             else:
                 return flask.make_response('', 404)
@@ -258,7 +260,7 @@ class RemindersEP(fr.Resource):
 
             if db_calls.delete_reminder(session, reminder_id, user_id):
                 return flask.make_response(flask.jsonify({
-                    'reminder_list': auxiliary.list_to_json(processing.get_reminders(session, user_id))
+                    'reminder_list': auxiliary.list_to_json(reminders.get_reminders(session, user_id))
                 }), 200)
             else:
                 return flask.make_response('', 404)
