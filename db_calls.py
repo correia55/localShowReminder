@@ -251,7 +251,7 @@ def get_sessions_reminders(session: sqlalchemy.orm.Session) -> List[Tuple[models
     """
 
     return session.query(models.Reminder, models.ShowSession) \
-        .filter(models.Reminder.show_id == models.ShowSession.id) \
+        .filter(models.Reminder.session_id == models.ShowSession.id) \
         .all()
 
 
