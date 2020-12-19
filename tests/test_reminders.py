@@ -145,7 +145,7 @@ class TestReminders(unittest.TestCase):
         expected_result = None
 
         # Prepare the mocks
-        show_session = models.ShowSession(None, None, datetime.datetime.now() + datetime.timedelta(hours=3), 1, 1)
+        show_session = models.ShowSession(None, None, datetime.datetime.now() + datetime.timedelta(hours=4), 1, 1)
         db_calls_mock.get_show_session.return_value = show_session
 
         db_calls_mock.register_reminder.return_value = None
@@ -164,7 +164,7 @@ class TestReminders(unittest.TestCase):
         """ Test the function that register a reminder, with success. """
 
         # Prepare the mocks
-        show_session = models.ShowSession(None, None, datetime.datetime.now() + datetime.timedelta(hours=3), 1, 1)
+        show_session = models.ShowSession(None, None, datetime.datetime.now() + datetime.timedelta(hours=4), 1, 1)
         db_calls_mock.get_show_session.return_value = show_session
 
         reminder = models.Reminder(60, 1, 1)

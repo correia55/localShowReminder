@@ -54,9 +54,15 @@ class Alarm:
 
 class Reminder:
     id: int
-    title: str
-    date_time: datetime.datetime
     anticipation_minutes: int
+    session_id: int
+
+    title: str
+    season: int
+    episode: int
+    date_time: datetime.datetime
+
+    channel_name: str
 
     def __init__(self, session: sqlalchemy.orm.Session, reminder: models.Reminder):
         """
@@ -69,8 +75,14 @@ class Reminder:
 
         self.id = reminder.id
         self.anticipation_minutes = reminder.anticipation_minutes
-        self.date_time = reminder_session_tuple[0].date_time
+        self.session_id = reminder.session_id
+
         self.title = reminder_session_tuple[2]
+        self.season = reminder_session_tuple[0].season
+        self.episode = reminder_session_tuple[0].episode
+        self.date_time = reminder_session_tuple[0].date_time
+
+        self.channel_name = reminder_session_tuple[1]
 
     def to_dict(self):
         """
@@ -79,8 +91,9 @@ class Reminder:
         :return: the corresponding dictionary.
         """
 
-        return {'id': self.id, 'title': self.title, 'date_time': self.date_time,
-                'anticipation_minutes': self.anticipation_minutes}
+        return {'id': self.id, 'anticipation_minutes': self.anticipation_minutes, 'session_id': self.session_id,
+                'title': self.title, 'season': self.season, 'episode': self.episode, 'date_time': self.date_time,
+                'channel_name': self.channel_name}
 
 
 class LocalShowResultType(Enum):

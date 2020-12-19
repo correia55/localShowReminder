@@ -50,8 +50,10 @@ def register_reminder(session: sqlalchemy.orm.Session, show_session_id: int, ant
     if not show_session:
         return None
 
-    # Check now is at least two hours before the session
-    if datetime.datetime.now() + datetime.timedelta(hours=2) > show_session.date_time:
+    anticipation_hours = int(anticipation_minutes / 60)
+
+    # Check now is at least two hours before the anticipation hours
+    if datetime.datetime.now() + datetime.timedelta(hours=anticipation_hours + 2) > show_session.date_time:
         return None
 
     return db_calls.register_reminder(session, show_session_id, anticipation_minutes, user_id)

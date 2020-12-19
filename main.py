@@ -322,6 +322,10 @@ class AlarmsEP(fr.Resource):
             except KeyError:
                 return flask.make_response('Invalid Alarm Type', 400)
 
+            # Alarms for Listings are no longer valid
+            if alarm_type == AlarmType.LISTINGS:
+                return flask.make_response('Invalid Alarm Type', 400)
+
             if alarm_type == AlarmType.DB and trakt_id is None:
                 return flask.make_response('Missing Trakt Id', 400)
 
