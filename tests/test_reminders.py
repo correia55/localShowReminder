@@ -228,13 +228,16 @@ class TestReminders(unittest.TestCase):
         db_calls_mock.get_sessions_reminders.return_value = [reminder_session_1, reminder_session_2, reminder_session_3,
                                                              reminder_session_4]
 
+        show_session_tuple_1 = (show_session_1, 'Channel 5', 'Show 10', True)
+        show_session_tuple_2 = (show_session_2, 'Channel 10', 'Show 15', False)
+        show_session_tuple_3 = (show_session_1, 'Channel 5', 'Show 10', True)
+
+        db_calls_mock.get_show_session_complete.side_effect = [show_session_tuple_1, show_session_tuple_2,
+                                                               show_session_tuple_3]
+
         db_calls_mock.get_user_id.side_effect = [models.User('email1@something.com', 'password', 'pt'),
                                                  models.User('email2@something.com', 'password', 'en'),
                                                  models.User('email2@something.com', 'password', 'en')]
-
-        db_calls_mock.get_channel_id.side_effect = [models.Channel('C5', 'Channel 5'),
-                                                    models.Channel('C10', 'Channel 10'),
-                                                    models.Channel('C5', 'Channel 5')]
 
         process_emails_mock.send_alarms_email.side_effect = [True, True, True]
 
@@ -244,19 +247,19 @@ class TestReminders(unittest.TestCase):
         # Verify the calls to the mocks
         db_calls_mock.get_sessions_reminders.assert_has_calls(self.session)
 
+        db_calls_mock.get_show_session_complete.assert_has_calls([unittest.mock.call(self.session, 1),
+                                                                  unittest.mock.call(self.session, 2),
+                                                                  unittest.mock.call(self.session, 1)])
+
         db_calls_mock.get_user_id.assert_has_calls([unittest.mock.call(self.session, 1),
                                                     unittest.mock.call(self.session, 2),
                                                     unittest.mock.call(self.session, 2)])
-
-        db_calls_mock.get_channel_id.assert_has_calls([unittest.mock.call(self.session, 5),
-                                                       unittest.mock.call(self.session, 10),
-                                                       unittest.mock.call(self.session, 5)])
 
         process_emails_mock.set_language.assert_has_calls([unittest.mock.call('pt'), unittest.mock.call('en'),
                                                            unittest.mock.call('en')])
 
         # Given that it can't compare the object sent in the email
-        self.assertEqual(3, process_emails_mock.send_alarms_email.call_count)
+        self.assertEqual(3, process_emails_mock.send_reminders_email.call_count)
 
 
 if __name__ == '__main__':
