@@ -121,3 +121,9 @@ msgstr "Deleted Sessions"
 
 msgid "deleted_sessions_intro"
 msgstr "A set of sessions was deleted due to an update on the channels' listings. These are the deleted sessions, associated with reminders you had created:"
+
+msgid "subject_reminders_results"
+msgstr "Reminders"
+
+msgid "reminders_results_intro"
+msgstr "These are the reminders for the following sessions:"

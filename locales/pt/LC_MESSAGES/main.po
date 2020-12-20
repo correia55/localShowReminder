@@ -121,3 +121,9 @@ msgstr "Sessões Apagadas"
 
 msgid "deleted_sessions_intro"
 msgstr "Algumas sessões foram apagadas devido a actualizações na programação do canal. Estas foram as sessões apagadas, para as quais tinha criado lembretes:"
+
+msgid "subject_reminders_results"
+msgstr "Lembretes"
+
+msgid "reminders_results_intro"
+msgstr "Estes são os lembretes para as sessões:"

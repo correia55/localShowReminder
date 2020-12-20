@@ -1,0 +1,29 @@
+{% extends "base_email.html" %}
+
+{% set title = title %}
+{% set application_name = application_name %}
+{% set application_link = application_link %}
+
+{% block content %}
+    <p>{% trans %}reminders_results_intro{% endtrans %}</p>
+
+    <div align="center">
+    {% for show in results %}
+        {% if loop.index > 0 %}
+            <p class="smallP"></p>
+        {% endif %}
+
+        <p class="circled result">
+            <b>{{ show.show_name }}</b>
+
+            {% if show.episode is not none %}
+                {% trans %}first_letter_of_season{% endtrans %}{{ show.season }} {% trans %}first_letter_of_episode{% endtrans %}{{ show.episode }}
+            {% endif %}
+
+            {% trans %}at_date{% endtrans %} {{ show.date_time }}, {% trans %}in_channel{% endtrans %} {{ show.service_name}}.
+        </p>
+    {% endfor %}
+    </div>
+
+    <p></p>
+{% endblock %}
