@@ -171,7 +171,7 @@ def search_shows_by_text(session: sqlalchemy.orm.Session, search_text: str, lang
         else:
             show_type = 'tv'
 
-    cache_key = 'tmdb|text|%s-%s-%s-%s' % (show_type, language, search_text, page)
+    cache_key = 'tmdb|text|%s-%s-%s-%s-%s' % (show_type, language, search_text, show_adult, page)
 
     cache_entry = db_calls.get_cache(session, cache_key)
 
