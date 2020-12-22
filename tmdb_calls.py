@@ -150,7 +150,7 @@ def search_show_by_id(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: b
 
 
 def search_shows_by_text(session: sqlalchemy.orm.Session, search_text: str, language: str = None, is_movie: bool = None,
-                         page: int = 1, show_adult: bool = True) -> Tuple[int, List[TmdbShow]]:
+                         page: int = 1, show_adult: bool = False) -> Tuple[int, List[TmdbShow]]:
     """
     Search shows by text, using TMDB.
 
@@ -171,7 +171,13 @@ def search_shows_by_text(session: sqlalchemy.orm.Session, search_text: str, lang
         else:
             show_type = 'tv'
 
-    cache_key = 'tmdb|text|%s-%s-%s-%s-%s' % (show_type, language, search_text, show_adult, page)
+    # The values need to be like this
+    if show_adult:
+        include_adult = 'true'
+    else:
+        include_adult = 'false'
+
+    cache_key = 'tmdb|text|%s-%s-%s-%s-%s' % (show_type, language, search_text, include_adult, page)
 
     cache_entry = db_calls.get_cache(session, cache_key)
 
@@ -182,7 +188,7 @@ def search_shows_by_text(session: sqlalchemy.orm.Session, search_text: str, lang
         # Make the request
         search_request = urllib.request.Request(
             'https://api.themoviedb.org/3/search/%s?api_key=%s&language=%s&query=%s&include_adult=%s'
-            % (show_type, configuration.tmdb_key, language, urllib.parse.quote(search_text), show_adult))
+            % (show_type, configuration.tmdb_key, language, urllib.parse.quote(search_text), include_adult))
 
         # Add the page, when it exists
         if page:
