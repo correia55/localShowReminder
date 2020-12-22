@@ -56,8 +56,8 @@ def clear_show_list(session):
     session.commit()
 
 
-def search_show_information(session: sqlalchemy.orm.Session, search_text: str, is_movie: bool, language: str) \
-        -> Tuple[bool, List[dict]]:
+def search_show_information(session: sqlalchemy.orm.Session, search_text: str, is_movie: bool, language: str,
+                            show_adult: bool) -> Tuple[bool, List[dict]]:
     """
     Uses tmdb to search for shows, of a given type, using a given search text.
 
@@ -65,6 +65,7 @@ def search_show_information(session: sqlalchemy.orm.Session, search_text: str, i
     :param search_text: the search text introduced by the user.
     :param is_movie: if the show is a movie.
     :param language: the language of interest.
+    :param show_adult: whether to show adult results or not.
     :return: a tuple with a boolean (whether there are more results or not) and the list of results.
     """
 
@@ -84,7 +85,7 @@ def search_show_information(session: sqlalchemy.orm.Session, search_text: str, i
     # Combine the results from all the pages
     while i < (pages + 1):
         total_nb_pages, trakt_shows_page = tmdb_calls.search_shows_by_text(session, search_text, is_movie=is_movie,
-                                                                           page=i)
+                                                                           page=i, show_adult=show_adult)
 
         # Get the new total of pages
         pages = min(configuration.tmdb_max_mb_pages, total_nb_pages)

@@ -578,7 +578,18 @@ class ShowsEP(fr.Resource):
             return flask.make_response('Search Text Too Small', 400)
 
         with session_scope() as session:
-            more_results, shows = processing.search_show_information(session, search_text, is_movie, language)
+            search_adult = False
+
+            # Get the user settings of whether it should look in channels with adult content or not
+            if 'HTTP_AUTHORIZATION' in flask.request.headers.environ:
+                token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
+                user_id = authentication.get_token_field(token.encode(), 'user')
+
+                user = session.query(models.User).filter(models.User.id == user_id).first()
+                search_adult = user.show_adult if user is not None else False
+
+            more_results, shows = processing.search_show_information(session, search_text, is_movie, language,
+                                                                     search_adult)
 
             response_dict = {'show_list': shows}
 
@@ -604,10 +615,10 @@ class LocalShowsEP(fr.Resource):
 
         search_text: str = args['search_text'].strip()
 
-        with session_scope() as session:
-            if len(search_text) < 2:
-                return flask.make_response({'Search Text Too Small'}, 400)
+        if len(search_text) < 2:
+            return flask.make_response({'Search Text Too Small'}, 400)
 
+        with session_scope() as session:
             search_adult = False
 
             # Get the user settings of whether it should look in channels with adult content or not
