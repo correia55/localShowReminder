@@ -74,8 +74,11 @@ def process_reminders(session: sqlalchemy.orm.Session) -> None:
 
         anticipation_hours = int(reminder.anticipation_minutes / 60)
 
+        # Replace the time minutes and seconds so that it can ensure the anticipation hours
+        show_time = show_session.date_time.replace(minute=0, second=0) - datetime.timedelta(minutes=5)
+
         # If it is time to fire the reminder
-        if datetime.datetime.utcnow() + datetime.timedelta(hours=anticipation_hours) > show_session.date_time:
+        if datetime.datetime.utcnow() + datetime.timedelta(hours=anticipation_hours) > show_time:
             show_session_tuple = db_calls.get_show_session_complete(session, show_session.id)
             user = db_calls.get_user_id(session, reminder.user_id)
 
