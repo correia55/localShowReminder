@@ -315,10 +315,12 @@ def update_show_list(db_session: sqlalchemy.orm.Session, channel_set: int, filen
     print('%d show sessions added!\n---------------' % nb_shows)
 
 
-if __name__ == '__main__':
+def execute_data_insertion():
+    """ Execute a data insertion. """
     input_channel_set = int(input('Choose one channel set for the data being inserted.\n'
                                   '0 - TVCine\n'
                                   '1 - Odisseia\n'))
+
     input_filename = input('What is the path to the file?\n')
 
     session = configuration.Session()
@@ -331,3 +333,7 @@ if __name__ == '__main__':
         raise
     finally:
         session.close()
+
+
+if __name__ == '__main__':
+    execute_data_insertion()
