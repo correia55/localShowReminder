@@ -106,7 +106,7 @@ class TVCine:
             else:
                 end_of_month = start_of_month.replace(year=start_of_month.year, month=1)
 
-            process_channels_updated_data(session, start_of_month, end_of_month, TVCine.channels)
+            process_channels_updated_data(db_session, start_of_month, end_of_month, TVCine.channels)
 
         return nb_shows
 
@@ -116,8 +116,8 @@ class Odisseia:
 
     @staticmethod
     def update_show_list(db_session: sqlalchemy.orm.Session, filename: str) -> int:
-        DOMTree = xml.dom.minidom.parse(filename)
-        collection = DOMTree.documentElement
+        dom_tree = xml.dom.minidom.parse(filename)
+        collection = dom_tree.documentElement
 
         events = collection.getElementsByTagName('Event')
 
@@ -156,7 +156,7 @@ class Odisseia:
             season = None
 
             if broadcast_name != portuguese_title:
-                episode_name = re.search('(Ep\.|Episódio) ?([0-9]+)\.?(.*)', broadcast_name)
+                episode_name = re.search(r'(Ep\.|Episódio) ?([0-9]+)\.?(.*)', broadcast_name)
 
                 if episode_name:
                     episode = episode_name.group(2)
@@ -210,7 +210,7 @@ class Odisseia:
         if nb_shows > 0:
             db_calls.commit(db_session)
 
-            process_channels_updated_data(session, first_event_datetime, date_time, Odisseia.channels)
+            process_channels_updated_data(db_session, first_event_datetime, date_time, Odisseia.channels)
 
         return nb_shows
 
@@ -261,23 +261,23 @@ def process_channels_updated_data(db_session: sqlalchemy.orm.Session, start_date
                     nb_shows_deleted += 1
 
                     # Get the session
-                    show_session = db_calls.get_show_session_complete(session, s[0])
+                    show_session = db_calls.get_show_session_complete(db_session, s[0])
                     show_result = response_models.LocalShowResult.create_from_show_session(show_session[0],
                                                                                            show_session[2],
                                                                                            show_session[3],
                                                                                            show_session[1])
 
                     # Get the reminders associated with this session
-                    reminders = db_calls.get_reminders_session(session, s[0])
+                    reminders = db_calls.get_reminders_session(db_session, s[0])
 
                     # Warn all users with the reminders for this session
                     for r in reminders:
-                        user = db_calls.get_user_id(session, r.user_id)
+                        user = db_calls.get_user_id(db_session, r.user_id)
 
                         process_emails.send_deleted_sessions_email(user.email, [show_result])
 
                         # Delete the reminders
-                        session.delete(r)
+                        db_session.delete(r)
 
                     db_session.query(models.ShowSession.id).filter(models.ShowSession.id == s[0]).delete()
                 # If it is a new session, nothing to do
