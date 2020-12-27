@@ -28,7 +28,7 @@ class ShowData(Base):
     portuguese_title = Column(String(255))
     number_seasons = Column(Integer)
     duration = Column(Integer)
-    synopsis = Column(String(500))
+    synopsis = Column(String(2000))
     year = Column(Integer)
     category = Column(String(255))  # Movie, series, documentary, news, ...
     show_type = Column(String(255))  # Comedy, thriller, ...
