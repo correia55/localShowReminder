@@ -210,7 +210,11 @@ class Odisseia:
         if nb_shows > 0:
             db_calls.commit(db_session)
 
-            process_channels_updated_data(db_session, first_event_datetime, date_time, Odisseia.channels)
+            first_day_at_start = first_event_datetime.replace(hour=0, minute=0, second=0)
+            end_day_at_start = (date_time + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0) \
+                               - datetime.timedelta(seconds=1)
+
+            process_channels_updated_data(db_session, first_day_at_start, end_day_at_start, Odisseia.channels)
 
         return nb_shows
 
@@ -226,9 +230,6 @@ def process_channels_updated_data(db_session: sqlalchemy.orm.Session, start_date
     :param end_datetime: the end of the interval of interest.
     :param channels: the set of channels.
     """
-
-    start_datetime = start_datetime - datetime.timedelta(minutes=5)
-    end_datetime = end_datetime + datetime.timedelta(minutes=5)
 
     print('Shows\' interval from %s to %s.' % (str(start_datetime), str(end_datetime)))
     print('Channels: %s.' % str(channels))
@@ -246,9 +247,9 @@ def process_channels_updated_data(db_session: sqlalchemy.orm.Session, start_date
                                  sqlalchemy.func.max(models.ShowSession.update_timestamp),
                                  sqlalchemy.func.count(models.ShowSession.date_time)) \
             .filter(models.ShowSession.channel_id == channel_id) \
-            .filter(models.ShowSession.date_time > start_datetime) \
-            .filter(models.ShowSession.date_time < end_datetime).group_by(models.ShowSession.date_time,
-                                                                          models.ShowSession.show_id).all()
+            .filter(models.ShowSession.date_time >= start_datetime) \
+            .filter(models.ShowSession.date_time <= end_datetime).group_by(models.ShowSession.date_time,
+                                                                           models.ShowSession.show_id).all()
 
         for s in shows:
             # If the session already existed and continues to exist, then delete the new one
