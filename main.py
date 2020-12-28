@@ -219,7 +219,8 @@ class RemindersEP(fr.Resource):
     update_args = \
         {
             'reminder_id': webargs.fields.Int(required=True),
-            'anticipation_minutes': webargs.fields.Int(required=True)
+            'anticipation_minutes': webargs.fields.Int(required=True,
+                                                       validate=[webargs.validate.Range(min=60, max=1440)])
         }
 
     @fp.use_args(update_args)
@@ -234,13 +235,18 @@ class RemindersEP(fr.Resource):
             token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
             user_id = authentication.get_token_field(token.encode(), 'user')
 
-            if db_calls.update_reminder(session, reminder_id, anticipation_minutes, user_id):
+            success, msg = reminders.update_reminder(session, reminder_id, anticipation_minutes, user_id)
+
+            if success:
                 return flask.make_response(
                     flask.jsonify({
                         'reminder_list': auxiliary.list_to_json(reminders.get_reminders(session, user_id))
                     }), 201)
             else:
-                return flask.make_response('', 404)
+                if msg == 'Not found':
+                    return flask.make_response('', 404)
+                else:
+                    return flask.make_response(msg, 400)
 
     delete_args = \
         {

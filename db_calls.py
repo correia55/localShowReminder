@@ -213,6 +213,22 @@ def get_reminders(session: sqlalchemy.orm.Session) -> List[models.Reminder]:
         .all()
 
 
+def get_reminder_id_user(session: sqlalchemy.orm.Session, reminder_id: int, user_id: int) -> models.Reminder:
+    """
+    Get the reminder with the given id, if it is the correct user.
+
+    :param session: the db session.
+    :param reminder_id: the id of the reminder.
+    :param user_id: the id of the user.
+    :return: the reminder.
+    """
+
+    return session.query(models.Reminder) \
+        .filter(models.Reminder.id == reminder_id) \
+        .filter(models.Reminder.user_id == user_id) \
+        .first()
+
+
 def get_reminders_user(session: sqlalchemy.orm.Session, user_id: int) -> List[models.Reminder]:
     """
     Get a list of reminders for the user who's id is user_id.
@@ -255,26 +271,23 @@ def get_sessions_reminders(session: sqlalchemy.orm.Session) -> List[Tuple[models
         .all()
 
 
-def update_reminder(session: sqlalchemy.orm.Session, reminder_id: int, anticipation_minutes: int,
-                    user_id: int) -> bool:
+def update_reminder(session: sqlalchemy.orm.Session, reminder: models.Reminder, anticipation_minutes: int) \
+        -> bool:
     """
     Update a reminder.
 
     :param session: the db session.
-    :param reminder_id: the id of the reminder.
+    :param reminder: the reminder.
     :param anticipation_minutes: the minutes before the show's session for the reminder.
-    :param user_id: the id of the user.
-    :return: True if the operation was a success.
+    :return: True if the update was a success.
     """
-
-    # Get the reminder
-    reminder = session.query(models.Reminder) \
-        .filter(models.Reminder.id == reminder_id) \
-        .filter(models.Reminder.user_id == user_id) \
-        .first()
 
     # Check if the reminder exists
     if reminder is None:
+        return False
+
+    # Check if there is a need for the update
+    if anticipation_minutes == reminder.anticipation_minutes:
         return False
 
     reminder.anticipation_minutes = anticipation_minutes

@@ -185,6 +185,105 @@ class TestReminders(unittest.TestCase):
         db_calls_mock.get_show_session.assert_called_with(self.session, 1)
         db_calls_mock.register_reminder.assert_called_with(self.session, 1, 60, 1)
 
+    def test_update_reminder_error_01(self) -> None:
+        """ Test the function update_reminder with an reminder id or user id. """
+
+        # The expected result
+        expected_result = False, 'Not found'
+
+        # Prepare the mocks
+        db_calls_mock.get_reminder_id_user.return_value = None
+
+        # Call the function
+        actual_result = reminders.update_reminder(self.session, -1, 60, 1)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+        # Verify the calls to the mocks
+        db_calls_mock.get_reminder_id_user.assert_called_with(self.session, -1, 1)
+
+    def test_update_reminder_error_02(self) -> None:
+        """ Test the function update_reminder with anticipation in less than two hours from airing. """
+
+        # The expected result
+        expected_result = False, 'Invalid anticipation time'
+
+        # Prepare the mocks
+        reminder = models.Reminder(60, 15, 1)
+        reminder.id = 123
+
+        db_calls_mock.get_reminder_id_user.return_value = reminder
+
+        show_session = models.ShowSession(None, None, datetime.datetime.now() + datetime.timedelta(hours=1), 1, 1)
+        db_calls_mock.get_show_session.return_value = show_session
+
+        # Call the function
+        actual_result = reminders.update_reminder(self.session, 1, 60, 1)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+        # Verify the calls to the mocks
+        db_calls_mock.get_reminder_id_user.assert_called_with(self.session, 1, 1)
+        db_calls_mock.get_show_session.assert_called_with(self.session, 15)
+
+    def test_update_reminder_error_03(self) -> None:
+        """ Test the function update_reminder with the same anticipation time. """
+
+        # The expected result
+        expected_result = False, 'Same anticipation time'
+
+        # Prepare the mocks
+        reminder = models.Reminder(60, 15, 1)
+        reminder.id = 123
+
+        db_calls_mock.get_reminder_id_user.return_value = reminder
+
+        show_session = models.ShowSession(None, None, datetime.datetime.now() + datetime.timedelta(hours=4), 1, 1)
+        db_calls_mock.get_show_session.return_value = show_session
+
+        db_calls_mock.update_reminder.return_value = False
+
+        # Call the function
+        actual_result = reminders.update_reminder(self.session, 1, 60, 1)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+        # Verify the calls to the mocks
+        db_calls_mock.get_reminder_id_user.assert_called_with(self.session, 1, 1)
+        db_calls_mock.get_show_session.assert_called_with(self.session, 15)
+        db_calls_mock.update_reminder.assert_called()
+
+    def test_update_reminder_ok(self) -> None:
+        """ Test the function update_reminder with success. """
+
+        # The expected result
+        expected_result = True, None
+
+        # Prepare the mocks
+        reminder = models.Reminder(60, 15, 1)
+        reminder.id = 123
+
+        db_calls_mock.get_reminder_id_user.return_value = reminder
+
+        show_session = models.ShowSession(None, None, datetime.datetime.now() + datetime.timedelta(hours=5), 1, 1)
+        db_calls_mock.get_show_session.return_value = show_session
+
+        db_calls_mock.update_reminder.return_value = True
+
+        # Call the function
+        actual_result = reminders.update_reminder(self.session, 1, 120, 1)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+        # Verify the calls to the mocks
+        db_calls_mock.get_reminder_id_user.assert_called_with(self.session, 1, 1)
+        db_calls_mock.get_show_session.assert_called_with(self.session, 15)
+        db_calls_mock.update_reminder.assert_called()
+
     def test_process_reminders_ok_01(self) -> None:
         """ Test the function that processes reminders, with an empty list. """
 

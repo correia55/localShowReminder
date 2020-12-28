@@ -253,6 +253,141 @@ class TestDBCalls(unittest.TestCase):
         self.assertEqual(show_session.id, actual_result[0].session_id)
         self.assertEqual(user.id, actual_result[0].user_id)
 
+    def test_get_reminder_id_user_error_01(self) -> None:
+        """ Test the function get_reminder_id_user with an invalid reminder id. """
+
+        # The expected result
+        expected_result = None
+
+        # Call the function
+        actual_result = db_calls.get_reminder_id_user(self.session, -1, 1)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_get_reminder_id_user_error_02(self) -> None:
+        """ Test the function get_reminder_id_user with the incorrect user id. """
+
+        # The expected result
+        expected_result = None
+
+        # Prepare the DB
+        user = db_calls.register_user(self.session, 'test_email', 'test_password')
+        self.assertIsNotNone(user)
+
+        channel = db_calls.register_channel(self.session, 'TC', 'TEST_CHANNEL')
+        self.assertIsNotNone(channel)
+
+        show_data = db_calls.register_show_data(self.session, 'test_title')
+        self.assertIsNotNone(show_data)
+
+        show_session = db_calls.register_show_session(self.session, 1, 1, datetime.datetime.utcnow(), channel.id,
+                                                      show_data.id, True)
+        self.assertIsNotNone(show_session)
+
+        reminder = db_calls.register_reminder(self.session, show_session.id, 10, user.id)
+        self.assertIsNotNone(reminder)
+
+        # Call the function
+        actual_result = db_calls.get_reminder_id_user(self.session, reminder.id, -1)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_get_reminder_id_user_ok(self) -> None:
+        """ Test the function get_reminder_id_user with success. """
+
+        # Prepare the DB
+        user = db_calls.register_user(self.session, 'test_email', 'test_password')
+        self.assertIsNotNone(user)
+
+        channel = db_calls.register_channel(self.session, 'TC', 'TEST_CHANNEL')
+        self.assertIsNotNone(channel)
+
+        show_data = db_calls.register_show_data(self.session, 'test_title')
+        self.assertIsNotNone(show_data)
+
+        show_session = db_calls.register_show_session(self.session, 1, 1, datetime.datetime.utcnow(), channel.id,
+                                                      show_data.id, True)
+        self.assertIsNotNone(show_session)
+
+        reminder = db_calls.register_reminder(self.session, show_session.id, 10, user.id)
+        self.assertIsNotNone(reminder)
+
+        # Call the function
+        actual_result = db_calls.get_reminder_id_user(self.session, reminder.id, reminder.user_id)
+
+        # Verify the result
+        self.assertIsNotNone(actual_result)
+
+    def test_update_reminder_error_01(self) -> None:
+        """ Test the function update_reminder with an invalid reminder. """
+
+        # The expected result
+        expected_result = False
+
+        # Call the function
+        actual_result = db_calls.update_reminder(self.session, None, 10)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_update_reminder_error_02(self) -> None:
+        """ Test the function update_reminder with the same anticipation minutes. """
+
+        # The expected result
+        expected_result = False
+
+        # Prepare the DB
+        user = db_calls.register_user(self.session, 'test_email', 'test_password')
+        self.assertIsNotNone(user)
+
+        channel = db_calls.register_channel(self.session, 'TC', 'TEST_CHANNEL')
+        self.assertIsNotNone(channel)
+
+        show_data = db_calls.register_show_data(self.session, 'test_title')
+        self.assertIsNotNone(show_data)
+
+        show_session = db_calls.register_show_session(self.session, 1, 1, datetime.datetime.utcnow(), channel.id,
+                                                      show_data.id, True)
+        self.assertIsNotNone(show_session)
+
+        reminder = db_calls.register_reminder(self.session, show_session.id, 10, user.id)
+        self.assertIsNotNone(reminder)
+
+        # Call the function
+        actual_result = db_calls.update_reminder(self.session, reminder, 10)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_update_reminder_ok(self) -> None:
+        """ Test the function update_reminder with success. """
+
+        # Prepare the DB
+        user = db_calls.register_user(self.session, 'test_email', 'test_password')
+        self.assertIsNotNone(user)
+
+        channel = db_calls.register_channel(self.session, 'TC', 'TEST_CHANNEL')
+        self.assertIsNotNone(channel)
+
+        show_data = db_calls.register_show_data(self.session, 'test_title')
+        self.assertIsNotNone(show_data)
+
+        show_session = db_calls.register_show_session(self.session, 1, 1, datetime.datetime.utcnow(), channel.id,
+                                                      show_data.id, True)
+        self.assertIsNotNone(show_session)
+
+        reminder = db_calls.register_reminder(self.session, show_session.id, 10, user.id)
+        self.assertIsNotNone(reminder)
+
+        # Call the function
+        actual_result = db_calls.update_reminder(self.session, reminder, 20)
+
+        # Verify the result
+        self.assertEqual(20, reminder.anticipation_minutes)
+        self.assertTrue(actual_result)
+
     def test_register_streaming_service_error(self) -> None:
         """ Test the function register_streaming_service with error due to same name already registered. """
 
