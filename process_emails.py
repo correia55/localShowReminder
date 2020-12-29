@@ -110,6 +110,22 @@ def send_email(content: str, subject: str, destination: str) -> bool:
     return True
 
 
+def send_arbitrary_email(content: str, destination: str, subject: str) -> bool:
+    """
+    Send an arbitrary email.
+
+    :param str content: the desired content.
+    :param str destination: the destination address.
+    :param str subject: the subject.
+    """
+
+    content = env.get_template('arbitrary_email.html').render(application_name=configuration.application_name,
+                                                              application_link=configuration.application_link,
+                                                              username=destination, title=subject, content=content)
+
+    return send_email(content, subject, destination)
+
+
 def send_verification_email(destination: str, verification_token: str) -> bool:
     """
     Send a verification email.
@@ -220,8 +236,8 @@ def send_reminders_email(destination: str, results: List[response_models.LocalSh
     subject = current.gettext('subject_reminders_results')
 
     content = env.get_template('reminders_email.html').render(application_name=configuration.application_name,
-                                                           application_link=configuration.application_link,
-                                                           username=destination, results=results, title=subject)
+                                                              application_link=configuration.application_link,
+                                                              username=destination, results=results, title=subject)
 
     return send_email(content, subject, destination)
 
