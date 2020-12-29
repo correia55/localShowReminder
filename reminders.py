@@ -26,8 +26,9 @@ def get_reminders(session, user_id: int) -> List[response_models.Reminder]:
     # Convert the reminder list to a response reminder list
     response_reminder_list = []
 
-    for a in reminder_list:
-        response_reminder_list.append(response_models.Reminder(session, a))
+    for r in reminder_list:
+        reminder_session_tuple = db_calls.get_show_session_complete(session, r.session_id)
+        response_reminder_list.append(response_models.Reminder(session, reminder_session_tuple))
 
     return response_reminder_list
 

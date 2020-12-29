@@ -1,11 +1,8 @@
 import datetime
 from enum import Enum
-from typing import List, Optional
-
-import sqlalchemy.orm
+from typing import List, Optional, Tuple
 
 import auxiliary
-import db_calls
 import models
 
 
@@ -65,14 +62,13 @@ class Reminder:
 
     channel_name: str
 
-    def __init__(self, session: sqlalchemy.orm.Session, reminder: models.Reminder):
+    def __init__(self, reminder: models.Reminder, reminder_session_tuple: Tuple[models.ShowSession, str, str, bool]):
         """
         Create an instance using a reminder.
 
         :param reminder: the DB reminder.
+        :param reminder_session_tuple: the tuple with all information on a reminder.
         """
-
-        reminder_session_tuple = db_calls.get_show_session_complete(session, reminder.session_id)
 
         self.id = reminder.id
         self.anticipation_minutes = reminder.anticipation_minutes
