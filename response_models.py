@@ -17,6 +17,7 @@ class AlarmType(Enum):
 class Alarm:
     id: int
     show_name: str
+    show_id: str
     is_movie: bool
     alarm_type: AlarmType
     show_season: int
@@ -33,6 +34,7 @@ class Alarm:
 
         self.id = alarm.id
         self.show_name = alarm.show_name
+        self.show_id = alarm.trakt_id
         self.is_movie = alarm.is_movie
         self.alarm_type = AlarmType(alarm.alarm_type)
         self.show_season = alarm.show_season
@@ -47,9 +49,8 @@ class Alarm:
         """
 
         return {'id': self.id, 'show_name': self.show_name, 'is_movie': self.is_movie,
-                'alarm_type': self.alarm_type.name,
-                'show_season': self.show_season, 'show_episode': self.show_episode,
-                'show_titles': self.show_titles}
+                'alarm_type': self.alarm_type.name, 'show_season': self.show_season, 'show_episode': self.show_episode,
+                'show_titles': self.show_titles, 'show_id': self.show_id}
 
 
 class Reminder:

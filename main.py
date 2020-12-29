@@ -225,7 +225,7 @@ class RemindersEP(fr.Resource):
 
     @fp.use_args(update_args)
     def put(self, args):
-        """Update an reminder."""
+        """Update a reminder."""
 
         reminder_id = args['reminder_id']
         anticipation_minutes = args['anticipation_minutes']
