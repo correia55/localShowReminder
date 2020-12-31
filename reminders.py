@@ -118,9 +118,8 @@ def process_reminders(session: sqlalchemy.orm.Session) -> None:
             user = db_calls.get_user_id(session, reminder.user_id)
 
             local_show_result = response_models.LocalShowResult.create_from_show_session(show_session_tuple[0],
-                                                                                         show_session_tuple[2],
-                                                                                         show_session_tuple[3],
-                                                                                         show_session_tuple[1])
+                                                                                         show_session_tuple[1],
+                                                                                         show_session_tuple[2])
 
             process_emails.set_language(user.language)
             process_emails.send_reminders_email(user.email, [local_show_result])

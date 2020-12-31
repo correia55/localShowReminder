@@ -75,6 +75,17 @@ class TVCine:
                 episode = None
                 # episode_synopsis = None
 
+                # Remove the year from the title
+                title_with_year = re.search(r'(.+) *\([0-9]{4}\) *', original_title.strip())
+
+                if title_with_year:
+                    title = title_with_year.group(1).strip()
+
+                    title_with_year = re.search(r'(.+) *\([0-9]{4}\) *', original_title.strip())
+
+                    if title_with_year:
+                        original_title = title_with_year.group(1).strip()
+
             channel_name = 'TVCine ' + channel_name.strip().split()[1]
             channel_id = db_session.query(models.Channel).filter(models.Channel.name == channel_name).first().id
 
@@ -264,9 +275,8 @@ def process_channels_updated_data(db_session: sqlalchemy.orm.Session, start_date
                     # Get the session
                     show_session = db_calls.get_show_session_complete(db_session, s[0])
                     show_result = response_models.LocalShowResult.create_from_show_session(show_session[0],
-                                                                                           show_session[2],
-                                                                                           show_session[3],
-                                                                                           show_session[1])
+                                                                                           show_session[1],
+                                                                                           show_session[2])
 
                     # Get the reminders associated with this session
                     reminders = db_calls.get_reminders_session(db_session, s[0])

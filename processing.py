@@ -174,7 +174,7 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
                                                       search_adult, below_datetime=below_datetime)
 
         for s in db_shows:
-            show = response_models.LocalShowResult.create_from_show_session(s[0], s[2], s[3], s[1])
+            show = response_models.LocalShowResult.create_from_show_session(s[0], s[1], s[2])
             results[show.id] = show
 
     # Create a list from the dictionary of results
@@ -242,7 +242,7 @@ def search_streaming_services_shows_db(session: sqlalchemy.orm.Session, search_l
                                                                 below_datetime=below_datetime)
 
         for s in db_shows:
-            show = response_models.LocalShowResult.create_from_streaming_service_show(s[0], s[2], s[3], s[1])
+            show = response_models.LocalShowResult.create_from_streaming_service_show(s[0], s[1], s[2])
             results[show.id] = show
 
     # Create a list from the dictionary of results

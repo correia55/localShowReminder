@@ -73,10 +73,20 @@ class TestReminders(unittest.TestCase):
         response_reminder.anticipation_minutes = 10
 
         show_session = models.ShowSession(None, None, datetime.datetime(2020, 1, 1), 5, 10)
-        complete_session = (show_session, 'Channel Name', 'Show Name', True)
+        channel = models.Channel(None, 'Channel Name')
+
+        show_data = models.ShowData('_Show_Name_', 'Show Name')
+        show_data.is_movie = True
+
+        complete_session = (show_session, channel, show_data)
 
         show_session_2 = models.ShowSession(None, None, datetime.datetime(2020, 2, 2), 15, 20)
-        complete_session_2 = (show_session_2, 'Channel Name 2', 'Show Name 2', False)
+        channel_2 = models.Channel(None, 'Channel Name 2')
+
+        show_data_2 = models.ShowData('_Show_Name_2_', 'Show Name 2')
+        show_data_2.is_movie = False
+
+        complete_session_2 = (show_session_2, channel_2, show_data_2)
 
         db_calls_mock.get_show_session_complete.side_effect = [complete_session, complete_session_2]
 
@@ -311,6 +321,15 @@ class TestReminders(unittest.TestCase):
         show_session_3 = models.ShowSession(None, None, now + datetime.timedelta(days=15), 10, 10)
         show_session_3.id = 3
 
+        channel_5 = models.Channel(None, 'Channel 5')
+        channel_10 = models.Channel(None, 'Channel 10')
+
+        show_data_10 = models.ShowData('Show 10', 'Show 10')
+        show_data_10.is_movie = True
+
+        show_data_15 = models.ShowData('Show 15', 'Show 15')
+        show_data_15.is_movie = False
+
         reminder_1 = models.Reminder(60, 1, 1)
         reminder_session_1 = (reminder_1, show_session_1)
 
@@ -327,9 +346,9 @@ class TestReminders(unittest.TestCase):
         db_calls_mock.get_sessions_reminders.return_value = [reminder_session_1, reminder_session_2, reminder_session_3,
                                                              reminder_session_4]
 
-        show_session_tuple_1 = (show_session_1, 'Channel 5', 'Show 10', True)
-        show_session_tuple_2 = (show_session_2, 'Channel 10', 'Show 15', False)
-        show_session_tuple_3 = (show_session_1, 'Channel 5', 'Show 10', True)
+        show_session_tuple_1 = (show_session_1, channel_5, show_data_10)
+        show_session_tuple_2 = (show_session_2, channel_10, show_data_15)
+        show_session_tuple_3 = (show_session_1, channel_5, show_data_10)
 
         db_calls_mock.get_show_session_complete.side_effect = [show_session_tuple_1, show_session_tuple_2,
                                                                show_session_tuple_3]

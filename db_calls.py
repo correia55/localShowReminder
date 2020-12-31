@@ -402,7 +402,7 @@ def get_show_sessions_channel(session: sqlalchemy.orm.Session, channel_id: int) 
 
 # TODO: IT ISN'T A TUPLE, BUT A sqlalchemy._util._collections.result
 def get_show_session_complete(session: sqlalchemy.orm.Session, show_id: int) \
-        -> Optional[Tuple[models.ShowSession, str, str, bool]]:
+        -> Optional[Tuple[models.ShowSession, models.Channel, models.ShowData]]:
     """
     Get the show session, and all associated data, with a given id.
 
@@ -411,8 +411,7 @@ def get_show_session_complete(session: sqlalchemy.orm.Session, show_id: int) \
     :return: the show session, and all associated data, with a given id.
     """
 
-    query = session.query(models.ShowSession, models.Channel.name, models.ShowData.portuguese_title,
-                          models.ShowData.is_movie).filter(models.ShowSession.id == show_id)
+    query = session.query(models.ShowSession, models.Channel, models.ShowData).filter(models.ShowSession.id == show_id)
 
     # Join channels
     query = query.join(models.Channel)
@@ -808,7 +807,8 @@ def get_streaming_service_show(session: sqlalchemy.orm.Session, show_id: int) ->
 
 def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: str, is_movie: Optional[bool],
                               season: Optional[int], episode: Optional[int], search_adult: bool,
-                              below_datetime: Optional[datetime.datetime] = None):
+                              below_datetime: Optional[datetime.datetime] = None) \
+        -> List[Tuple[models.ShowSession, models.Channel, models.ShowData]]:
     """
     Get the show sessions, and all associated data, that match a given search pattern and criteria.
 
@@ -824,8 +824,7 @@ def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: s
 
     regex_operation = get_regex_operation_dbms()
 
-    query = session.query(models.ShowSession, models.Channel.name, models.ShowData.portuguese_title,
-                          models.ShowData.is_movie) \
+    query = session.query(models.ShowSession, models.Channel, models.ShowData) \
         .filter(models.ShowData.search_title.op(regex_operation)(search_pattern))
 
     if is_movie:
@@ -855,7 +854,8 @@ def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: s
 
 def search_streaming_service_shows_data(session: sqlalchemy.orm.Session, search_pattern: str, is_movie: Optional[bool],
                                         season: Optional[int], episode: Optional[int], search_adult: bool,
-                                        below_datetime: Optional[datetime.datetime] = None):
+                                        below_datetime: Optional[datetime.datetime] = None) \
+        -> List[Tuple[models.ShowSession, models.StreamingService, models.ShowData]]:
     """
     Get the streaming services' shows, and all associated data, that match a given search pattern and criteria.
 
@@ -871,8 +871,7 @@ def search_streaming_service_shows_data(session: sqlalchemy.orm.Session, search_
 
     regex_operation = get_regex_operation_dbms()
 
-    query = session.query(models.StreamingServiceShow, models.StreamingService.name, models.ShowData.portuguese_title,
-                          models.ShowData.is_movie) \
+    query = session.query(models.StreamingServiceShow, models.StreamingService, models.ShowData) \
         .filter(models.ShowData.search_title.op(regex_operation)(search_pattern))
 
     if is_movie:

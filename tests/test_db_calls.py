@@ -163,9 +163,8 @@ class TestDBCalls(unittest.TestCase):
 
         # Verify the result
         self.assertEqual(show_session, actual_result[0])
-        self.assertEqual('TEST_CHANNEL', actual_result[1])
-        self.assertEqual('test_title', actual_result[2])
-        self.assertEqual(None, actual_result[3])
+        self.assertEqual(channel, actual_result[1])
+        self.assertEqual(show_data, actual_result[2])
 
     def test_get_reminders_error(self) -> None:
         """ Test the function get_reminders without results. """
@@ -656,35 +655,35 @@ class TestDBCalls(unittest.TestCase):
 
         # Can't ensure order
         for r in actual_result:
-            if r[2] == 'other fake':
+            if r[2].portuguese_title == 'other fake':
                 self.assertEqual(1, r[0].season)
                 self.assertEqual(1, r[0].episode)
-                self.assertEqual('TEST_CHANNEL', r[1])
-                self.assertEqual(None, r[3])
+                self.assertEqual('TEST_CHANNEL', r[1].name)
+                self.assertEqual(None, r[2].is_movie)
 
                 found[0] = True
 
-            if r[2] == 'other fakes':
+            if r[2].portuguese_title == 'other fakes':
                 self.assertEqual(2, r[0].season)
                 self.assertEqual(1, r[0].episode)
-                self.assertEqual('TEST_CHANNEL', r[1])
-                self.assertEqual(False, r[3])
+                self.assertEqual('TEST_CHANNEL', r[1].name)
+                self.assertEqual(False, r[2].is_movie)
 
                 found[1] = True
 
-            if r[2] == 'some other fakes':
+            if r[2].portuguese_title == 'some other fakes':
                 self.assertEqual(None, r[0].season)
                 self.assertEqual(None, r[0].episode)
-                self.assertEqual('TEST_CHANNEL', r[1])
-                self.assertEqual(True, r[3])
+                self.assertEqual('TEST_CHANNEL', r[1].name)
+                self.assertEqual(True, r[2].is_movie)
 
                 found[2] = True
 
-            if r[2] == 'fakes':
+            if r[2].portuguese_title == 'fakes':
                 self.assertEqual(None, r[0].season)
                 self.assertEqual(None, r[0].episode)
-                self.assertEqual('TEST_CHANNEL', r[1])
-                self.assertEqual(True, r[3])
+                self.assertEqual('TEST_CHANNEL', r[1].name)
+                self.assertEqual(True, r[2].is_movie)
 
                 found[3] = True
 
@@ -766,9 +765,9 @@ class TestDBCalls(unittest.TestCase):
 
         self.assertEqual(None, actual_result[0][0].season)
         self.assertEqual(None, actual_result[0][0].episode)
-        self.assertEqual('TEST_CHANNEL', actual_result[0][1])
-        self.assertEqual('some other fakes', actual_result[0][2])
-        self.assertEqual(True, actual_result[0][3])
+        self.assertEqual('TEST_CHANNEL', actual_result[0][1].name)
+        self.assertEqual('some other fakes', actual_result[0][2].portuguese_title)
+        self.assertEqual(True, actual_result[0][2].is_movie)
 
     def test_search_show_sessions_data_03(self) -> None:
         """Test the function search_show_sessions_data: only one matches everything and it is from an adult channel."""
@@ -840,9 +839,9 @@ class TestDBCalls(unittest.TestCase):
 
         self.assertEqual(4, actual_result[0][0].season)
         self.assertEqual(4, actual_result[0][0].episode)
-        self.assertEqual('TEST_CHANNEL_2', actual_result[0][1])
-        self.assertEqual('other fake', actual_result[0][2])
-        self.assertEqual(None, actual_result[0][3])
+        self.assertEqual('TEST_CHANNEL_2', actual_result[0][1].name)
+        self.assertEqual('other fake', actual_result[0][2].portuguese_title)
+        self.assertEqual(None, actual_result[0][2].is_movie)
 
     def test_search_streaming_service_shows_data_01(self) -> None:
         """
@@ -923,35 +922,35 @@ class TestDBCalls(unittest.TestCase):
 
         # Can't ensure order
         for r in actual_result:
-            if r[2] == 'other fake':
+            if r[2].portuguese_title == 'other fake':
                 self.assertEqual(1, r[0].first_season_available)
                 self.assertEqual(1, r[0].last_season_available)
-                self.assertEqual('streaming_service', r[1])
-                self.assertEqual(None, r[3])
+                self.assertEqual('streaming_service', r[1].name)
+                self.assertEqual(None, r[2].is_movie)
 
                 found[0] = True
 
-            elif r[2] == 'other fakes':
+            elif r[2].portuguese_title == 'other fakes':
                 self.assertEqual(1, r[0].first_season_available)
                 self.assertEqual(2, r[0].last_season_available)
-                self.assertEqual('streaming_service', r[1])
-                self.assertEqual(False, r[3])
+                self.assertEqual('streaming_service', r[1].name)
+                self.assertEqual(False, r[2].is_movie)
 
                 found[1] = True
 
-            elif r[2] == 'some other fakes':
+            elif r[2].portuguese_title == 'some other fakes':
                 self.assertEqual(None, r[0].first_season_available)
                 self.assertEqual(None, r[0].last_season_available)
-                self.assertEqual('streaming_service_2', r[1])
-                self.assertEqual(True, r[3])
+                self.assertEqual('streaming_service_2', r[1].name)
+                self.assertEqual(True, r[2].is_movie)
 
                 found[2] = True
 
-            elif r[2] == 'fakes':
+            elif r[2].portuguese_title == 'fakes':
                 self.assertEqual(None, r[0].first_season_available)
                 self.assertEqual(None, r[0].last_season_available)
-                self.assertEqual('streaming_service_2', r[1])
-                self.assertEqual(True, r[3])
+                self.assertEqual('streaming_service_2', r[1].name)
+                self.assertEqual(True, r[2].is_movie)
 
                 found[3] = True
 
@@ -1030,9 +1029,9 @@ class TestDBCalls(unittest.TestCase):
 
         self.assertEqual(None, actual_result[0][0].first_season_available)
         self.assertEqual(None, actual_result[0][0].last_season_available)
-        self.assertEqual('streaming_service_2', actual_result[0][1])
-        self.assertEqual('some other fakes', actual_result[0][2])
-        self.assertEqual(True, actual_result[0][3])
+        self.assertEqual('streaming_service_2', actual_result[0][1].name)
+        self.assertEqual('some other fakes', actual_result[0][2].portuguese_title)
+        self.assertEqual(True, actual_result[0][2].is_movie)
 
     def test_search_streaming_service_shows_data_03(self) -> None:
         """ Test the function search_streaming_service_shows_data: only two match everything. """
@@ -1122,18 +1121,18 @@ class TestDBCalls(unittest.TestCase):
 
         # Can't ensure order
         for r in actual_result:
-            if r[2] == 'other fakes':
+            if r[2].portuguese_title == 'other fakes':
                 self.assertEqual(1, r[0].first_season_available)
                 self.assertEqual(2, r[0].last_season_available)
-                self.assertEqual('streaming_service', r[1])
-                self.assertEqual(False, r[3])
+                self.assertEqual('streaming_service', r[1].name)
+                self.assertEqual(False, r[2].is_movie)
 
                 found[0] = True
-            elif r[2] == 'other fake':
+            elif r[2].portuguese_title == 'other fake':
                 self.assertEqual(1, r[0].first_season_available)
                 self.assertEqual(2, r[0].last_season_available)
-                self.assertEqual('streaming_service_2', r[1])
-                self.assertEqual(None, r[3])
+                self.assertEqual('streaming_service_2', r[1].name)
+                self.assertEqual(None, r[2].is_movie)
 
                 found[1] = True
 

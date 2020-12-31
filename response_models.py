@@ -62,7 +62,8 @@ class Reminder:
 
     channel_name: str
 
-    def __init__(self, reminder: models.Reminder, reminder_session_tuple: Tuple[models.ShowSession, str, str, bool]):
+    def __init__(self, reminder: models.Reminder,
+                 reminder_session_tuple: Tuple[models.ShowSession, models.Channel, models.ShowData]):
         """
         Create an instance using a reminder.
 
@@ -74,12 +75,12 @@ class Reminder:
         self.anticipation_minutes = reminder.anticipation_minutes
         self.session_id = reminder.session_id
 
-        self.title = reminder_session_tuple[2]
+        self.title = reminder_session_tuple[2].portuguese_title
         self.season = reminder_session_tuple[0].season
         self.episode = reminder_session_tuple[0].episode
         self.date_time = reminder_session_tuple[0].date_time
 
-        self.channel_name = reminder_session_tuple[1]
+        self.channel_name = reminder_session_tuple[1].name
 
     def to_dict(self):
         """
@@ -107,6 +108,7 @@ class LocalShowResult:
     show_name: str
     service_name: str  # Channel name or Streaming Service name
     is_movie: Optional[bool]
+    year: Optional[int]
 
     # TV
     season: Optional[int]
@@ -119,16 +121,14 @@ class LocalShowResult:
     original: bool
 
     @staticmethod
-    def create_from_show_session(show_session: models.ShowSession, show_name: str, is_movie: Optional[bool],
-                                 channel_name: str):
+    def create_from_show_session(show_session: models.ShowSession, channel: models.Channel, show_data: models.ShowData):
         """
         Create local show result from the a show session, the name of the show, whether it is a movie or not and the
         name of the channel.
 
         :param show_session: the corresponding session.
-        :param show_name: the name of the show.
-        :param is_movie: whether it is a movie or not.
-        :param channel_name: the name of the channel.
+        :param channel: the corresponding channel.
+        :param show_data: the corresponding show data.
         :return: the local show result.
         """
 
@@ -136,9 +136,10 @@ class LocalShowResult:
         local_show_result.id = show_session.id
         local_show_result.type = LocalShowResultType.TV
 
-        local_show_result.show_name = show_name
-        local_show_result.service_name = channel_name
-        local_show_result.is_movie = is_movie
+        local_show_result.show_name = show_data.portuguese_title
+        local_show_result.service_name = channel.name
+        local_show_result.is_movie = show_data.is_movie
+        local_show_result.year = show_data.year
 
         local_show_result.season = show_session.season
         local_show_result.episode = show_session.episode
@@ -147,16 +148,15 @@ class LocalShowResult:
         return local_show_result
 
     @staticmethod
-    def create_from_streaming_service_show(ss_show: models.StreamingServiceShow, show_name: str,
-                                           is_movie: Optional[bool], channel_name: str):
+    def create_from_streaming_service_show(ss_show: models.StreamingServiceShow,
+                                           streaming_service: models.StreamingService, show_data: models.ShowData):
         """
         Create local show result from the a show session, the name of the show, whether it is a movie or not and the
         name of the channel.
 
         :param ss_show: the corresponding streaming service show.
-        :param show_name: the name of the show.
-        :param is_movie: whether it is a movie or not.
-        :param channel_name: the name of the channel.
+        :param streaming_service: the corresponding stream service.
+        :param show_data: the corresponding show data.
         :return: the local show result.
         """
 
@@ -164,9 +164,10 @@ class LocalShowResult:
         local_show_result.id = ss_show.id
         local_show_result.type = LocalShowResultType.Streaming
 
-        local_show_result.show_name = show_name
-        local_show_result.service_name = channel_name
-        local_show_result.is_movie = is_movie
+        local_show_result.show_name = show_data.portuguese_title
+        local_show_result.service_name = streaming_service.name
+        local_show_result.is_movie = show_data.is_movie
+        local_show_result.year = show_data.year
 
         local_show_result.first_season_available = ss_show.first_season_available
         local_show_result.last_season_available = ss_show.last_season_available
@@ -186,6 +187,9 @@ class LocalShowResult:
 
         if self.is_movie is not None:
             local_show_dict['is_movie'] = self.is_movie
+
+        if self.year is not None:
+            local_show_dict['year'] = self.year
 
         # TV
         if self.type == LocalShowResultType.TV:
