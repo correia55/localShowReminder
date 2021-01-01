@@ -155,7 +155,7 @@ class TestDBCalls(unittest.TestCase):
         self.assertIsNotNone(show_data)
 
         show_session = db_calls.register_show_session(self.session, 1, 1, datetime.datetime.utcnow(), channel.id,
-                                                      show_data.id, True)
+                                                      show_data.id, should_commit=True)
         self.assertIsNotNone(show_session)
 
         # Call the function
@@ -196,7 +196,7 @@ class TestDBCalls(unittest.TestCase):
         self.assertIsNotNone(show_data)
 
         show_session = db_calls.register_show_session(self.session, 1, 1, datetime.datetime.utcnow(), channel.id,
-                                                      show_data.id, True)
+                                                      show_data.id, should_commit=True)
         self.assertIsNotNone(show_session)
 
         reminder = db_calls.register_reminder(self.session, show_session.id, 10, user.id)
@@ -237,7 +237,7 @@ class TestDBCalls(unittest.TestCase):
         self.assertIsNotNone(show_data)
 
         show_session = db_calls.register_show_session(self.session, 1, 1, datetime.datetime.utcnow(), channel.id,
-                                                      show_data.id, True)
+                                                      show_data.id, should_commit=True)
         self.assertIsNotNone(show_session)
 
         reminder = db_calls.register_reminder(self.session, show_session.id, 10, user.id)
@@ -281,7 +281,7 @@ class TestDBCalls(unittest.TestCase):
         self.assertIsNotNone(show_data)
 
         show_session = db_calls.register_show_session(self.session, 1, 1, datetime.datetime.utcnow(), channel.id,
-                                                      show_data.id, True)
+                                                      show_data.id, should_commit=True)
         self.assertIsNotNone(show_session)
 
         reminder = db_calls.register_reminder(self.session, show_session.id, 10, user.id)
@@ -307,7 +307,7 @@ class TestDBCalls(unittest.TestCase):
         self.assertIsNotNone(show_data)
 
         show_session = db_calls.register_show_session(self.session, 1, 1, datetime.datetime.utcnow(), channel.id,
-                                                      show_data.id, True)
+                                                      show_data.id, should_commit=True)
         self.assertIsNotNone(show_session)
 
         reminder = db_calls.register_reminder(self.session, show_session.id, 10, user.id)
@@ -348,7 +348,7 @@ class TestDBCalls(unittest.TestCase):
         self.assertIsNotNone(show_data)
 
         show_session = db_calls.register_show_session(self.session, 1, 1, datetime.datetime.utcnow(), channel.id,
-                                                      show_data.id, True)
+                                                      show_data.id, should_commit=True)
         self.assertIsNotNone(show_session)
 
         reminder = db_calls.register_reminder(self.session, show_session.id, 10, user.id)
@@ -374,7 +374,7 @@ class TestDBCalls(unittest.TestCase):
         self.assertIsNotNone(show_data)
 
         show_session = db_calls.register_show_session(self.session, 1, 1, datetime.datetime.utcnow(), channel.id,
-                                                      show_data.id, True)
+                                                      show_data.id, should_commit=True)
         self.assertIsNotNone(show_session)
 
         reminder = db_calls.register_reminder(self.session, show_session.id, 10, user.id)

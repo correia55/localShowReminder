@@ -92,23 +92,21 @@ class ShowSession(Base):
     show_id = Column(Integer, ForeignKey('ShowData.id'))
     channel_id = Column(Integer, ForeignKey('Channel.id'))
 
-    # Identifies to this show session
+    # Specific this show session
     season = Column(Integer)
     episode = Column(Integer)
     date_time = Column(DateTime)
+    audio_language = Column(String)
 
     def __init__(self, season: Optional[int], episode: Optional[int], date_time: datetime.datetime, channel_id: int,
-                 show_id: int):
+                 show_id: int, audio_language: str = None):
         self.channel_id = channel_id
         self.show_id = show_id
 
         self.season = season
         self.episode = episode
         self.date_time = date_time
-
-    def __str__(self):
-        return 'id: %d; show_id: %d; season: %s; episode: %s; date_time: %s; channel_id: %d' % \
-               (self.id, self.show_id, str(self.season), str(self.episode), str(self.date_time), self.channel_id)
+        self.original_audio = audio_language
 
 
 class StreamingService(Base):

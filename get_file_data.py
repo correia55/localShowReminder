@@ -6,15 +6,72 @@ from typing import List
 import openpyxl
 import sqlalchemy.orm
 
+import auxiliary
 import configuration
 import db_calls
 import models
 import process_emails
 import response_models
 
+unordered_words = ['The', 'A', 'An', 'I', 'Un', 'Le', 'La', 'Les', 'Um']
+
 
 class TVCine:
     channels = ['TVCine Top', 'TVCine Edition', 'TVCine Emotion', 'TVCine Action']
+
+    @staticmethod
+    def process_title(title: str) -> [str, bool]:
+        # Replace all quotation marks for the same quotation mark
+        title = re.sub('[´`]', '\'', title)
+
+        search_result = auxiliary.search_chars(title, ['(', ')', ','])
+        vp = False
+
+        nb_parenthesis = len(search_result[0])
+
+        if nb_parenthesis > 0:
+            # Keep only the last two parenthesis
+            if nb_parenthesis > 2:
+                search_result[0] = search_result[0][nb_parenthesis - 2:]
+                search_result[1] = search_result[1][nb_parenthesis - 2:]
+                nb_parenthesis = 2
+
+            if nb_parenthesis == 2:
+                group_1 = title[search_result[0][0] + 1:search_result[1][0]]
+                is_year = re.search(r'[0-9]{4}', group_1.strip())
+
+                # We've got the result
+                if is_year:
+                    vp = title[search_result[0][1] + 1:search_result[1][1]] == 'VP'
+                    title = title[:search_result[0][0]]
+                # Keep only the last parenthesis
+                else:
+                    search_result[0] = search_result[0][-1:]
+                    search_result[1] = search_result[1][-1:]
+                    nb_parenthesis = 1
+
+            if nb_parenthesis == 1:
+                group_1 = title[search_result[0][0] + 1:search_result[1][0]]
+                is_year = re.search(r'[0-9]{4}', group_1.strip())
+
+                if is_year:
+                    title = title[:search_result[0][0]]
+                else:
+                    is_vpvo = re.search(r'(VO|VP)', group_1.strip())
+
+                    if is_vpvo:
+                        vp = is_vpvo.group(1) == 'VP'
+                        title = title[:search_result[0][0]]
+
+        if len(search_result) > 1 and len(search_result[2]) > 0:
+            last_comma = search_result[2][-1]
+
+            after_comma = title[last_comma + 1:].strip()
+
+            if after_comma in unordered_words:
+                title = after_comma + ' ' + title[:last_comma]
+
+        return title.strip(), vp
 
     @staticmethod
     def update_show_list(db_session: sqlalchemy.orm.Session, filename: str) -> int:
@@ -55,6 +112,9 @@ class TVCine:
             # Check if it matches the regex of a series
             series = re.search('(.+) T([0-9]+),[ ]+([0-9]+)', title.strip())
 
+            is_movie = None
+            audio_language = None
+
             # If it is a series, extract it's season and episode
             if series:
                 title = series.group(1)
@@ -70,21 +130,31 @@ class TVCine:
 
                 if series:
                     original_title = series.group(1)
+                    is_movie = False
             else:
                 season = None
                 episode = None
                 # episode_synopsis = None
 
-                # Remove the year from the title
-                title_with_year = re.search(r'(.+) *\([0-9]{4}\) *', original_title.strip())
+                # Process the titles
+                title, vp = TVCine.process_title(title)
+                audio_language = 'pt' if vp else None
 
-                if title_with_year:
-                    title = title_with_year.group(1).strip()
+                original_title, _ = TVCine.process_title(original_title)
 
-                    title_with_year = re.search(r'(.+) *\([0-9]{4}\) *', original_title.strip())
+                if show_type != 'Documentário':
+                    is_movie = True
 
-                    if title_with_year:
-                        original_title = title_with_year.group(1).strip()
+            # Sometimes the cast is switched with the director
+            if cast is not None and director is not None:
+                cast_commas = auxiliary.search_chars(cast, [','])[0]
+                director_commas = auxiliary.search_chars(director, [','])[0]
+
+                # When that happens, switch them
+                if len(cast_commas) < len(director_commas):
+                    aux = cast
+                    cast = director
+                    director = aux
 
             channel_name = 'TVCine ' + channel_name.strip().split()[1]
             channel_id = db_session.query(models.Channel).filter(models.Channel.name == channel_name).first().id
@@ -94,7 +164,7 @@ class TVCine:
                                                              duration=duration, synopsis=synopsis, year=year,
                                                              show_type=show_type, director=director, cast=cast,
                                                              audio_languages=languages, countries=countries,
-                                                             age_classification=age_classification, is_movie=not series)
+                                                             age_classification=age_classification, is_movie=is_movie)
 
             if show_data is None:
                 print('Insertion of Show Data failed!')
@@ -102,7 +172,7 @@ class TVCine:
 
             # Insert the instance
             db_calls.register_show_session(db_session, season, episode, date_time, channel_id, show_data.id,
-                                           should_commit=False)
+                                           audio_language=audio_language, should_commit=False)
 
             nb_shows += 1
 

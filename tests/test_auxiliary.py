@@ -13,6 +13,9 @@ class AutoReprTest:
         self.string = string
         self.number = number
 
+    def to_dict(self):
+        return {'string': self.string, 'number': self.number}
+
 
 class TestAuxiliary(unittest.TestCase):
     def test_strip_accents(self) -> None:
@@ -129,6 +132,36 @@ class TestAuxiliary(unittest.TestCase):
         auto_repr_test = AutoReprTest('a string', 353)
 
         actual_result = auto_repr_test.__repr__()
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_list_to_json(self) -> None:
+        """ Test the function list_to_json. """
+
+        # The expected result
+        expected_result = [{'number': 353, 'string': 'a string'},
+                           {'number': 123, 'string': 'other string'}]
+
+        # Call the function
+        auto_repr_test_1 = AutoReprTest('a string', 353)
+        auto_repr_test_2 = AutoReprTest('other string', 123)
+
+        actual_result = auxiliary.list_to_json([auto_repr_test_1, auto_repr_test_2])
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_search_chars(self) -> None:
+        """ Test the function search_chars. """
+
+        # The expected result
+        expected_result = [[19, 50], [4, 10, 24, 37], [16, 20, 27]]
+
+        # Call the function
+        text = 'Text, with, commas (and), parenthesis, everywhere (!)'
+
+        actual_result = auxiliary.search_chars(text, ['(', ',', 'a'])
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)

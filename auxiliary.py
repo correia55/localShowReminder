@@ -1,6 +1,7 @@
 import datetime
 import re
 import unicodedata
+from typing import List
 
 import pytz
 
@@ -104,3 +105,23 @@ def list_to_json(list_of_objects):
         result.append(o.to_dict())
 
     return result
+
+
+def search_chars(text: str, chars: List[str]) -> List[List[int]]:
+    """
+    Get all indexes of a list of chars in a string.
+
+    :param text: the text.
+    :param chars: the list of chars of interest.
+    :return: the list with the lists of indexes for each of the chars in the string.
+    """
+
+    search_result = [[] for i in range(len(chars))]
+
+    for i in range(len(text)):
+        for j in range(len(chars)):
+            if text[i] == chars[j]:
+                search_result[j].append(i)
+                break
+
+    return search_result
