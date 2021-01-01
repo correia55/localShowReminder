@@ -96,7 +96,7 @@ class ShowSession(Base):
     season = Column(Integer)
     episode = Column(Integer)
     date_time = Column(DateTime)
-    audio_language = Column(String)
+    audio_language = Column(String(255))
 
     def __init__(self, season: Optional[int], episode: Optional[int], date_time: datetime.datetime, channel_id: int,
                  show_id: int, audio_language: str = None):
