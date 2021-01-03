@@ -530,9 +530,9 @@ class SendVerificationEmailEP(fr.Resource):
                 return flask.make_response('', 400)
 
 
-class SessionEP(fr.Resource):
+class AccessEP(fr.Resource):
     def __init__(self):
-        super(SessionEP, self).__init__()
+        super(AccessEP, self).__init__()
 
     access_args = \
         {
@@ -902,7 +902,7 @@ api.add_resource(SendVerificationEmailEP, '/send-verification-email', endpoint='
 # Resources
 api.add_resource(AlarmsEP, '/alarms', endpoint='alarms')
 api.add_resource(RemindersEP, '/reminders', endpoint='reminders')
-api.add_resource(SessionEP, '/session', endpoint='session')
+api.add_resource(AccessEP, '/access', endpoint='access')
 api.add_resource(ShowsEP, '/shows', endpoint='shows')
 api.add_resource(LocalShowsEP, '/local-shows', endpoint='local-shows')
 api.add_resource(UsersEP, '/users', endpoint='users')
