@@ -829,8 +829,12 @@ def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: s
         .filter(models.ShowData.search_title.op(regex_operation)(search_pattern))
 
     if is_movie:
-        query = query.filter(models.ShowData.is_movie.is_(True))
+        query = query.filter(sqlalchemy.or_(models.ShowData.is_movie.is_(None), models.ShowData.is_movie.is_(True)))
     else:
+        if is_movie is not None:
+            query = query.filter(
+                sqlalchemy.or_(models.ShowData.is_movie.is_(None), models.ShowData.is_movie.is_(False)))
+
         if season is not None:
             query = query.filter(models.ShowSession.season == season)
 
@@ -876,8 +880,12 @@ def search_streaming_service_shows_data(session: sqlalchemy.orm.Session, search_
         .filter(models.ShowData.search_title.op(regex_operation)(search_pattern))
 
     if is_movie:
-        query = query.filter(models.ShowData.is_movie.is_(True))
+        query = query.filter(sqlalchemy.or_(models.ShowData.is_movie.is_(None), models.ShowData.is_movie.is_(True)))
     else:
+        if is_movie is not None:
+            query = query.filter(sqlalchemy.or_(models.ShowData.is_movie.is_(None),
+                                                models.ShowData.is_movie.is_(False)))
+
         if season is not None:
             query = query.filter(models.StreamingServiceShow.first_season_available <= season)
             query = query.filter(models.StreamingServiceShow.last_season_available >= season)

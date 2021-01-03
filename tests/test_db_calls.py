@@ -999,7 +999,7 @@ class TestDBCalls(unittest.TestCase):
                                                            show_data.id)
         self.assertIsNotNone(ss_show)
 
-        # This session is not a match because it is not a movie
+        # This session is a match because is_movie is None
         ss_show_2 = db_calls.register_streaming_service_show(self.session, 1, 1, False, streaming_service.id,
                                                              show_data_3.id)
         self.assertIsNotNone(ss_show_2)
@@ -1022,16 +1022,33 @@ class TestDBCalls(unittest.TestCase):
 
         # Call the function
         actual_result = db_calls.search_streaming_service_shows_data(self.session, '_fakes?_$', True, None, None, True,
-                                                                     now - datetime.timedelta(days=2))
+                                                                     below_datetime=now - datetime.timedelta(days=2))
 
         # Verify the result
-        self.assertEqual(1, len(actual_result))
+        self.assertEqual(2, len(actual_result))
 
-        self.assertEqual(None, actual_result[0][0].first_season_available)
-        self.assertEqual(None, actual_result[0][0].last_season_available)
-        self.assertEqual('streaming_service_2', actual_result[0][1].name)
-        self.assertEqual('some other fakes', actual_result[0][2].portuguese_title)
-        self.assertEqual(True, actual_result[0][2].is_movie)
+        found = [False] * 2
+
+        # Can't ensure order
+        for r in actual_result:
+            if r[2].portuguese_title == 'some other fakes':
+                self.assertEqual(None, r[0].first_season_available)
+                self.assertEqual(None, r[0].last_season_available)
+                self.assertEqual('streaming_service_2', r[1].name)
+                self.assertEqual(True, r[2].is_movie)
+
+                found[0] = True
+
+            elif r[2].portuguese_title == 'other fake':
+                self.assertEqual(1, r[0].first_season_available)
+                self.assertEqual(1, r[0].last_season_available)
+                self.assertEqual('streaming_service', r[1].name)
+                self.assertEqual(None, r[2].is_movie)
+
+                found[1] = True
+
+        for f in found:
+            self.assertTrue(f)
 
     def test_search_streaming_service_shows_data_03(self) -> None:
         """ Test the function search_streaming_service_shows_data: only two match everything. """
