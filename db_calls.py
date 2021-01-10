@@ -586,8 +586,10 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, portuguese_titl
         return show_data
 
     # If not, then add it
-    return register_show_data(session, portuguese_title, original_title, duration, synopsis, year, show_type, director,
-                              cast, audio_languages, countries, age_classification, is_movie)
+    return register_show_data(session, portuguese_title, original_title=original_title, duration=duration,
+                              synopsis=synopsis, year=year, show_type=show_type, director=director,
+                              cast=cast, audio_languages=audio_languages, countries=countries,
+                              age_classification=age_classification, category=category, is_movie=is_movie)
 
 
 def register_cache(session: sqlalchemy.orm.Session, key: str,

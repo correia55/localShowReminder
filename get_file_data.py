@@ -118,6 +118,7 @@ class TVCine:
             # If it is a series, extract it's season and episode
             if series:
                 title = series.group(1)
+                is_movie = False
 
                 season = int(series.group(2))
                 episode = int(series.group(3))
@@ -130,7 +131,6 @@ class TVCine:
 
                 if series:
                     original_title = series.group(1)
-                    is_movie = False
             else:
                 season = None
                 episode = None
