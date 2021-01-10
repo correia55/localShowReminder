@@ -612,17 +612,34 @@ class LocalShowsEP(fr.Resource):
 
     search_args = \
         {
-            'search_text': webargs.fields.Str(required=True)
+            'search_text': webargs.fields.Str(),
+            'show_id': webargs.fields.Int(),
+            'is_movie': webargs.fields.Bool(),
         }
 
     @fp.use_args(search_args)
     def get(self, args):
-        """Get search results for the search_text in the listings and streaming services."""
+        """Get search results for the search_text or the show_id, in the listings and streaming services."""
 
-        search_text: str = args['search_text'].strip()
+        search_text = None
+        show_id = None
+        is_movie = None
 
-        if len(search_text) < 2:
-            return flask.make_response({'Search Text Too Small'}, 400)
+        for k, v in args.items():
+            if v is None:
+                continue
+
+            if k == 'search_text':
+                search_text = v.strip()
+
+            if k == 'show_id':
+                show_id = v
+
+            if k == 'is_movie':
+                is_movie = v
+
+        if search_text is None and show_id is None:
+            return flask.make_response('Invalid request', 400)
 
         with session_scope() as session:
             search_adult = False
@@ -635,9 +652,25 @@ class LocalShowsEP(fr.Resource):
                 user = session.query(models.User).filter(models.User.id == user_id).first()
                 search_adult = user.show_adult if user is not None else False
 
-            db_shows = processing.search_streaming_services_shows_db(session, [search_text], search_adult=search_adult)
+            # Check whether it is a request by id or by text
+            if show_id is not None:
+                if is_movie is None:
+                    return flask.make_response('Invalid request', 400)
 
-            db_shows += processing.search_sessions_db(session, [search_text], search_adult=search_adult)
+                titles = processing.get_show_titles(session, show_id, is_movie)
+                complete_title = True
+            else:
+                if len(search_text) < 2:
+                    return flask.make_response('Search Text Too Small', 400)
+
+                titles = [search_text]
+                complete_title = False
+
+            db_shows = processing.search_streaming_services_shows_db(session, titles, is_movie=is_movie,
+                                                                     complete_title=complete_title,
+                                                                     search_adult=search_adult)
+            db_shows += processing.search_sessions_db(session, titles, is_movie=is_movie, complete_title=complete_title,
+                                                      search_adult=search_adult)
 
             if len(db_shows) != 0:
                 return flask.make_response(flask.jsonify({'show_list': auxiliary.list_to_json(db_shows)}), 200)
