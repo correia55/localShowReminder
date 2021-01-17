@@ -142,8 +142,7 @@ class TVCine:
 
                 original_title, _ = TVCine.process_title(original_title)
 
-                if show_type != 'Documentário':
-                    is_movie = True
+                is_movie = True
 
             # Sometimes the cast is switched with the director
             if cast is not None and director is not None:
@@ -234,7 +233,6 @@ class Odisseia:
 
             episode = None
             # episode_title = None
-            season = None
 
             if broadcast_name != portuguese_title:
                 episode_name = re.search(r'(Ep\.|Episódio) ?([0-9]+)\.?(.*)', broadcast_name)
@@ -242,7 +240,6 @@ class Odisseia:
                 if episode_name:
                     episode = episode_name.group(2)
                     # episode_title = episode_name.group(3)
-                    season = 1
 
                 synopsis = None
                 # episode_synopsis = epg_text.getElementsByTagName('ShortDescription')[0].firstChild.nodeValue
@@ -255,6 +252,7 @@ class Odisseia:
             year = None
             director = None
             countries = None
+            season = None
 
             for extended_info in extended_info_elements:
                 attribute = extended_info.getAttribute('name')
@@ -267,6 +265,12 @@ class Odisseia:
                     director = extended_info.firstChild.nodeValue
                 elif attribute == 'Nationality' and extended_info.firstChild is not None:
                     countries = extended_info.firstChild.nodeValue
+                elif attribute == 'Cycle' and extended_info.firstChild is not None:
+                    season = extended_info.firstChild.nodeValue
+
+            if episode is not None:
+                if season is None:
+                    season = 1
 
             channel_name = 'Odisseia'
             channel_id = db_session.query(models.Channel).filter(models.Channel.name == channel_name).first().id
@@ -276,7 +280,7 @@ class Odisseia:
                                                              original_title=original_title, duration=duration,
                                                              synopsis=synopsis, year=year, show_type=show_type,
                                                              director=director, countries=countries, category=category,
-                                                             is_movie=False)
+                                                             is_movie=episode is None)
 
             if show_data is None:
                 print('Insertion of Show Data failed!')
