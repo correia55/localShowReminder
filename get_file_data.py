@@ -112,7 +112,6 @@ class TVCine:
             # Check if it matches the regex of a series
             series = re.search('(.+) T([0-9]+),[ ]+([0-9]+)', title.strip())
 
-            is_movie = None
             audio_language = None
 
             # If it is a series, extract it's season and episode

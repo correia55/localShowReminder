@@ -437,20 +437,20 @@ def get_show_session(session: sqlalchemy.orm.Session, show_id: int) -> Optional[
         .first()
 
 
-def search_show_data_by_original_title_and_year(session: sqlalchemy.orm.Session, original_title: str, year: int) -> \
+def search_show_data_by_original_title_and_director(session: sqlalchemy.orm.Session, original_title: str, director: str) -> \
         Optional[models.ShowData]:
     """
     Search for the show data with the same original title and year.
 
     :param session: the db session.
     :param original_title: the original title of the show.
-    :param year: the year of the show's release.
+    :param director: the director of the show.
     :return: the show data with that data.
     """
 
     return session.query(models.ShowData) \
         .filter(models.ShowData.original_title == original_title) \
-        .filter(models.ShowData.year == year) \
+        .filter(models.ShowData.director == director) \
         .first()
 
 
@@ -577,8 +577,9 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, portuguese_titl
     """
 
     # Check if there's already an entry with this information
-    if original_title is not None and year is not None:
-        show_data = search_show_data_by_original_title_and_year(session, original_title, year)
+    # Year was being used but it is not reliable
+    if original_title is not None and director is not None:
+        show_data = search_show_data_by_original_title_and_director(session, original_title, director)
     else:
         show_data = search_show_data_by_search_title_and_everything_else_empty(session, portuguese_title)
 
