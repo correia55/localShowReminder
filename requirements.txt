@@ -28,3 +28,4 @@ Werkzeug==1.0.1
 dnspython==1.16.0
 openpyxl==3.0.5
 google-auth==1.26.1
+requests==2.25.1
