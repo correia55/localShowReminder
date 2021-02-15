@@ -27,6 +27,7 @@ class TestAuthentication(unittest.TestCase):
         """ Reset the mocks after each test. """
 
         db_calls_mock.reset_mock()
+        configuration_mock.reset_mock()
 
         configuration_mock.REFRESH_TOKEN_VALIDITY_DAYS = None
         configuration_mock.ACCESS_TOKEN_VALIDITY_HOURS = None

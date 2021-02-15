@@ -6,6 +6,7 @@ import flask_bcrypt as fb
 import sqlalchemy.orm
 
 import authentication
+import external_authentication
 import auxiliary
 import configuration
 import db_calls
@@ -474,13 +475,40 @@ def register_user(session, email: str, password: str, language: str) -> bool:
     :param language: the user's language of choice.
     """
 
-    user = db_calls.register_user(session, email, get_hash(password), language)
+    user = db_calls.register_user(session, email, get_hash(password), language=language)
 
     if user is not None:
         return send_verification_email(user)
     else:
         # TODO: Send warning email
         return False
+
+
+def register_external_user(session, email: str, source: str, language: str) -> Optional[models.User]:
+    """
+    Register a new user, from an external source (such as Google or Facebook).
+
+    :param session: the db session.
+    :param email: the user's email.
+    :param source: the external source.
+    :param language: the user's language of choice.
+    :return: the user, when successful.
+    """
+
+    # Verify the source
+    if source == external_authentication.UserSource.GOOGLE.name:
+        account_type = models.AccountType.GOOGLE
+    else:
+        return None
+
+    # Register the user
+    user = db_calls.register_user(session, email, None, language=language, account_type=account_type, verified=True)
+
+    if user is not None:
+        return user
+    else:
+        # TODO: Send warning email
+        return None
 
 
 def verify_user(session, verification_token: str):

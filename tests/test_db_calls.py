@@ -118,12 +118,13 @@ class TestDBCalls(unittest.TestCase):
         self.assertEqual('pt', actual_result.language)
         self.assertEqual(False, actual_result.show_adult)
         self.assertEqual(False, actual_result.verified)
+        self.assertEqual('EMAIL', actual_result.account_type)
 
     def test_register_user_ok_02(self) -> None:
-        """ Test the function register_user with success, with language. """
+        """ Test the function register_user with success, with language and account type. """
 
         # Call the function
-        actual_result = db_calls.register_user(self.session, 'test_email', 'test_password', 'en')
+        actual_result = db_calls.register_user(self.session, 'test_email', 'test_password', language='en', account_type=models.AccountType.GOOGLE)
 
         # Verify the result
         self.assertEqual('test_email', actual_result.email)
@@ -131,6 +132,7 @@ class TestDBCalls(unittest.TestCase):
         self.assertEqual('en', actual_result.language)
         self.assertEqual(False, actual_result.show_adult)
         self.assertEqual(False, actual_result.verified)
+        self.assertEqual('GOOGLE', actual_result.account_type)
 
     def test_get_show_session_complete_error(self) -> None:
         """ Test the function get all of the information associated with a show session without results. """

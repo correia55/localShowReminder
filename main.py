@@ -10,6 +10,7 @@ import webargs.flaskparser as fp
 from flask_cors import CORS
 
 import authentication
+import external_authentication
 import auxiliary
 import configuration
 import db_calls
@@ -124,6 +125,64 @@ class LoginEP(fr.Resource):
             else:
                 print('ERROR: The user passed the decorator verification!')
                 return flask.make_response('Unauthorized Access', 403)  # Should be 503
+
+
+class ExternalLoginEP(fr.Resource):
+    def __init__(self):
+        super(ExternalLoginEP, self).__init__()
+
+    login_args = \
+        {
+            'external_token': webargs.fields.Str(required=True),
+            'source': webargs.fields.Str(required=True),
+            'language': webargs.fields.Str()
+        }
+
+    @fp.use_args(login_args)
+    def post(self, args):
+        """Login with an external token."""
+
+        external_token = args['external_token']
+        source = args['source']
+
+        language = None
+
+        for k, v in args.items():
+            if v is None:
+                continue
+
+            if k == 'language':
+                language = v
+
+        with session_scope() as session:
+            # Get the email from the token
+            email = external_authentication.external_authentication(external_token, source)
+
+            # If we can't get the email
+            if email is None:
+                return flask.make_response('', 400)
+
+            # Check if there's a user
+            user = processing.get_user_by_email(session, email)
+
+            # Register the user
+            if user is None:
+                user = processing.register_external_user(session, email, source, language=language)
+
+                # If the registration failed
+                if user is None:
+                    return flask.make_response('', 400)
+
+            # Generate the refresh token
+            refresh_token = authentication.generate_token(user.id, authentication.TokenType.REFRESH,
+                                                          session=session).decode()
+
+            username = user.email[:user.email.index('@')]
+
+            return flask.make_response(flask.jsonify({
+                'token': str(refresh_token),
+                'username': username, **processing.get_settings(session, user.id)
+            }), 200)
 
 
 class LogoutEP(fr.Resource):
@@ -925,6 +984,7 @@ class UsersBASettingsEP(fr.Resource):
 
 # Functions
 api.add_resource(LoginEP, '/login', endpoint='login')
+api.add_resource(ExternalLoginEP, '/external-login', endpoint='external_login')
 api.add_resource(LogoutEP, '/logout', endpoint='logout')
 api.add_resource(RecoverPasswordEP, '/recover-password', endpoint='recover_password')
 api.add_resource(SendEmailEP, '/send-email', endpoint='send_email')

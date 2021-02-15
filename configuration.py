@@ -140,6 +140,17 @@ PASSWORD_RECOVERY_TOKEN_VALIDITY_DAYS = 2
 
 # endregion
 
+# region External Login
+
+# Get the client id for Google
+google_client_id = os.environ.get('GOOGLE_CLIENT_ID', None)
+
+if google_client_id is None:
+    print('Unable to find google client id!')
+    exit(1)
+
+# endregion
+
 # region Email
 
 email_domain = os.environ.get('EMAIL_DOMAIN', None)

@@ -72,7 +72,9 @@ def get_channel_name(session: sqlalchemy.orm.Session, name: str) -> Optional[mod
         .first()
 
 
-def register_user(session, email: str, password_hash: str, language: str = None) -> Optional[models.User]:
+def register_user(session, email: str, password_hash: Optional[str], language: str = None,
+                  account_type: models.AccountType = models.AccountType.EMAIL, verified: bool = False) \
+        -> Optional[models.User]:
     """
     Register a user.
 
@@ -80,6 +82,8 @@ def register_user(session, email: str, password_hash: str, language: str = None)
     :param email: the email of the user.
     :param password_hash: the password's hash.
     :param language: the language of the user.
+    :param account_type: the account type of the user.
+    :param verified: whether or not the user is created as verified.
     :return: the created user.
     """
 
@@ -87,7 +91,7 @@ def register_user(session, email: str, password_hash: str, language: str = None)
     if language is None or language not in configuration.AVAILABLE_LANGUAGES:
         language = configuration.AvailableLanguage.PT.value
 
-    user = models.User(email, password_hash, language)
+    user = models.User(email, password_hash, language, account_type=account_type, verified=verified)
     session.add(user)
 
     try:
@@ -437,8 +441,8 @@ def get_show_session(session: sqlalchemy.orm.Session, show_id: int) -> Optional[
         .first()
 
 
-def search_show_data_by_original_title_and_director(session: sqlalchemy.orm.Session, original_title: str, director: str) -> \
-        Optional[models.ShowData]:
+def search_show_data_by_original_title_and_director(session: sqlalchemy.orm.Session, original_title: str,
+                                                    director: str) -> Optional[models.ShowData]:
     """
     Search for the show data with the same original title and year.
 

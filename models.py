@@ -1,4 +1,5 @@
 import datetime
+from enum import Enum
 from typing import Optional
 
 import sqlalchemy
@@ -7,6 +8,11 @@ from sqlalchemy.ext.declarative import declarative_base
 
 # Base class for DB Classes
 Base = declarative_base()
+
+
+class AccountType(Enum):
+    EMAIL = 0
+    GOOGLE = 1
 
 
 class ShowData(Base):
@@ -164,17 +170,20 @@ class User(Base):
     # Technical
     id = Column(Integer, primary_key=True, autoincrement=True)
     verified = Column(Boolean)
+    account_type = Column(String(20))
 
     # Necessary
     email = Column(String(255), unique=True, nullable=False)
-    password = Column(String(255), nullable=False)
+    password = Column(String(255), nullable=True)
 
     # Preferences
     show_adult = Column(Boolean)
     language = Column(String(5))
 
-    def __init__(self, email: str, password: str, language: str):
-        self.verified = False
+    def __init__(self, email: str, password: str, language: str, account_type: AccountType = AccountType.EMAIL,
+                 verified: bool = False):
+        self.verified = verified
+        self.account_type = account_type.name
 
         self.email = email
         self.password = password
