@@ -231,6 +231,7 @@ class Odisseia:
             broadcast_name = epg_text.getElementsByTagName('BroadcastName')[0].firstChild.nodeValue
 
             episode = None
+            synopsis = None
             # episode_title = None
 
             if broadcast_name != portuguese_title:
@@ -240,10 +241,12 @@ class Odisseia:
                     episode = episode_name.group(2)
                     # episode_title = episode_name.group(3)
 
-                synopsis = None
                 # episode_synopsis = epg_text.getElementsByTagName('ShortDescription')[0].firstChild.nodeValue
             else:
-                synopsis = epg_text.getElementsByTagName('ShortDescription')[0].firstChild.nodeValue
+                short_description = epg_text.getElementsByTagName('ShortDescription')
+
+                if short_description is not None and short_description[0].firstChild is not None:
+                    synopsis = short_description[0].firstChild.nodeValue
 
             extended_info_elements = epg_text.getElementsByTagName('ExtendedInfo')
 
