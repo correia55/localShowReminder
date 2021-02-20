@@ -26,9 +26,9 @@ class InsertionResult:
     nb_added_sessions: int
     nb_deleted_sessions: int
 
-    def __init__(self, start_datetime: datetime.datetime, end_datetime: datetime.datetime,
-                 total_nb_sessions_in_file: int, nb_updated_sessions: int, nb_added_sessions: int,
-                 nb_deleted_sessions: int):
+    def __init__(self, start_datetime: datetime.datetime = None, end_datetime: datetime.datetime = None,
+                 total_nb_sessions_in_file: int = 0, nb_updated_sessions: int = 0, nb_added_sessions: int = 0,
+                 nb_deleted_sessions: int = 0):
         self.start_datetime = start_datetime
         self.end_datetime = end_datetime
         self.total_nb_sessions_in_file = total_nb_sessions_in_file
@@ -98,9 +98,7 @@ class TVCine:
     def update_show_list(db_session: sqlalchemy.orm.Session, filename: str) -> Optional[InsertionResult]:
         wb = openpyxl.load_workbook(filename)
 
-        total_nb_sessions = 0
-        nb_sessions_updated = 0
-        nb_sessions_added = 0
+        insertion_result = InsertionResult()
 
         # Skip row 1, with the headers
         for row in wb.active.iter_rows(min_row=2, max_col=15):
@@ -189,41 +187,15 @@ class TVCine:
                                                                        age_classification=age_classification,
                                                                        is_movie=is_movie)
 
-            if show_data is None:
-                print('Error: Insertion of Show Data %s failed!' % original_title)
+            # Process a show session
+            insertion_result = process_show_session(db_session, insertion_result, show_data, new_show, original_title,
+                                                    season, episode, date_time, channel_id,
+                                                    audio_language=audio_language)
+
+            if insertion_result is None:
                 return None
 
-            if director is None:
-                print('Warning: Director not provided for: %s!' % original_title)
-
-            total_nb_sessions += 1
-
-            # If it is a new show
-            if new_show:
-                add_show = True
-            else:
-                existing_show_session = db_calls.search_existing_session(db_session, season, episode, date_time,
-                                                                         channel_id, show_data.id)
-
-                # If there's already an existing session
-                if existing_show_session is not None:
-                    add_show = False
-
-                    existing_show_session.date_time = date_time
-                    existing_show_session.update_timestamp = datetime.datetime.now()
-                else:
-                    add_show = True
-
-            # Insert the new session
-            if add_show:
-                db_calls.register_show_session(db_session, season, episode, date_time, channel_id, show_data.id,
-                                               audio_language=audio_language, should_commit=False)
-
-                nb_sessions_added += 1
-            else:
-                nb_sessions_updated += 1
-
-        if total_nb_sessions != 0:
+        if insertion_result.total_nb_sessions_in_file != 0:
             db_calls.commit(db_session)
 
             # Get the start and end of month
@@ -234,10 +206,14 @@ class TVCine:
             else:
                 end_of_month = start_of_month.replace(year=start_of_month.year, month=1)
 
-            nb_sessions_deleted = delete_old_sessions(db_session, start_of_month, end_of_month, TVCine.channels)
+            nb_deleted_sessions = delete_old_sessions(db_session, start_of_month, end_of_month, TVCine.channels)
 
-            return InsertionResult(start_of_month, end_of_month, total_nb_sessions, nb_sessions_updated,
-                                   nb_sessions_added, nb_sessions_deleted)
+            # Set the remaining information
+            insertion_result.nb_deleted_sessions = nb_deleted_sessions
+            insertion_result.start_datetime = start_of_month
+            insertion_result.end_datetime = end_of_month
+
+            return insertion_result
         else:
             return None
 
@@ -250,8 +226,6 @@ class Odisseia:
         dom_tree = xml.dom.minidom.parse(filename)
         collection = dom_tree.documentElement
 
-        nb_sessions_updated = 0
-        nb_sessions_added = 0
         first_event_datetime = None
 
         # Get all events
@@ -260,6 +234,8 @@ class Odisseia:
         # If there are no events
         if len(events) == 0:
             return None
+
+        insertion_result = InsertionResult()
 
         # Process each event
         for event in events:
@@ -338,37 +314,12 @@ class Odisseia:
                                                                        countries=countries, category=category,
                                                                        is_movie=episode is None)
 
-            if show_data is None:
-                print('Error: Insertion of Show Data %s failed!' % original_title)
+            # Process a show session
+            insertion_result = process_show_session(db_session, insertion_result, show_data, new_show, original_title,
+                                                    season, episode, date_time, channel_id)
+
+            if insertion_result is None:
                 return None
-
-            if director is None:
-                print('Warning: Director not provided for: %s!' % original_title)
-
-            # If it is a new show
-            if new_show:
-                add_show = True
-            else:
-                existing_show_session = db_calls.search_existing_session(db_session, season, episode, date_time,
-                                                                         channel_id, show_data.id)
-
-                # If there's already an existing session
-                if existing_show_session is not None:
-                    add_show = False
-
-                    existing_show_session.date_time = date_time
-                    existing_show_session.update_timestamp = datetime.datetime.now()
-                else:
-                    add_show = True
-
-            # Insert the new session
-            if add_show:
-                db_calls.register_show_session(db_session, season, episode, date_time, channel_id, show_data.id,
-                                               should_commit=False)
-
-                nb_sessions_added += 1
-            else:
-                nb_sessions_updated += 1
 
         db_calls.commit(db_session)
 
@@ -376,10 +327,72 @@ class Odisseia:
         end_day_at_start = (date_time + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0) \
                            - datetime.timedelta(seconds=1)
 
-        nb_sessions_deleted = delete_old_sessions(db_session, first_day_at_start, end_day_at_start, Odisseia.channels)
+        nb_deleted_sessions = delete_old_sessions(db_session, first_day_at_start, end_day_at_start, Odisseia.channels)
 
-        return InsertionResult(first_day_at_start, end_day_at_start, len(events), nb_sessions_updated,
-                               nb_sessions_added, nb_sessions_deleted)
+        # Set the remaining information
+        insertion_result.nb_deleted_sessions = nb_deleted_sessions
+        insertion_result.start_datetime = first_day_at_start
+        insertion_result.end_datetime = end_day_at_start
+
+        return insertion_result
+
+
+def process_show_session(db_session: sqlalchemy.orm.Session, insertion_result: InsertionResult,
+                         show_data: models.ShowData, new_show: bool, original_title: str, season: Optional[int],
+                         episode: Optional[int], date_time: datetime.datetime, channel_id: int,
+                         audio_language: str = None) -> Optional[InsertionResult]:
+    """
+    Process a show session.
+
+    :param db_session: the db session.
+    :param insertion_result: the insertion result.
+    :param show_data: the corresponding show data.
+    :param new_show: whether or not the show data was new.
+    :param original_title: the original title of the show.
+    :param season: the season.
+    :param episode: the episode.
+    :param date_time: the datetime.
+    :param channel_id: the id of the channel.
+    :param audio_language: the audio language.
+    :return: the updated insertion result, or None if there's a fatal error.
+    """
+
+    if show_data is None:
+        print('Error: Insertion of Show Data %s failed!' % original_title)
+        return None
+
+    if show_data.director is None:
+        print('Warning: Director not provided for: %s!' % original_title)
+
+    insertion_result.total_nb_sessions_in_file += 1
+
+    # If it is a new show
+    if new_show:
+        add_show = True
+    else:
+        existing_show_session = db_calls.search_existing_session(db_session, season, episode, date_time,
+                                                                 channel_id, show_data.id)
+
+        # If there's already an existing session
+        if existing_show_session is not None:
+            add_show = False
+
+            existing_show_session.date_time = date_time
+            existing_show_session.update_timestamp = datetime.datetime.now()
+        else:
+            add_show = True
+
+    # Insert the new session
+    if add_show:
+        db_calls.register_show_session(db_session, season, episode, date_time, channel_id, show_data.id,
+                                       audio_language=audio_language,
+                                       should_commit=False)
+
+        insertion_result.nb_added_sessions += 1
+    else:
+        insertion_result.nb_updated_sessions += 1
+
+    return insertion_result
 
 
 def delete_old_sessions(db_session: sqlalchemy.orm.Session, start_datetime: datetime.datetime,
