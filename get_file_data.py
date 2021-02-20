@@ -1,7 +1,7 @@
 import datetime
 import re
 import xml.dom.minidom
-from typing import List
+from typing import List, Optional
 
 import openpyxl
 import sqlalchemy.orm
@@ -14,6 +14,27 @@ import process_emails
 import response_models
 
 unordered_words = ['The', 'A', 'An', 'I', 'Un', 'Le', 'La', 'Les', 'Um']
+
+
+class InsertionResult:
+    """To store the results of an insertion from a file."""
+
+    start_datetime: datetime.datetime
+    end_datetime: datetime.datetime
+    total_nb_sessions_in_file: int
+    nb_updated_sessions: int
+    nb_added_sessions: int
+    nb_deleted_sessions: int
+
+    def __init__(self, start_datetime: datetime.datetime, end_datetime: datetime.datetime,
+                 total_nb_sessions_in_file: int, nb_updated_sessions: int, nb_added_sessions: int,
+                 nb_deleted_sessions: int):
+        self.start_datetime = start_datetime
+        self.end_datetime = end_datetime
+        self.total_nb_sessions_in_file = total_nb_sessions_in_file
+        self.nb_updated_sessions = nb_updated_sessions
+        self.nb_added_sessions = nb_added_sessions
+        self.nb_deleted_sessions = nb_deleted_sessions
 
 
 class TVCine:
@@ -74,10 +95,12 @@ class TVCine:
         return title.strip(), vp
 
     @staticmethod
-    def update_show_list(db_session: sqlalchemy.orm.Session, filename: str) -> int:
+    def update_show_list(db_session: sqlalchemy.orm.Session, filename: str) -> Optional[InsertionResult]:
         wb = openpyxl.load_workbook(filename)
 
-        nb_shows = 0
+        total_nb_sessions = 0
+        nb_sessions_updated = 0
+        nb_sessions_added = 0
 
         # Skip row 1, with the headers
         for row in wb.active.iter_rows(min_row=2, max_col=15):
@@ -158,23 +181,49 @@ class TVCine:
             channel_id = db_session.query(models.Channel).filter(models.Channel.name == channel_name).first().id
 
             # Insert the ShowData, if necessary
-            show_data = db_calls.insert_if_missing_show_data(db_session, title, original_title=original_title,
-                                                             duration=duration, synopsis=synopsis, year=year,
-                                                             show_type=show_type, director=director, cast=cast,
-                                                             audio_languages=languages, countries=countries,
-                                                             age_classification=age_classification, is_movie=is_movie)
+            new_show, show_data = db_calls.insert_if_missing_show_data(db_session, title, original_title=original_title,
+                                                                       duration=duration, synopsis=synopsis, year=year,
+                                                                       show_type=show_type, director=director,
+                                                                       cast=cast, audio_languages=languages,
+                                                                       countries=countries,
+                                                                       age_classification=age_classification,
+                                                                       is_movie=is_movie)
 
             if show_data is None:
-                print('Insertion of Show Data failed!')
-                return 0
+                print('Error: Insertion of Show Data %s failed!' % original_title)
+                return None
 
-            # Insert the instance
-            db_calls.register_show_session(db_session, season, episode, date_time, channel_id, show_data.id,
-                                           audio_language=audio_language, should_commit=False)
+            if director is None:
+                print('Warning: Director not provided for: %s!' % original_title)
 
-            nb_shows += 1
+            total_nb_sessions += 1
 
-        if nb_shows > 0:
+            # If it is a new show
+            if new_show:
+                add_show = True
+            else:
+                existing_show_session = db_calls.search_existing_session(db_session, season, episode, date_time,
+                                                                         channel_id, show_data.id)
+
+                # If there's already an existing session
+                if existing_show_session is not None:
+                    add_show = False
+
+                    existing_show_session.date_time = date_time
+                    existing_show_session.update_timestamp = datetime.datetime.now()
+                else:
+                    add_show = True
+
+            # Insert the new session
+            if add_show:
+                db_calls.register_show_session(db_session, season, episode, date_time, channel_id, show_data.id,
+                                               audio_language=audio_language, should_commit=False)
+
+                nb_sessions_added += 1
+            else:
+                nb_sessions_updated += 1
+
+        if total_nb_sessions != 0:
             db_calls.commit(db_session)
 
             # Get the start and end of month
@@ -185,25 +234,34 @@ class TVCine:
             else:
                 end_of_month = start_of_month.replace(year=start_of_month.year, month=1)
 
-            process_channels_updated_data(db_session, start_of_month, end_of_month, TVCine.channels)
+            nb_sessions_deleted = delete_old_sessions(db_session, start_of_month, end_of_month, TVCine.channels)
 
-        return nb_shows
+            return InsertionResult(start_of_month, end_of_month, total_nb_sessions, nb_sessions_updated,
+                                   nb_sessions_added, nb_sessions_deleted)
+        else:
+            return None
 
 
 class Odisseia:
     channels = ['Odisseia']
 
     @staticmethod
-    def update_show_list(db_session: sqlalchemy.orm.Session, filename: str) -> int:
+    def update_show_list(db_session: sqlalchemy.orm.Session, filename: str) -> Optional[InsertionResult]:
         dom_tree = xml.dom.minidom.parse(filename)
         collection = dom_tree.documentElement
 
-        events = collection.getElementsByTagName('Event')
-
+        nb_sessions_updated = 0
+        nb_sessions_added = 0
         first_event_datetime = None
 
-        nb_shows = 0
+        # Get all events
+        events = collection.getElementsByTagName('Event')
 
+        # If there are no events
+        if len(events) == 0:
+            return None
+
+        # Process each event
         for event in events:
             begin_time = event.getAttribute('beginTime')
             date_time = datetime.datetime.strptime(begin_time, '%Y%m%d%H%M%S')
@@ -230,19 +288,10 @@ class Odisseia:
             portuguese_title = epg_text.getElementsByTagName('Name')[0].firstChild.nodeValue
             broadcast_name = epg_text.getElementsByTagName('BroadcastName')[0].firstChild.nodeValue
 
-            episode = None
             synopsis = None
-            # episode_title = None
 
-            if broadcast_name != portuguese_title:
-                episode_name = re.search(r'(Ep\.|Episódio) ?([0-9]+)\.?(.*)', broadcast_name)
-
-                if episode_name:
-                    episode = episode_name.group(2)
-                    # episode_title = episode_name.group(3)
-
-                # episode_synopsis = epg_text.getElementsByTagName('ShortDescription')[0].firstChild.nodeValue
-            else:
+            # If they are the names are the same, it's a movie
+            if broadcast_name == portuguese_title:
                 short_description = epg_text.getElementsByTagName('ShortDescription')
 
                 if short_description is not None and short_description[0].firstChild is not None:
@@ -255,6 +304,7 @@ class Odisseia:
             director = None
             countries = None
             season = None
+            episode = None
 
             for extended_info in extended_info_elements:
                 attribute = extended_info.getAttribute('name')
@@ -269,48 +319,74 @@ class Odisseia:
                     countries = extended_info.firstChild.nodeValue
                 elif attribute == 'Cycle' and extended_info.firstChild is not None:
                     season = extended_info.firstChild.nodeValue
+                elif attribute == 'EpisodeNumber' and extended_info.firstChild is not None:
+                    episode = extended_info.firstChild.nodeValue
 
             if episode is not None:
                 if season is None:
+                    print('Found episode but no season for show: %s' % str(event.getAttribute('beginTime')))
                     season = 1
 
             channel_name = 'Odisseia'
             channel_id = db_session.query(models.Channel).filter(models.Channel.name == channel_name).first().id
 
             # Insert the ShowData, if necessary
-            show_data = db_calls.insert_if_missing_show_data(db_session, portuguese_title,
-                                                             original_title=original_title, duration=duration,
-                                                             synopsis=synopsis, year=year, show_type=show_type,
-                                                             director=director, countries=countries, category=category,
-                                                             is_movie=episode is None)
+            new_show, show_data = db_calls.insert_if_missing_show_data(db_session, portuguese_title,
+                                                                       original_title=original_title, duration=duration,
+                                                                       synopsis=synopsis, year=year,
+                                                                       show_type=show_type, director=director,
+                                                                       countries=countries, category=category,
+                                                                       is_movie=episode is None)
 
             if show_data is None:
-                print('Insertion of Show Data failed!')
-                return 0
+                print('Error: Insertion of Show Data %s failed!' % original_title)
+                return None
 
-            # Insert the instance
-            db_calls.register_show_session(db_session, season, episode, date_time, channel_id, show_data.id,
-                                           should_commit=False)
+            if director is None:
+                print('Warning: Director not provided for: %s!' % original_title)
 
-            nb_shows += 1
+            # If it is a new show
+            if new_show:
+                add_show = True
+            else:
+                existing_show_session = db_calls.search_existing_session(db_session, season, episode, date_time,
+                                                                         channel_id, show_data.id)
 
-        if nb_shows > 0:
-            db_calls.commit(db_session)
+                # If there's already an existing session
+                if existing_show_session is not None:
+                    add_show = False
 
-            first_day_at_start = first_event_datetime.replace(hour=0, minute=0, second=0)
-            end_day_at_start = (date_time + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0) \
-                               - datetime.timedelta(seconds=1)
+                    existing_show_session.date_time = date_time
+                    existing_show_session.update_timestamp = datetime.datetime.now()
+                else:
+                    add_show = True
 
-            process_channels_updated_data(db_session, first_day_at_start, end_day_at_start, Odisseia.channels)
+            # Insert the new session
+            if add_show:
+                db_calls.register_show_session(db_session, season, episode, date_time, channel_id, show_data.id,
+                                               should_commit=False)
 
-        return nb_shows
+                nb_sessions_added += 1
+            else:
+                nb_sessions_updated += 1
+
+        db_calls.commit(db_session)
+
+        first_day_at_start = first_event_datetime.replace(hour=0, minute=0, second=0)
+        end_day_at_start = (date_time + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0) \
+                           - datetime.timedelta(seconds=1)
+
+        nb_sessions_deleted = delete_old_sessions(db_session, first_day_at_start, end_day_at_start, Odisseia.channels)
+
+        return InsertionResult(first_day_at_start, end_day_at_start, len(events), nb_sessions_updated,
+                               nb_sessions_added, nb_sessions_deleted)
 
 
-def process_channels_updated_data(db_session: sqlalchemy.orm.Session, start_datetime: datetime.datetime,
-                                  end_datetime: datetime.datetime, channels: List[str]):
+def delete_old_sessions(db_session: sqlalchemy.orm.Session, start_datetime: datetime.datetime,
+                        end_datetime: datetime.datetime, channels: List[str]):
     """
-    Delete sessions that no longer exist and the new sessions that are a collision to the previous ones.
-    Sending an email to the users whose reminders are associated with such sessions.
+    Delete sessions that no longer exist.
+    Send emails to the users whose reminders are associated with such sessions.
 
     :param db_session: the DB session.
     :param start_datetime: the start of the interval of interest.
@@ -318,64 +394,37 @@ def process_channels_updated_data(db_session: sqlalchemy.orm.Session, start_date
     :param channels: the set of channels.
     """
 
-    print('Shows\' interval from %s to %s.' % (str(start_datetime), str(end_datetime)))
-    print('Channels: %s.' % str(channels))
+    nb_deleted_sessions = 0
 
-    nb_shows_maintained = 0
-    nb_shows_deleted = 0
-    nb_shows_added = 0
+    # Get the old show sessions
+    old_sessions = db_calls.search_old_sessions(db_session, start_datetime, end_datetime, channels)
 
-    now = datetime.datetime.now() - datetime.timedelta(hours=1)
+    for show_session in old_sessions:
+        nb_deleted_sessions += 1
 
-    # Get all of the shows of interest
-    for channel in channels:
-        channel_id = db_session.query(models.Channel).filter(models.Channel.name == channel).first().id
-        shows = db_session.query(sqlalchemy.func.max(models.ShowSession.id),
-                                 sqlalchemy.func.max(models.ShowSession.update_timestamp),
-                                 sqlalchemy.func.count(models.ShowSession.date_time)) \
-            .filter(models.ShowSession.channel_id == channel_id) \
-            .filter(models.ShowSession.date_time >= start_datetime) \
-            .filter(models.ShowSession.date_time <= end_datetime).group_by(models.ShowSession.date_time,
-                                                                           models.ShowSession.show_id).all()
+        # Get the session
+        show_result = response_models.LocalShowResult.create_from_show_session(show_session[0],
+                                                                               show_session[1],
+                                                                               show_session[2])
 
-        for s in shows:
-            # If the session already existed and continues to exist, then delete the new one
-            if s[2] == 2:
-                nb_shows_maintained += 1
-                db_session.query(models.ShowSession.id).filter(models.ShowSession.id == s[0]).delete()
-            else:
-                # If it is an old session, then it needs to be deleted and the users warned
-                if now > s[1]:
-                    nb_shows_deleted += 1
+        # Get the reminders associated with this session
+        reminders = db_calls.get_reminders_session(db_session, show_session.id)
 
-                    # Get the session
-                    show_session = db_calls.get_show_session_complete(db_session, s[0])
-                    show_result = response_models.LocalShowResult.create_from_show_session(show_session[0],
-                                                                                           show_session[1],
-                                                                                           show_session[2])
+        # Warn all users with the reminders for this session
+        for r in reminders:
+            user = db_calls.get_user_id(db_session, r.user_id)
 
-                    # Get the reminders associated with this session
-                    reminders = db_calls.get_reminders_session(db_session, s[0])
+            process_emails.send_deleted_sessions_email(user.email, [show_result])
 
-                    # Warn all users with the reminders for this session
-                    for r in reminders:
-                        user = db_calls.get_user_id(db_session, r.user_id)
+            # Delete the reminders
+            db_session.delete(r)
 
-                        process_emails.send_deleted_sessions_email(user.email, [show_result])
-
-                        # Delete the reminders
-                        db_session.delete(r)
-
-                    db_session.query(models.ShowSession.id).filter(models.ShowSession.id == s[0]).delete()
-                # If it is a new session, nothing to do
-                else:
-                    nb_shows_added += 1
+        # Delete the session
+        show_session.delete()
 
     db_session.commit()
 
-    print('%d show sessions maintained!' % nb_shows_maintained)
-    print('%d show sessions deleted!' % nb_shows_deleted)
-    print('%d show sessions added!' % nb_shows_added)
+    return nb_deleted_sessions
 
 
 def update_show_list(db_session: sqlalchemy.orm.Session, channel_set: int, filename: str) -> ():
@@ -389,17 +438,24 @@ def update_show_list(db_session: sqlalchemy.orm.Session, channel_set: int, filen
 
     print('Processing file...')
 
-    nb_shows = 0
+    result = None
 
     # TVCine
     if channel_set == 0:
-        nb_shows = TVCine.update_show_list(db_session, filename)
+        result = TVCine.update_show_list(db_session, filename)
 
     # Odisseia
     elif channel_set == 1:
-        nb_shows = Odisseia.update_show_list(db_session, filename)
+        result = Odisseia.update_show_list(db_session, filename)
 
-    print('%d show sessions added!\n---------------' % nb_shows)
+    if result is not None:
+        print('complete!\n')
+        print('The file contained %d show sessions!' % result.total_nb_sessions_in_file)
+        print('Shows\' interval from %s to %s.\n' % (str(result.start_datetime), str(result.end_datetime)))
+
+        print('%4d show sessions updated!' % result.nb_updated_sessions)
+        print('%4d show sessions added!' % result.nb_added_sessions)
+        print('%4d show sessions deleted!' % result.nb_deleted_sessions)
 
 
 def execute_data_insertion():

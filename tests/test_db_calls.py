@@ -124,7 +124,8 @@ class TestDBCalls(unittest.TestCase):
         """ Test the function register_user with success, with language and account type. """
 
         # Call the function
-        actual_result = db_calls.register_user(self.session, 'test_email', 'test_password', language='en', account_type=models.AccountType.GOOGLE)
+        actual_result = db_calls.register_user(self.session, 'test_email', 'test_password', language='en',
+                                               account_type=models.AccountType.GOOGLE)
 
         # Verify the result
         self.assertEqual('test_email', actual_result.email)
@@ -1223,3 +1224,111 @@ class TestDBCalls(unittest.TestCase):
 
         self.assertEqual(1, ss_show.prev_first_season_available)
         self.assertEqual(2, ss_show.prev_last_season_available)
+
+    def test_search_old_sessions_ok_01(self) -> None:
+        """ Test the function search_old_sessions with only new sessions. """
+
+        # The expected result
+        expected_result = []
+
+        # Prepare the DB
+        now = datetime.datetime.utcnow()
+
+        channel = db_calls.register_channel(self.session, 'TC', 'TEST_CHANNEL')
+        self.assertIsNotNone(channel)
+
+        show_data = db_calls.register_show_data(self.session, 'show name')
+        self.assertIsNotNone(show_data)
+
+        show_session = db_calls.register_show_session(self.session, 5, 5, now, channel.id, show_data.id)
+        self.assertIsNotNone(show_session)
+
+        # Call the function
+        today_at_start = now.replace(hour=0, minute=0, second=0)
+        today_at_end = (now + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0) \
+                       - datetime.timedelta(seconds=1)
+
+        actual_result = db_calls.search_old_sessions(self.session, today_at_start, today_at_end, ['TEST_CHANNEL'])
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_search_old_sessions_ok_02(self) -> None:
+        """ Test the function search_old_sessions with old sessions. """
+
+        # Prepare the DB
+        now = datetime.datetime.utcnow()
+
+        channel = db_calls.register_channel(self.session, 'TC', 'TEST_CHANNEL')
+        self.assertIsNotNone(channel)
+
+        show_data = db_calls.register_show_data(self.session, 'show name')
+        self.assertIsNotNone(show_data)
+
+        show_session = db_calls.register_show_session(self.session, 5, 5, now, channel.id, show_data.id)
+        self.assertIsNotNone(show_session)
+
+        # Change the update timestamp to an old datetime
+        show_session.update_timestamp = now - datetime.timedelta(hours=24)
+        self.session.commit()
+
+        # Call the function
+        today_at_start = now.replace(hour=0, minute=0, second=0)
+        today_at_end = (now + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0) \
+                       - datetime.timedelta(seconds=1)
+
+        actual_result = db_calls.search_old_sessions(self.session, today_at_start, today_at_end, ['TEST_CHANNEL'])
+
+        # Verify the result
+        self.assertEqual(1, len(actual_result))
+        self.assertEqual(5, actual_result[0].season)
+        self.assertEqual(5, actual_result[0].episode)
+        self.assertEqual(channel.id, actual_result[0].channel_id)
+        self.assertEqual(show_data.id, actual_result[0].show_id)
+
+    def test_search_existing_session_ok_01(self) -> None:
+        """ Test the function search_existing_session without an existing session. """
+
+        # The expected result
+        expected_result = None
+
+        # Prepare the DB
+        now = datetime.datetime.utcnow()
+
+        channel = db_calls.register_channel(self.session, 'TC', 'TEST_CHANNEL')
+        self.assertIsNotNone(channel)
+
+        show_data = db_calls.register_show_data(self.session, 'show name')
+        self.assertIsNotNone(show_data)
+
+        show_session = db_calls.register_show_session(self.session, 5, 5, now - datetime.timedelta(hours=5), channel.id,
+                                                      show_data.id)
+        self.assertIsNotNone(show_session)
+
+        # Call the function
+        actual_result = db_calls.search_existing_session(self.session, 5, 5, now, channel.id, show_data.id)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_search_existing_session_ok_02(self) -> None:
+        """ Test the function search_existing_session with an existing session. """
+
+        # Prepare the DB
+        now = datetime.datetime.utcnow()
+
+        channel = db_calls.register_channel(self.session, 'TC', 'TEST_CHANNEL')
+        self.assertIsNotNone(channel)
+
+        show_data = db_calls.register_show_data(self.session, 'show name')
+        self.assertIsNotNone(show_data)
+
+        show_session = db_calls.register_show_session(self.session, 5, 5, now - datetime.timedelta(minutes=30),
+                                                      channel.id, show_data.id)
+        self.assertIsNotNone(show_session)
+
+        # Call the function
+        actual_result = db_calls.search_existing_session(self.session, 5, 5, now, channel.id, show_data.id)
+
+        # Verify the result
+        self.assertIsNotNone(actual_result)

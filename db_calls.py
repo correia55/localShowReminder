@@ -458,6 +458,23 @@ def search_show_data_by_original_title_and_director(session: sqlalchemy.orm.Sess
         .first()
 
 
+def search_show_data_by_original_title_and_year(session: sqlalchemy.orm.Session, original_title: str, year: int) -> \
+        Optional[models.ShowData]:
+    """
+    Search for the show data with the same original title and year.
+
+    :param session: the db session.
+    :param original_title: the original title of the show.
+    :param year: the year of the show's release.
+    :return: the show data with that data.
+    """
+
+    return session.query(models.ShowData) \
+        .filter(models.ShowData.original_title == original_title) \
+        .filter(models.ShowData.year == year) \
+        .first()
+
+
 def search_show_data_by_search_title_and_everything_else_empty(session: sqlalchemy.orm.Session, portuguese_title: str) \
         -> Optional[models.ShowData]:
     """
@@ -559,7 +576,7 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, portuguese_titl
                                 director: str = None, cast: str = None, audio_languages: str = None,
                                 countries: str = None, age_classification: str = None, category: Optional[str] = None,
                                 is_movie: Optional[bool] = None) \
-        -> Optional[models.ShowData]:
+        -> [bool, Optional[models.ShowData]]:
     """
     Check, and return, if there's a matching entry of ShowData and, if not add it.
 
@@ -577,24 +594,29 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, portuguese_titl
     :param age_classification: the age classification.
     :param category: the category of the show (movie, series, documentary, ...).
     :param is_movie: True if it is a movie, False if it is TV.
-    :return: the corresponding show data.
+    :return: a boolean for whether it is a new show or not and the corresponding show data.
     """
 
+    show_data = None
+
     # Check if there's already an entry with this information
-    # Year was being used but it is not reliable
-    if original_title is not None and director is not None:
-        show_data = search_show_data_by_original_title_and_director(session, original_title, director)
+    if original_title is not None:
+        # Year is less reliable, but we can use it when there's no director
+        if director is not None:
+            show_data = search_show_data_by_original_title_and_director(session, original_title, director)
+        elif year is not None:
+            show_data = search_show_data_by_original_title_and_year(session, original_title, year)
     else:
         show_data = search_show_data_by_search_title_and_everything_else_empty(session, portuguese_title)
 
     if show_data is not None:
-        return show_data
+        return False, show_data
 
     # If not, then add it
-    return register_show_data(session, portuguese_title, original_title=original_title, duration=duration,
-                              synopsis=synopsis, year=year, show_type=show_type, director=director,
-                              cast=cast, audio_languages=audio_languages, countries=countries,
-                              age_classification=age_classification, category=category, is_movie=is_movie)
+    return True, register_show_data(session, portuguese_title, original_title=original_title, duration=duration,
+                                    synopsis=synopsis, year=year, show_type=show_type, director=director,
+                                    cast=cast, audio_languages=audio_languages, countries=countries,
+                                    age_classification=age_classification, category=category, is_movie=is_movie)
 
 
 def register_cache(session: sqlalchemy.orm.Session, key: str,
@@ -915,6 +937,63 @@ def search_streaming_service_shows_data(session: sqlalchemy.orm.Session, search_
     query = query.join(models.ShowData)
 
     return query.all()
+
+
+def search_old_sessions(session: sqlalchemy.orm.Session, start_datetime: datetime.datetime,
+                        end_datetime: datetime.datetime, channels: List[str]) -> List[models.ShowSession]:
+    """
+    Search sessions that exist within the given interval and were last updated before 1 hour ago.
+
+    :param session: the DB session.
+    :param start_datetime: the start of the interval of interest.
+    :param end_datetime: the end of the interval of interest.
+    :param channels: the set of channels.
+    """
+
+    now = datetime.datetime.now() - datetime.timedelta(hours=1)
+
+    # Get the corresponding channel ids
+    channels_ids = session.query(models.Channel.id) \
+        .filter(models.Channel.name.in_(channels)) \
+        .all()
+
+    # Search the sessions
+    query = session.query(models.ShowSession) \
+        .filter(models.ShowSession.channel_id.in_(channels_ids)) \
+        .filter(models.ShowSession.date_time >= start_datetime) \
+        .filter(models.ShowSession.date_time <= end_datetime) \
+        .filter(models.ShowSession.update_timestamp < now)
+
+    return query.all()
+
+
+def search_existing_session(session: sqlalchemy.orm.Session, season: Optional[int], episode: Optional[int],
+                            date_time: datetime.datetime, channel_id: int, show_id: int) \
+        -> Optional[models.ShowSession]:
+    """
+    Search if there's already a show session with the same data but whose schedule changed slightly.
+
+    :param session: the db session.
+    :param season: the season of the show session.
+    :param episode: the episode of the show session.
+    :param date_time: the date and time of the show session.
+    :param channel_id: the id of the channel where the show session will take place.
+    :param show_id: the id of the corresponding show data (technical).
+    :return: the existing session.
+    """
+
+    start_datetime = date_time - datetime.timedelta(hours=1)
+    end_datetime = date_time + datetime.timedelta(hours=1)
+
+    query = session.query(models.ShowSession) \
+        .filter(models.ShowSession.show_id == show_id) \
+        .filter(models.ShowSession.season == season) \
+        .filter(models.ShowSession.episode == episode) \
+        .filter(models.ShowSession.channel_id == channel_id) \
+        .filter(models.ShowSession.date_time >= start_datetime) \
+        .filter(models.ShowSession.date_time <= end_datetime)
+
+    return query.first()
 
 
 def get_last_update(session: sqlalchemy.orm.Session) -> Optional[models.LastUpdate]:

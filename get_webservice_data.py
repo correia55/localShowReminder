@@ -147,7 +147,7 @@ class MEPG:
                         show_episode = None
 
                 # Add the show to the db
-                show_data = db_calls.insert_if_missing_show_data(session, show_title.strip(), is_movie=is_movie)
+                show_data = db_calls.insert_if_missing_show_data(session, show_title.strip(), is_movie=is_movie)[1]
 
                 if show_data is None:
                     print('ERROR: The registration of the show %s failed!' % show_title)
