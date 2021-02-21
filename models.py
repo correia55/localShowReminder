@@ -103,9 +103,10 @@ class ShowSession(Base):
     episode = Column(Integer)
     date_time = Column(DateTime)
     audio_language = Column(String(255))
+    extended_cut = Column(Boolean)
 
     def __init__(self, season: Optional[int], episode: Optional[int], date_time: datetime.datetime, channel_id: int,
-                 show_id: int, audio_language: str = None):
+                 show_id: int, audio_language: str = None, extended_cut: bool = False):
         self.channel_id = channel_id
         self.show_id = show_id
 
@@ -113,6 +114,7 @@ class ShowSession(Base):
         self.episode = episode
         self.date_time = date_time
         self.original_audio = audio_language
+        self.extended_cut = extended_cut
 
 
 class StreamingService(Base):

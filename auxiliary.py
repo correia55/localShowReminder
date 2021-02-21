@@ -116,7 +116,7 @@ def search_chars(text: str, chars: List[str]) -> List[List[int]]:
     :return: the list with the lists of indexes for each of the chars in the string.
     """
 
-    search_result = [[] for i in range(len(chars))]
+    search_result = [[] for _ in range(len(chars))]
 
     for i in range(len(text)):
         for j in range(len(chars)):

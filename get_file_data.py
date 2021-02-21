@@ -41,58 +41,50 @@ class TVCine:
     channels = ['TVCine Top', 'TVCine Edition', 'TVCine Emotion', 'TVCine Action']
 
     @staticmethod
-    def process_title(title: str) -> [str, bool]:
+    def process_title(title: str) -> [str, bool, bool]:
         # Replace all quotation marks for the same quotation mark
         title = re.sub('[´`]', '\'', title)
 
         search_result = auxiliary.search_chars(title, ['(', ')', ','])
         vp = False
+        extended_cut = False
 
-        nb_parenthesis = len(search_result[0])
-
-        if nb_parenthesis > 0:
-            # Keep only the last two parenthesis
-            if nb_parenthesis > 2:
-                search_result[0] = search_result[0][nb_parenthesis - 2:]
-                search_result[1] = search_result[1][nb_parenthesis - 2:]
-                nb_parenthesis = 2
-
-            if nb_parenthesis == 2:
-                group_1 = title[search_result[0][0] + 1:search_result[1][0]]
-                is_year = re.search(r'[0-9]{4}', group_1.strip())
-
-                # We've got the result
-                if is_year:
-                    vp = title[search_result[0][1] + 1:search_result[1][1]] == 'VP'
-                    title = title[:search_result[0][0]]
-                # Keep only the last parenthesis
-                else:
-                    search_result[0] = search_result[0][-1:]
-                    search_result[1] = search_result[1][-1:]
-                    nb_parenthesis = 1
-
-            if nb_parenthesis == 1:
-                group_1 = title[search_result[0][0] + 1:search_result[1][0]]
-                is_year = re.search(r'[0-9]{4}', group_1.strip())
-
-                if is_year:
-                    title = title[:search_result[0][0]]
-                else:
-                    is_vpvo = re.search(r'(VO|VP)', group_1.strip())
-
-                    if is_vpvo:
-                        vp = is_vpvo.group(1) == 'VP'
-                        title = title[:search_result[0][0]]
-
-        if len(search_result) > 1 and len(search_result[2]) > 0:
+        # If there's at least a comma in the title - it would always be at the end
+        if len(search_result[2]) > 0:
             last_comma = search_result[2][-1]
 
             after_comma = title[last_comma + 1:].strip()
 
+            # If it's one of the unordered words
             if after_comma in unordered_words:
                 title = after_comma + ' ' + title[:last_comma]
 
-        return title.strip(), vp
+        # If the number of opening parenthesis is not the same as the closing ones
+        if len(search_result[0]) != len(search_result[1]):
+            return title.strip(), vp
+
+        # From the last position of the parenthesis
+        for i in range(len(search_result[0]) - 1, -1, -1):
+            start_pos = search_result[0][i]
+            end_pos = search_result[1][i]
+
+            text = title[start_pos + 1:end_pos]
+
+            if text == 'VP':
+                vp = True
+            elif text == 'VO':
+                vp = False
+            elif text == 'versão alargada' or text == 'extended cut':
+                extended_cut = True
+            elif re.search(r'[0-9]{4}', text.strip()):
+                pass
+            else:
+                continue
+
+            # Remove the parenthesis and its context
+            title = title[:search_result[0][i]] + title[search_result[1][i] + 1:]
+
+        return title.strip(), vp, extended_cut
 
     @staticmethod
     def update_show_list(db_session: sqlalchemy.orm.Session, filename: str) -> Optional[InsertionResult]:
@@ -157,10 +149,10 @@ class TVCine:
                 # episode_synopsis = None
 
                 # Process the titles
-                title, vp = TVCine.process_title(title)
+                title, vp, extended_cut = TVCine.process_title(title)
                 audio_language = 'pt' if vp else None
 
-                original_title, _ = TVCine.process_title(original_title)
+                original_title, _, _ = TVCine.process_title(original_title)
 
                 is_movie = True
 
@@ -190,7 +182,7 @@ class TVCine:
             # Process a show session
             insertion_result = process_show_session(db_session, insertion_result, show_data, new_show, original_title,
                                                     season, episode, date_time, channel_id,
-                                                    audio_language=audio_language)
+                                                    audio_language=audio_language, extended_cut=extended_cut)
 
             if insertion_result is None:
                 return None
@@ -340,7 +332,7 @@ class Odisseia:
 def process_show_session(db_session: sqlalchemy.orm.Session, insertion_result: InsertionResult,
                          show_data: models.ShowData, new_show: bool, original_title: str, season: Optional[int],
                          episode: Optional[int], date_time: datetime.datetime, channel_id: int,
-                         audio_language: str = None) -> Optional[InsertionResult]:
+                         audio_language: str = None, extended_cut: bool = False) -> Optional[InsertionResult]:
     """
     Process a show session.
 
@@ -354,6 +346,7 @@ def process_show_session(db_session: sqlalchemy.orm.Session, insertion_result: I
     :param date_time: the datetime.
     :param channel_id: the id of the channel.
     :param audio_language: the audio language.
+    :param extended_cut: whether or not this is the extended cut.
     :return: the updated insertion result, or None if there's a fatal error.
     """
 
@@ -385,8 +378,7 @@ def process_show_session(db_session: sqlalchemy.orm.Session, insertion_result: I
     # Insert the new session
     if add_show:
         db_calls.register_show_session(db_session, season, episode, date_time, channel_id, show_data.id,
-                                       audio_language=audio_language,
-                                       should_commit=False)
+                                       audio_language=audio_language, extended_cut=extended_cut, should_commit=False)
 
         insertion_result.nb_added_sessions += 1
     else:
@@ -396,7 +388,7 @@ def process_show_session(db_session: sqlalchemy.orm.Session, insertion_result: I
 
 
 def delete_old_sessions(db_session: sqlalchemy.orm.Session, start_datetime: datetime.datetime,
-                        end_datetime: datetime.datetime, channels: List[str]):
+                        end_datetime: datetime.datetime, channels: List[str]) -> int:
     """
     Delete sessions that no longer exist.
     Send emails to the users whose reminders are associated with such sessions.
@@ -405,6 +397,7 @@ def delete_old_sessions(db_session: sqlalchemy.orm.Session, start_datetime: date
     :param start_datetime: the start of the interval of interest.
     :param end_datetime: the end of the interval of interest.
     :param channels: the set of channels.
+    :return: the number of deleted sessions.
     """
 
     nb_deleted_sessions = 0
@@ -412,28 +405,29 @@ def delete_old_sessions(db_session: sqlalchemy.orm.Session, start_datetime: date
     # Get the old show sessions
     old_sessions = db_calls.search_old_sessions(db_session, start_datetime, end_datetime, channels)
 
-    for show_session in old_sessions:
+    for s in old_sessions:
         nb_deleted_sessions += 1
 
-        # Get the session
-        show_result = response_models.LocalShowResult.create_from_show_session(show_session[0],
-                                                                               show_session[1],
-                                                                               show_session[2])
-
         # Get the reminders associated with this session
-        reminders = db_calls.get_reminders_session(db_session, show_session.id)
+        reminders = db_calls.get_reminders_session(db_session, s.id)
 
-        # Warn all users with the reminders for this session
-        for r in reminders:
-            user = db_calls.get_user_id(db_session, r.user_id)
+        if len(reminders) != 0:
+            # Get the session
+            show_session = db_calls.get_show_session_complete(db_session, s.id)
+            show_result = response_models.LocalShowResult.create_from_show_session(show_session[0], show_session[1],
+                                                                                   show_session[2])
 
-            process_emails.send_deleted_sessions_email(user.email, [show_result])
+            # Warn all users with the reminders for this session
+            for r in reminders:
+                user = db_calls.get_user_id(db_session, r.user_id)
 
-            # Delete the reminders
-            db_session.delete(r)
+                process_emails.send_deleted_sessions_email(user.email, [show_result])
+
+                # Delete the reminder
+                db_session.delete(r)
 
         # Delete the session
-        show_session.delete()
+        db_session.delete(s)
 
     db_session.commit()
 

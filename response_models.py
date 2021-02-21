@@ -109,11 +109,13 @@ class LocalShowResult:
     service_name: str  # Channel name or Streaming Service name
     is_movie: Optional[bool]
     year: Optional[int]
+    extended_cut: Optional[bool]
 
     # TV
     season: Optional[int]
     episode: Optional[int]
     date_time: Optional[datetime.datetime]
+    audio_language: Optional[str]
 
     # Streaming
     first_season_available: Optional[int]
@@ -144,6 +146,8 @@ class LocalShowResult:
         local_show_result.season = show_session.season
         local_show_result.episode = show_session.episode
         local_show_result.date_time = show_session.date_time
+        local_show_result.extended_cut = show_session.extended_cut
+        local_show_result.audio_language = show_session.audio_language
 
         return local_show_result
 
@@ -191,6 +195,9 @@ class LocalShowResult:
         if self.year is not None:
             local_show_dict['year'] = self.year
 
+        if self.extended_cut is not None:
+            local_show_dict['extended_cut'] = self.extended_cut
+
         # TV
         if self.type == LocalShowResultType.TV:
             if self.season:
@@ -203,6 +210,9 @@ class LocalShowResult:
                 # Converts the date_time to UTC and formats it
                 date_time = auxiliary.convert_datetime_to_utc(auxiliary.get_datetime_with_tz_offset(self.date_time))
                 local_show_dict['date_time'] = date_time.strftime("%Y-%m-%dT%H:%M:%S")
+
+            if self.audio_language:
+                local_show_dict['audio_language'] = self.audio_language
         # Streaming
         else:
             if self.first_season_available:

@@ -362,7 +362,7 @@ def get_show_titles(session: sqlalchemy.orm.Session, tmdb_id: int) -> Optional[m
 
 def register_show_session(session: sqlalchemy.orm.Session, season: Optional[int], episode: Optional[int],
                           date_time: datetime.datetime, channel_id: int, show_id: int, audio_language: str = None,
-                          should_commit: bool = True) -> Optional[models.ShowSession]:
+                          extended_cut: bool = False, should_commit: bool = True) -> Optional[models.ShowSession]:
     """
     Register a show session.
 
@@ -373,11 +373,13 @@ def register_show_session(session: sqlalchemy.orm.Session, season: Optional[int]
     :param channel_id: the id of the channel where the show session will take place.
     :param show_id: the id of the corresponding show data (technical).
     :param audio_language: the audio language, None when it is the original one.
+    :param extended_cut: whether or not this is the extended cut.
     :param should_commit: True it the data should be committed right away.
     :return: the created show session.
     """
 
-    show_session = models.ShowSession(season, episode, date_time, channel_id, show_id, audio_language=audio_language)
+    show_session = models.ShowSession(season, episode, date_time, channel_id, show_id, audio_language=audio_language,
+                                      extended_cut=extended_cut)
     session.add(show_session)
 
     if should_commit:
