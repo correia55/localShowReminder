@@ -148,31 +148,15 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
     for search_text in search_list:
         print('Original search text: %s' % search_text)
 
-        # Split the search text into a list of words
-        search_words = auxiliary.get_words(search_text)
-
-        # Has no words
-        if search_words == ['']:
-            return []
-
-        print('List of words obtained from the search text: %s' % str(search_words))
-
-        # Create a search pattern to search the DB
-        search_pattern = '^' if complete_title else ''
-
-        for w in search_words:
-            if w != '':
-                search_pattern += '_%ss?' % w
-
         if complete_title:
-            search_pattern += '_$'
+            search_pattern = auxiliary.make_searchable_title(search_text)
         else:
-            search_pattern += '_'
+            search_pattern = auxiliary.make_search_pattern(search_text)
 
         print('Search pattern: %s' % search_pattern)
 
         db_shows = db_calls.search_show_sessions_data(session, search_pattern, is_movie, show_season, show_episode,
-                                                      search_adult, below_datetime=below_datetime)
+                                                      search_adult, complete_title, below_datetime=below_datetime)
 
         for s in db_shows:
             show = response_models.LocalShowResult.create_from_show_session(s[0], s[1], s[2])
@@ -215,31 +199,15 @@ def search_streaming_services_shows_db(session: sqlalchemy.orm.Session, search_l
     for search_text in search_list:
         print('Original search text: %s' % search_text)
 
-        # Split the search text into a list of words
-        search_words = auxiliary.get_words(search_text)
-
-        # Has no words
-        if search_words == ['']:
-            return []
-
-        print('List of words obtained from the search text: %s' % str(search_words))
-
-        # Create a search pattern to search the DB
-        search_pattern = '^' if complete_title else ''
-
-        for w in search_words:
-            if w != '':
-                search_pattern += '_%ss?' % w
-
         if complete_title:
-            search_pattern += '_$'
+            search_pattern = auxiliary.make_searchable_title(search_text)
         else:
-            search_pattern += '_'
+            search_pattern = auxiliary.make_search_pattern(search_text)
 
         print('Search pattern: %s' % search_pattern)
 
         db_shows = db_calls.search_streaming_service_shows_data(session, search_pattern, is_movie, show_season,
-                                                                show_episode, search_adult,
+                                                                show_episode, search_adult, complete_title,
                                                                 below_datetime=below_datetime)
 
         for s in db_shows:

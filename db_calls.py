@@ -838,7 +838,7 @@ def get_streaming_service_show(session: sqlalchemy.orm.Session, show_id: int) ->
 
 
 def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: str, is_movie: Optional[bool],
-                              season: Optional[int], episode: Optional[int], search_adult: bool,
+                              season: Optional[int], episode: Optional[int], search_adult: bool, complete_title: bool,
                               below_datetime: Optional[datetime.datetime] = None) \
         -> List[Tuple[models.ShowSession, models.Channel, models.ShowData]]:
     """
@@ -850,14 +850,19 @@ def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: s
     :param season: to specify a season.
     :param episode: to specify an episode.
     :param search_adult: if it should also search in adult channels.
+    :param complete_title: whether it is a complete title or not.
     :param below_datetime: a datetime below to limit the search.
     :return: the streaming service show with a given id.
     """
 
-    regex_operation = get_regex_operation_dbms()
+    if complete_title:
+        query = session.query(models.ShowSession, models.Channel, models.ShowData) \
+            .filter(models.ShowData.search_title == search_pattern)
+    else:
+        regex_operation = get_regex_operation_dbms()
 
-    query = session.query(models.ShowSession, models.Channel, models.ShowData) \
-        .filter(models.ShowData.search_title.op(regex_operation)(search_pattern))
+        query = session.query(models.ShowSession, models.Channel, models.ShowData) \
+            .filter(models.ShowData.search_title.op(regex_operation)(search_pattern))
 
     if is_movie:
         query = query.filter(sqlalchemy.or_(models.ShowData.is_movie.is_(None), models.ShowData.is_movie.is_(True)))
@@ -890,7 +895,7 @@ def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: s
 
 def search_streaming_service_shows_data(session: sqlalchemy.orm.Session, search_pattern: str, is_movie: Optional[bool],
                                         season: Optional[int], episode: Optional[int], search_adult: bool,
-                                        below_datetime: Optional[datetime.datetime] = None) \
+                                        complete_title: bool, below_datetime: Optional[datetime.datetime] = None) \
         -> List[Tuple[models.ShowSession, models.StreamingService, models.ShowData]]:
     """
     Get the streaming services' shows, and all associated data, that match a given search pattern and criteria.
@@ -901,14 +906,19 @@ def search_streaming_service_shows_data(session: sqlalchemy.orm.Session, search_
     :param season: to specify a season.
     :param episode: to specify an episode.
     :param search_adult: if it should also search in adult channels.
+    :param complete_title: whether it is a complete title or not.
     :param below_datetime: a datetime below to limit the search.
     :return: the streaming service show with a given id.
     """
 
-    regex_operation = get_regex_operation_dbms()
+    if complete_title:
+        query = session.query(models.StreamingServiceShow, models.StreamingService, models.ShowData) \
+            .filter(models.ShowData.search_title == search_pattern)
+    else:
+        regex_operation = get_regex_operation_dbms()
 
-    query = session.query(models.StreamingServiceShow, models.StreamingService, models.ShowData) \
-        .filter(models.ShowData.search_title.op(regex_operation)(search_pattern))
+        query = session.query(models.StreamingServiceShow, models.StreamingService, models.ShowData) \
+            .filter(models.ShowData.search_title.op(regex_operation)(search_pattern))
 
     if is_movie:
         query = query.filter(sqlalchemy.or_(models.ShowData.is_movie.is_(None), models.ShowData.is_movie.is_(True)))
