@@ -165,3 +165,17 @@ class TestAuxiliary(unittest.TestCase):
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
+
+    def test_make_search_pattern(self) -> None:
+        """ Test the function make_search_pattern. """
+
+        # The expected result
+        expected_result = '_cancaos?_as?_procurars?_'
+
+        # Call the function
+        text = 'canção a procurar'
+
+        actual_result = auxiliary.make_search_pattern(text)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)

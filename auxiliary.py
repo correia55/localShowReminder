@@ -58,6 +58,31 @@ def make_searchable_title(title: str):
     return '_' + '_'.join(get_words(title)) + '_'
 
 
+def make_search_pattern(search_text: str):
+    """
+    Create a search pattern given a search text.
+
+    :param search_text: the searched text.
+    :return: the resulting pattern.
+    """
+
+    # Split the search text into a list of words
+    search_words = get_words(search_text)
+
+    # Has no words
+    if search_words == ['']:
+        return []
+
+    # Create a search pattern to search the DB
+    search_pattern = ''
+
+    for w in search_words:
+        if w != '':
+            search_pattern += '_%ss?' % w
+
+    return search_pattern + '_'
+
+
 def get_datetime_with_tz_offset(date_time: datetime.datetime) -> datetime.datetime:
     """
     Get the datetime with the timezone offset.
