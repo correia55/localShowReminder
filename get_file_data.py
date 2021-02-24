@@ -88,7 +88,7 @@ class Cinemundo(ChannelInsertion):
             age_classification = row[6].value
             director = row[7].value
             cast = row[8].value
-            show_type = row[9].value
+            category = row[9].value
 
             # Combine the date with the time
             date_time = date.replace(hour=time.hour, minute=time.minute)
@@ -105,8 +105,8 @@ class Cinemundo(ChannelInsertion):
             # Insert the ShowData, if necessary
             new_show, show_data = db_calls.insert_if_missing_show_data(db_session, localized_title,
                                                                        original_title=original_title, synopsis=synopsis,
-                                                                       year=year, show_type=show_type,
-                                                                       director=director,
+                                                                       year=year, show_type='Filmes',
+                                                                       director=director, category=category,
                                                                        cast=cast, age_classification=age_classification,
                                                                        is_movie=True)
 
@@ -401,15 +401,22 @@ class TVCine(ChannelInsertion):
                     cast = director
                     director = aux
 
+            # Show type is movie, series, documentary, news...
+            if show_type != 'Documentário':
+                category = show_type
+                show_type = 'Filmes' if is_movie else 'Séries'
+            else:
+                category = None
+
             channel_name = 'TVCine ' + channel_name.strip().split()[1]
             channel_id = db_session.query(models.Channel).filter(models.Channel.name == channel_name).first().id
 
             # Insert the ShowData, if necessary
             new_show, show_data = db_calls.insert_if_missing_show_data(db_session, title, original_title=original_title,
                                                                        duration=duration, synopsis=synopsis, year=year,
-                                                                       show_type=show_type, director=director,
+                                                                       show_type=show_type, category=category,
                                                                        cast=cast, audio_languages=languages,
-                                                                       countries=countries,
+                                                                       countries=countries, director=director,
                                                                        age_classification=age_classification,
                                                                        is_movie=is_movie)
 
