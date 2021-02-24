@@ -37,11 +37,245 @@ class InsertionResult:
         self.nb_deleted_sessions = nb_deleted_sessions
 
 
-class TVCine:
+class ChannelInsertion:
+    channels: str
+
+
+class Cinemundo(ChannelInsertion):
+    channels = ['Cinemundo']
+
+    @staticmethod
+    def process_title(title: str) -> [str, bool]:
+        """
+        Process the title, removing special markers:
+        - VP - for portuguese audio.
+
+        :param title: the title as is in the file.
+        :return: a tuple with the clean title and whether or not it is a session with the portuguese voice.
+        """
+
+        # Replace all quotation marks for the same quotation mark
+        title = re.sub('[´`]', '\'', title)
+
+        # Search for VP in the end of the title
+        vp = title.endswith('VP')
+
+        if vp:
+            # Remove the VP when it exists
+            title = title[:-3]
+
+        return title.strip(), vp
+
+    @staticmethod
+    def update_show_list(db_session: sqlalchemy.orm.Session, filename: str) -> Optional[InsertionResult]:
+        wb = openpyxl.load_workbook(filename)
+
+        insertion_result = InsertionResult()
+
+        # Skip row 1, with the headers
+        for row in wb.active.iter_rows(min_row=3, max_col=12):
+            # Skip rows that do not contain a date
+            if row[0].value is None:
+                continue
+
+            # Get the data
+            date = datetime.datetime.strptime(str(row[0].value), '%Y%m%d')
+            time = row[1].value
+            original_title = str(row[2].value)
+            localized_title = str(row[3].value)
+            synopsis = row[4].value
+            year = int(row[5].value)
+            age_classification = row[6].value
+            director = row[7].value
+            cast = row[8].value
+            show_type = row[9].value
+
+            # Combine the date with the time
+            date_time = date.replace(hour=time.hour, minute=time.minute)
+
+            # Process the titles
+            localized_title, vp = Cinemundo.process_title(localized_title)
+            audio_language = 'pt' if vp else None
+
+            original_title, _ = Cinemundo.process_title(original_title)
+
+            # Get the channel id
+            channel_id = db_session.query(models.Channel).filter(models.Channel.name == 'Cinemundo').first().id
+
+            # Insert the ShowData, if necessary
+            new_show, show_data = db_calls.insert_if_missing_show_data(db_session, localized_title,
+                                                                       original_title=original_title, synopsis=synopsis,
+                                                                       year=year, show_type=show_type,
+                                                                       director=director,
+                                                                       cast=cast, age_classification=age_classification,
+                                                                       is_movie=True)
+
+            # Process a show session
+            insertion_result = process_show_session(db_session, insertion_result, show_data, new_show, original_title,
+                                                    None, None, date_time, channel_id, audio_language=audio_language)
+
+            if insertion_result is None:
+                return None
+
+        if insertion_result.total_nb_sessions_in_file != 0:
+            db_calls.commit(db_session)
+
+            # Get the start and end of month
+            start_of_month = date.replace(day=1)
+
+            if start_of_month.month != 12:
+                end_of_month = start_of_month.replace(month=start_of_month.month + 1)
+            else:
+                end_of_month = start_of_month.replace(year=start_of_month.year, month=1)
+
+            nb_deleted_sessions = delete_old_sessions(db_session, start_of_month, end_of_month, Cinemundo.channels)
+
+            # Set the remaining information
+            insertion_result.nb_deleted_sessions = nb_deleted_sessions
+            insertion_result.start_datetime = start_of_month
+            insertion_result.end_datetime = end_of_month
+
+            return insertion_result
+        else:
+            return None
+
+
+class Odisseia(ChannelInsertion):
+    channels = ['Odisseia']
+
+    @staticmethod
+    def update_show_list(db_session: sqlalchemy.orm.Session, filename: str) -> Optional[InsertionResult]:
+        dom_tree = xml.dom.minidom.parse(filename)
+        collection = dom_tree.documentElement
+
+        first_event_datetime = None
+
+        # Get all events
+        events = collection.getElementsByTagName('Event')
+
+        # If there are no events
+        if len(events) == 0:
+            return None
+
+        insertion_result = InsertionResult()
+
+        # Process each event
+        for event in events:
+            begin_time = event.getAttribute('beginTime')
+            date_time = datetime.datetime.strptime(begin_time, '%Y%m%d%H%M%S')
+
+            # Get the first event's datetime
+            if first_event_datetime is None:
+                first_event_datetime = date_time
+
+            duration = int(int(event.getAttribute('duration')) / 60)
+
+            epg_production = event.getElementsByTagName('EpgProduction')[0]
+
+            genere_list = epg_production.getElementsByTagName('Genere')
+
+            if len(genere_list) > 0:
+                category = genere_list[0].firstChild.nodeValue
+            else:
+                category = None
+
+            show_type = epg_production.getElementsByTagName('Subgenere')[0].firstChild.nodeValue
+
+            epg_text = epg_production.getElementsByTagName('EpgText')[0]
+
+            portuguese_title = epg_text.getElementsByTagName('Name')[0].firstChild.nodeValue
+            broadcast_name = epg_text.getElementsByTagName('BroadcastName')[0].firstChild.nodeValue
+
+            synopsis = None
+
+            # If they are the names are the same, it's a movie
+            if broadcast_name == portuguese_title:
+                short_description = epg_text.getElementsByTagName('ShortDescription')
+
+                if short_description is not None and short_description[0].firstChild is not None:
+                    synopsis = short_description[0].firstChild.nodeValue
+
+            extended_info_elements = epg_text.getElementsByTagName('ExtendedInfo')
+
+            original_title = None
+            year = None
+            director = None
+            countries = None
+            season = None
+            episode = None
+
+            for extended_info in extended_info_elements:
+                attribute = extended_info.getAttribute('name')
+
+                if attribute == 'OriginalEventName' and extended_info.firstChild is not None:
+                    original_title = extended_info.firstChild.nodeValue
+                elif attribute == 'Year' and extended_info.firstChild is not None:
+                    year = int(extended_info.firstChild.nodeValue)
+                elif attribute == 'Director' and extended_info.firstChild is not None:
+                    director = extended_info.firstChild.nodeValue
+                elif attribute == 'Nationality' and extended_info.firstChild is not None:
+                    countries = extended_info.firstChild.nodeValue
+                elif attribute == 'Cycle' and extended_info.firstChild is not None:
+                    season = extended_info.firstChild.nodeValue
+                elif attribute == 'EpisodeNumber' and extended_info.firstChild is not None:
+                    episode = extended_info.firstChild.nodeValue
+
+            if episode is not None:
+                if season is None:
+                    print('Found episode but no season for show: %s' % str(event.getAttribute('beginTime')))
+                    season = 1
+
+            channel_name = 'Odisseia'
+            channel_id = db_session.query(models.Channel).filter(models.Channel.name == channel_name).first().id
+
+            # Insert the ShowData, if necessary
+            new_show, show_data = db_calls.insert_if_missing_show_data(db_session, portuguese_title,
+                                                                       original_title=original_title, duration=duration,
+                                                                       synopsis=synopsis, year=year,
+                                                                       show_type=show_type, director=director,
+                                                                       countries=countries, category=category,
+                                                                       is_movie=episode is None)
+
+            # Process a show session
+            insertion_result = process_show_session(db_session, insertion_result, show_data, new_show, original_title,
+                                                    season, episode, date_time, channel_id)
+
+            if insertion_result is None:
+                return None
+
+        db_calls.commit(db_session)
+
+        first_day_at_start = first_event_datetime.replace(hour=0, minute=0, second=0)
+        end_day_at_start = (date_time + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0) \
+                           - datetime.timedelta(seconds=1)
+
+        nb_deleted_sessions = delete_old_sessions(db_session, first_day_at_start, end_day_at_start, Odisseia.channels)
+
+        # Set the remaining information
+        insertion_result.nb_deleted_sessions = nb_deleted_sessions
+        insertion_result.start_datetime = first_day_at_start
+        insertion_result.end_datetime = end_day_at_start
+
+        return insertion_result
+
+
+class TVCine(ChannelInsertion):
     channels = ['TVCine Top', 'TVCine Edition', 'TVCine Emotion', 'TVCine Action']
 
     @staticmethod
     def process_title(title: str) -> [str, bool, bool]:
+        """
+        Process the title, removing special markers and reformatting the title:
+        - (VP) - for portuguese audio;
+        - (VO) - for original audio;
+        - (extended cut) or (versão alargada) - for extended cut;
+        - some of the words come unordered, thus the unordered list of words.
+
+        :param title: the title as is in the file.
+        :return: a tuple with the clean title, whether or not it is a session with the portuguese voice and whether or
+        not it is a session with the extended cut.
+        """
+
         # Replace all quotation marks for the same quotation mark
         title = re.sub('[´`]', '\'', title)
 
@@ -210,123 +444,7 @@ class TVCine:
             return None
 
 
-class Odisseia:
-    channels = ['Odisseia']
-
-    @staticmethod
-    def update_show_list(db_session: sqlalchemy.orm.Session, filename: str) -> Optional[InsertionResult]:
-        dom_tree = xml.dom.minidom.parse(filename)
-        collection = dom_tree.documentElement
-
-        first_event_datetime = None
-
-        # Get all events
-        events = collection.getElementsByTagName('Event')
-
-        # If there are no events
-        if len(events) == 0:
-            return None
-
-        insertion_result = InsertionResult()
-
-        # Process each event
-        for event in events:
-            begin_time = event.getAttribute('beginTime')
-            date_time = datetime.datetime.strptime(begin_time, '%Y%m%d%H%M%S')
-
-            # Get the first event's datetime
-            if first_event_datetime is None:
-                first_event_datetime = date_time
-
-            duration = int(int(event.getAttribute('duration')) / 60)
-
-            epg_production = event.getElementsByTagName('EpgProduction')[0]
-
-            genere_list = epg_production.getElementsByTagName('Genere')
-
-            if len(genere_list) > 0:
-                category = genere_list[0].firstChild.nodeValue
-            else:
-                category = None
-
-            show_type = epg_production.getElementsByTagName('Subgenere')[0].firstChild.nodeValue
-
-            epg_text = epg_production.getElementsByTagName('EpgText')[0]
-
-            portuguese_title = epg_text.getElementsByTagName('Name')[0].firstChild.nodeValue
-            broadcast_name = epg_text.getElementsByTagName('BroadcastName')[0].firstChild.nodeValue
-
-            synopsis = None
-
-            # If they are the names are the same, it's a movie
-            if broadcast_name == portuguese_title:
-                short_description = epg_text.getElementsByTagName('ShortDescription')
-
-                if short_description is not None and short_description[0].firstChild is not None:
-                    synopsis = short_description[0].firstChild.nodeValue
-
-            extended_info_elements = epg_text.getElementsByTagName('ExtendedInfo')
-
-            original_title = None
-            year = None
-            director = None
-            countries = None
-            season = None
-            episode = None
-
-            for extended_info in extended_info_elements:
-                attribute = extended_info.getAttribute('name')
-
-                if attribute == 'OriginalEventName' and extended_info.firstChild is not None:
-                    original_title = extended_info.firstChild.nodeValue
-                elif attribute == 'Year' and extended_info.firstChild is not None:
-                    year = int(extended_info.firstChild.nodeValue)
-                elif attribute == 'Director' and extended_info.firstChild is not None:
-                    director = extended_info.firstChild.nodeValue
-                elif attribute == 'Nationality' and extended_info.firstChild is not None:
-                    countries = extended_info.firstChild.nodeValue
-                elif attribute == 'Cycle' and extended_info.firstChild is not None:
-                    season = extended_info.firstChild.nodeValue
-                elif attribute == 'EpisodeNumber' and extended_info.firstChild is not None:
-                    episode = extended_info.firstChild.nodeValue
-
-            if episode is not None:
-                if season is None:
-                    print('Found episode but no season for show: %s' % str(event.getAttribute('beginTime')))
-                    season = 1
-
-            channel_name = 'Odisseia'
-            channel_id = db_session.query(models.Channel).filter(models.Channel.name == channel_name).first().id
-
-            # Insert the ShowData, if necessary
-            new_show, show_data = db_calls.insert_if_missing_show_data(db_session, portuguese_title,
-                                                                       original_title=original_title, duration=duration,
-                                                                       synopsis=synopsis, year=year,
-                                                                       show_type=show_type, director=director,
-                                                                       countries=countries, category=category,
-                                                                       is_movie=episode is None)
-
-            # Process a show session
-            insertion_result = process_show_session(db_session, insertion_result, show_data, new_show, original_title,
-                                                    season, episode, date_time, channel_id)
-
-            if insertion_result is None:
-                return None
-
-        db_calls.commit(db_session)
-
-        first_day_at_start = first_event_datetime.replace(hour=0, minute=0, second=0)
-        end_day_at_start = (date_time + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0) \
-                           - datetime.timedelta(seconds=1)
-
-        nb_deleted_sessions = delete_old_sessions(db_session, first_day_at_start, end_day_at_start, Odisseia.channels)
-
-        # Set the remaining information
-        insertion_result.nb_deleted_sessions = nb_deleted_sessions
-        insertion_result.start_datetime = first_day_at_start
-        insertion_result.end_datetime = end_day_at_start
-
-        return insertion_result
+channel_insertion_list = [Cinemundo, Odisseia, TVCine]
 
 
 def process_show_session(db_session: sqlalchemy.orm.Session, insertion_result: InsertionResult,
@@ -445,15 +563,7 @@ def update_show_list(db_session: sqlalchemy.orm.Session, channel_set: int, filen
 
     print('Processing file...')
 
-    result = None
-
-    # TVCine
-    if channel_set == 0:
-        result = TVCine.update_show_list(db_session, filename)
-
-    # Odisseia
-    elif channel_set == 1:
-        result = Odisseia.update_show_list(db_session, filename)
+    result = channel_insertion_list[channel_set].update_show_list(db_session, filename)
 
     if result is not None:
         print('complete!\n')
@@ -467,9 +577,13 @@ def update_show_list(db_session: sqlalchemy.orm.Session, channel_set: int, filen
 
 def execute_data_insertion():
     """ Execute a data insertion. """
-    input_channel_set = int(input('Choose one channel set for the data being inserted.\n'
-                                  '0 - TVCine\n'
-                                  '1 - Odisseia\n'))
+
+    question = 'Choose one channel set for the data being inserted:\n'
+
+    for i in range(len(channel_insertion_list)):
+        question += '%d - %s\n' % (i, channel_insertion_list[i].channels)
+
+    input_channel_set = int(input(question))
 
     input_filename = input('What is the path to the file?\n')
 
