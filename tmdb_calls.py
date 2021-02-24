@@ -48,7 +48,8 @@ class TmdbShow(object):
             self.original_title = show_dict['original_name']
             self.title = show_dict['name']
 
-            if 'first_air_date' in show_dict and show_dict['first_air_date'] != '':
+            if 'first_air_date' in show_dict and show_dict['first_air_date'] != '' and show_dict[
+                'first_air_date'] is not None:
                 self.year = int(show_dict['first_air_date'][0:4])
 
             self.origin_country = show_dict['origin_country']
