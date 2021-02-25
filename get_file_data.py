@@ -144,6 +144,13 @@ class Odisseia(ChannelInsertion):
     channels = ['Odisseia']
 
     @staticmethod
+    def process_title(title: str) -> str:
+        """ Process the title, removing special markers and reformatting the title. """
+
+        # Replace all quotation marks for the same quotation mark
+        return re.sub('[´`]', '\'', title)
+
+    @staticmethod
     def update_show_list(db_session: sqlalchemy.orm.Session, filename: str) -> Optional[InsertionResult]:
         dom_tree = xml.dom.minidom.parse(filename)
         collection = dom_tree.documentElement
@@ -183,13 +190,13 @@ class Odisseia(ChannelInsertion):
 
             epg_text = epg_production.getElementsByTagName('EpgText')[0]
 
-            portuguese_title = epg_text.getElementsByTagName('Name')[0].firstChild.nodeValue
+            localized_title = epg_text.getElementsByTagName('Name')[0].firstChild.nodeValue
             broadcast_name = epg_text.getElementsByTagName('BroadcastName')[0].firstChild.nodeValue
 
             synopsis = None
 
             # If they are the names are the same, it's a movie
-            if broadcast_name == portuguese_title:
+            if broadcast_name == localized_title:
                 short_description = epg_text.getElementsByTagName('ShortDescription')
 
                 if short_description is not None and short_description[0].firstChild is not None:
@@ -228,8 +235,12 @@ class Odisseia(ChannelInsertion):
             channel_name = 'Odisseia'
             channel_id = db_session.query(models.Channel).filter(models.Channel.name == channel_name).first().id
 
+            # Process titles
+            original_title = Odisseia.process_title(original_title)
+            localized_title = Odisseia.process_title(localized_title)
+
             # Insert the ShowData, if necessary
-            new_show, show_data = db_calls.insert_if_missing_show_data(db_session, portuguese_title,
+            new_show, show_data = db_calls.insert_if_missing_show_data(db_session, localized_title,
                                                                        original_title=original_title, duration=duration,
                                                                        synopsis=synopsis, year=year,
                                                                        show_type=show_type, director=director,
@@ -377,18 +388,20 @@ class TVCine(ChannelInsertion):
 
                 if series:
                     original_title = series.group(1)
+
+                # Because the year in the series is the year of the season
+                year = None
             else:
                 season = None
                 episode = None
-                # episode_synopsis = None
-
-                # Process the titles
-                title, vp, extended_cut = TVCine.process_title(title)
-                audio_language = 'pt' if vp else None
-
-                original_title, _, _ = TVCine.process_title(original_title)
 
                 is_movie = True
+
+            # Process the titles
+            title, vp, extended_cut = TVCine.process_title(title)
+            audio_language = 'pt' if vp else None
+
+            original_title, _, _ = TVCine.process_title(original_title)
 
             # Sometimes the cast is switched with the director
             if cast is not None and director is not None:
