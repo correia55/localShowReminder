@@ -499,9 +499,9 @@ def search_show_data_by_search_title_and_everything_else_empty(session: sqlalche
 
 
 def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, original_title: str = None,
-                       duration: int = None, synopsis: str = None, year: int = None, show_type: str = None,
+                       duration: int = None, synopsis: str = None, year: int = None, genre: str = None,
                        director: str = None, cast: str = None, audio_languages: str = None, countries: str = None,
-                       age_classification: str = None, category: Optional[str] = None, is_movie: Optional[bool] = None) \
+                       age_classification: str = None, subgenre: Optional[str] = None, is_movie: Optional[bool] = None) \
         -> Optional[models.ShowData]:
     """
     Register an entry of ShowData.
@@ -512,13 +512,13 @@ def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, o
     :param duration: the duration.
     :param synopsis: the synopsis.
     :param year: the year of the show.
-    :param show_type: the type of show (Comedy, thriller, ...).
+    :param genre: the type of show (movie, series, documentary, ...).
     :param director: the director of the show.
     :param cast: the cast of the show.
     :param audio_languages: the languages of the audio.
     :param countries: the countries.
     :param age_classification: the age classification.
-    :param category: the category of the show (movie, series, documentary, ...).
+    :param subgenre: the subgenre of the show (Comedy, thriller, ...).
     :param is_movie: True if it is a movie, False if it is TV.
     :return: the created show data.
     """
@@ -539,8 +539,8 @@ def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, o
     if year is not None:
         show_data.year = year
 
-    if show_type is not None:
-        show_data.show_type = show_type
+    if genre is not None:
+        show_data.genre = genre
 
     if director is not None:
         show_data.director = director
@@ -557,8 +557,8 @@ def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, o
     if age_classification is not None:
         show_data.age_classification = age_classification
 
-    if category is not None:
-        show_data.category = category
+    if subgenre is not None:
+        show_data.subgenre = subgenre
 
     if is_movie is not None:
         show_data.is_movie = is_movie
@@ -574,9 +574,9 @@ def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, o
 
 
 def insert_if_missing_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, original_title: str = None,
-                                duration: int = None, synopsis: str = None, year: int = None, show_type: str = None,
+                                duration: int = None, synopsis: str = None, year: int = None, genre: str = None,
                                 director: str = None, cast: str = None, audio_languages: str = None,
-                                countries: str = None, age_classification: str = None, category: Optional[str] = None,
+                                countries: str = None, age_classification: str = None, subgenre: Optional[str] = None,
                                 is_movie: Optional[bool] = None) \
         -> [bool, Optional[models.ShowData]]:
     """
@@ -588,13 +588,13 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, portuguese_titl
     :param duration: the duration.
     :param synopsis: the synopsis.
     :param year: the year of the show.
-    :param show_type: the type of show (Comedy, thriller, ...).
+    :param genre: the type of show (movie, series, documentary, ...).
     :param director: the director of the show.
     :param cast: the cast of the show.
     :param audio_languages: the languages of the audio.
     :param countries: the countries.
     :param age_classification: the age classification.
-    :param category: the category of the show (movie, series, documentary, ...).
+    :param subgenre: the subgenre of the show (Comedy, thriller, ...).
     :param is_movie: True if it is a movie, False if it is TV.
     :return: a boolean for whether it is a new show or not and the corresponding show data.
     """
@@ -616,9 +616,9 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, portuguese_titl
 
     # If not, then add it
     return True, register_show_data(session, portuguese_title, original_title=original_title, duration=duration,
-                                    synopsis=synopsis, year=year, show_type=show_type, director=director,
+                                    synopsis=synopsis, year=year, genre=genre, director=director,
                                     cast=cast, audio_languages=audio_languages, countries=countries,
-                                    age_classification=age_classification, category=category, is_movie=is_movie)
+                                    age_classification=age_classification, subgenre=subgenre, is_movie=is_movie)
 
 
 def register_cache(session: sqlalchemy.orm.Session, key: str,

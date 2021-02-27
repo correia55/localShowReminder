@@ -88,7 +88,7 @@ class Cinemundo(ChannelInsertion):
             age_classification = row[6].value
             director = row[7].value
             cast = row[8].value
-            category = row[9].value
+            subgenre = row[9].value  # Obtained in portuguese
 
             # Combine the date with the time
             date_time = date.replace(hour=time.hour, minute=time.minute)
@@ -105,9 +105,9 @@ class Cinemundo(ChannelInsertion):
             # Insert the ShowData, if necessary
             new_show, show_data = db_calls.insert_if_missing_show_data(db_session, localized_title,
                                                                        original_title=original_title, synopsis=synopsis,
-                                                                       year=year, show_type='Filmes',
-                                                                       director=director, category=category,
-                                                                       cast=cast, age_classification=age_classification,
+                                                                       year=year, genre='Movie', subgenre=subgenre,
+                                                                       director=director, cast=cast,
+                                                                       age_classification=age_classification,
                                                                        is_movie=True)
 
             # Process a show session
@@ -179,14 +179,15 @@ class Odisseia(ChannelInsertion):
 
             epg_production = event.getElementsByTagName('EpgProduction')[0]
 
-            genere_list = epg_production.getElementsByTagName('Genere')
+            genre_list = epg_production.getElementsByTagName('Genere')
 
-            if len(genere_list) > 0:
-                category = genere_list[0].firstChild.nodeValue
+            if len(genre_list) > 0:
+                genre = genre_list[0].firstChild.nodeValue
             else:
-                category = None
+                genre = None
 
-            show_type = epg_production.getElementsByTagName('Subgenere')[0].firstChild.nodeValue
+            # Subgenre is in portuguese
+            subgenre = epg_production.getElementsByTagName('Subgenere')[0].firstChild.nodeValue
 
             epg_text = epg_production.getElementsByTagName('EpgText')[0]
 
@@ -217,7 +218,11 @@ class Odisseia(ChannelInsertion):
                 if attribute == 'OriginalEventName' and extended_info.firstChild is not None:
                     original_title = extended_info.firstChild.nodeValue
                 elif attribute == 'Year' and extended_info.firstChild is not None:
-                    year = int(extended_info.firstChild.nodeValue)
+                    temp_year = int(extended_info.firstChild.nodeValue)
+
+                    # Sometimes the year is 0
+                    if temp_year != 0:
+                        year = temp_year
                 elif attribute == 'Director' and extended_info.firstChild is not None:
                     director = extended_info.firstChild.nodeValue
                 elif attribute == 'Nationality' and extended_info.firstChild is not None:
@@ -239,12 +244,18 @@ class Odisseia(ChannelInsertion):
             original_title = Odisseia.process_title(original_title)
             localized_title = Odisseia.process_title(localized_title)
 
+            # Change the genre
+            if 'Document' in genre:
+                genre = 'Documentary'
+            else:
+                print('The show %s was not a documentary!' % original_title)
+
             # Insert the ShowData, if necessary
             new_show, show_data = db_calls.insert_if_missing_show_data(db_session, localized_title,
                                                                        original_title=original_title, duration=duration,
                                                                        synopsis=synopsis, year=year,
-                                                                       show_type=show_type, director=director,
-                                                                       countries=countries, category=category,
+                                                                       genre=genre, director=director,
+                                                                       countries=countries, subgenre=subgenre,
                                                                        is_movie=episode is None)
 
             # Process a show session
@@ -354,7 +365,7 @@ class TVCine(ChannelInsertion):
             original_title = str(row[3].value)
             year = int(row[4].value)
             age_classification = row[5].value
-            show_type = row[6].value
+            genre = row[6].value
             duration = int(row[7].value)
             languages = row[8].value
             countries = row[9].value
@@ -414,12 +425,13 @@ class TVCine(ChannelInsertion):
                     cast = director
                     director = aux
 
-            # Show type is movie, series, documentary, news...
-            if show_type != 'Documentário':
-                category = show_type
-                show_type = 'Filmes' if is_movie else 'Séries'
+            # Genre is movie, series, documentary, news...
+            if 'Document' not in genre:
+                subgenre = genre # Subgenre is in portuguese
+                genre = 'Movie' if is_movie else 'Series'
             else:
-                category = None
+                genre = 'Documentary'
+                subgenre = None
 
             channel_name = 'TVCine ' + channel_name.strip().split()[1]
             channel_id = db_session.query(models.Channel).filter(models.Channel.name == channel_name).first().id
@@ -427,7 +439,7 @@ class TVCine(ChannelInsertion):
             # Insert the ShowData, if necessary
             new_show, show_data = db_calls.insert_if_missing_show_data(db_session, title, original_title=original_title,
                                                                        duration=duration, synopsis=synopsis, year=year,
-                                                                       show_type=show_type, category=category,
+                                                                       genre=genre, subgenre=subgenre,
                                                                        cast=cast, audio_languages=languages,
                                                                        countries=countries, director=director,
                                                                        age_classification=age_classification,
