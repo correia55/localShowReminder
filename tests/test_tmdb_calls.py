@@ -25,7 +25,8 @@ class TestTmdbCalls(unittest.TestCase):
 
     @unittest.mock.patch('tmdb_calls.urllib.request')
     @unittest.mock.patch('tmdb_calls.db_calls')
-    def test_get_show_using_id_01(self, db_calls_mock, external_request_mock):
+    @unittest.mock.patch('tmdb_calls.configuration')
+    def test_get_show_using_id_01(self, configuration_mock, db_calls_mock, external_request_mock):
         """ Test get_show_using_id with no valid cache. """
 
         # Prepare the calls to the mocks
