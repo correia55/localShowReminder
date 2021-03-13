@@ -35,6 +35,12 @@ jobs:
         
       - name: Create a conftest (for pytest to be able to import modules)
         run: touch conftest.py
+        
+      - name: Check for files
+        run: ls
+        
+      - name: Check for files
+        run: ls data/
     
       - name: Run tests with pytest
         run: pytest --cov=. --cov-report=xml
