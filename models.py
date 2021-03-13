@@ -25,25 +25,28 @@ class ShowData(Base):
 
     # Technical
     id = Column(Integer, primary_key=True, autoincrement=True)
-    tmdb_id = Column(String(255), unique=True)
+    tmdb_id = Column(Integer, unique=True)
     search_title = Column(String(255))
 
-    # Identifies to this show session
+    # Present in all shows
     is_movie = Column(Boolean)
     original_title = Column(String(255))
     portuguese_title = Column(String(255))
-    number_seasons = Column(Integer)
-    duration = Column(Integer)
     synopsis = Column(String(2000))
     year = Column(Integer)
     genre = Column(String(255))  # Movie, Series, Documentary, News, ...
-    subgenre = Column(String(255))   # Comedy, Thriller, ...
-    director = Column(String(255))
-    cast = Column(String(255))
-    audio_languages = Column(String(255))
-    subtitle_languages = Column(String(255))
+    subgenre = Column(String(255))  # Comedy, Thriller, ...
+    audio_languages = Column(String(255))  # Original
     countries = Column(String(255))
     age_classification = Column(String(255))
+
+    # Only movies
+    duration = Column(Integer)
+    cast = Column(String(255))
+    director = Column(String(255))
+
+    # Only tv shows
+    number_seasons = Column(Integer)
 
     def __init__(self, search_title: str, portuguese_title: str):
         self.search_title = search_title
@@ -117,6 +120,37 @@ class ShowSession(Base):
         self.extended_cut = extended_cut
 
 
+class ChannelShowData(Base):
+    """Used to store corrections on names of the shows for a given channel."""
+
+    __tablename__ = 'ChannelShowData'
+
+    # Technical
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # Foreign key
+    show_id = Column(Integer, ForeignKey('ShowData.id'))
+    channel_id = Column(Integer, ForeignKey('Channel.id'))
+
+    # Mandatory
+    is_movie = Column(Boolean)
+    original_title = Column(String(255))
+    localized_title = Column(String(255))
+
+    # Optional
+    year = Column(Integer)
+    directors = Column(String(255))
+    subgenre = Column(String(255))
+
+    def __init__(self, channel_id: int, show_id: int, is_movie: bool, original_title: str, localized_title: str):
+        self.channel_id = channel_id
+        self.show_id = show_id
+
+        self.is_movie = is_movie
+        self.original_title = original_title
+        self.localized_title = localized_title
+
+
 class StreamingService(Base):
     __tablename__ = 'StreamingService'
 
@@ -146,7 +180,9 @@ class StreamingServiceShow(Base):
     first_season_available = Column(Integer)
     last_season_available = Column(Integer)
     last_season_number_episodes = Column(Integer)
-    original = Column(Boolean)
+    original = Column(Boolean)  # Originally created by this Streaming Service
+    audio_languages = Column(String(255))
+    subtitle_languages = Column(String(255))
 
     # Foreign keys
     show_data_id = Column(Integer, ForeignKey('ShowData.id'))
@@ -274,7 +310,7 @@ class Cache(Base):
 
     __tablename__ = 'Cache'
 
-    key = Column(String(100), primary_key=True)
+    key = Column(String(200), primary_key=True)
     result = Column(String(100000))
     date_time = Column(DateTime, default=datetime.datetime.now())
 

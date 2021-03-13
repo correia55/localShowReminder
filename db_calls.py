@@ -443,38 +443,35 @@ def get_show_session(session: sqlalchemy.orm.Session, show_id: int) -> Optional[
         .first()
 
 
-def search_show_data_by_original_title_and_director(session: sqlalchemy.orm.Session, original_title: str,
-                                                    director: str) -> Optional[models.ShowData]:
+def search_show_data_by_original_title(session: sqlalchemy.orm.Session, original_title: str, is_movie: bool,
+                                       directors: List[str] = None, year: int = None, genre: str = None) \
+        -> Optional[models.ShowData]:
     """
-    Search for the show data with the same original title and year.
+    Search for the show data with the same original title and other parameters.
 
     :param session: the db session.
     :param original_title: the original title of the show.
-    :param director: the director of the show.
+    :param is_movie: whether or not it is a movie.
+    :param directors: the directors of the show.
+    :param year: the year of the show.
+    :param genre: the genre of the show.
     :return: the show data with that data.
     """
 
-    return session.query(models.ShowData) \
-        .filter(models.ShowData.original_title == original_title) \
-        .filter(models.ShowData.director == director) \
-        .first()
+    query = session.query(models.ShowData) \
+        .filter(models.ShowData.is_movie == is_movie) \
+        .filter(sqlalchemy.func.lower(models.ShowData.original_title) == original_title.lower())
 
+    if is_movie and directors is not None:
+        query = query.filter(sqlalchemy.or_(models.ShowData.director.contains(d) for d in directors))
 
-def search_show_data_by_original_title_and_year(session: sqlalchemy.orm.Session, original_title: str, year: int) -> \
-        Optional[models.ShowData]:
-    """
-    Search for the show data with the same original title and year.
+    if year is not None:
+        query = query.filter(models.ShowData.year == year)
 
-    :param session: the db session.
-    :param original_title: the original title of the show.
-    :param year: the year of the show's release.
-    :return: the show data with that data.
-    """
+    if genre is not None:
+        query = query.filter(models.ShowData.genre == genre)
 
-    return session.query(models.ShowData) \
-        .filter(models.ShowData.original_title == original_title) \
-        .filter(models.ShowData.year == year) \
-        .first()
+    return query.first()
 
 
 def search_show_data_by_search_title_and_everything_else_empty(session: sqlalchemy.orm.Session, portuguese_title: str) \
@@ -530,23 +527,11 @@ def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, o
     if original_title is not None:
         show_data.original_title = original_title
 
-    if duration is not None:
-        show_data.duration = duration
-
-    if synopsis is not None:
-        show_data.synopsis = synopsis
-
     if year is not None:
         show_data.year = year
 
     if genre is not None:
         show_data.genre = genre
-
-    if director is not None:
-        show_data.director = director
-
-    if cast is not None:
-        show_data.cast = cast
 
     if audio_languages is not None:
         show_data.audio_languages = audio_languages
@@ -563,6 +548,21 @@ def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, o
     if is_movie is not None:
         show_data.is_movie = is_movie
 
+    if is_movie is None or is_movie:
+        if duration is not None:
+            show_data.duration = duration
+
+        if synopsis is not None:
+            show_data.synopsis = synopsis
+
+    # Even though the cast and director are only fixed for movies
+    # we store them temporarily for searching the TMDB
+    if director is not None:
+        show_data.director = director
+
+    if cast is not None:
+        show_data.cast = cast
+
     session.add(show_data)
 
     try:
@@ -573,9 +573,37 @@ def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, o
         return None
 
 
-def insert_if_missing_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, original_title: str = None,
+def get_show_data_id(session: sqlalchemy.orm.Session, show_data_id: int) -> Optional[models.ShowData]:
+    """
+    Get the ShowData with a given id.
+
+    :param session: the db session.
+    :param show_data_id: the id of the ShowData.
+    :return: the ShowData.
+    """
+
+    return session.query(models.ShowData) \
+        .filter(models.ShowData.id == show_data_id) \
+        .first()
+
+
+def get_show_data_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: int) -> Optional[models.ShowData]:
+    """
+    Get the ShowData with a given TMDB id.
+
+    :param session: the db session.
+    :param tmdb_id: the TMDB id.
+    :return: the ShowData.
+    """
+
+    return session.query(models.ShowData) \
+        .filter(models.ShowData.tmdb_id == tmdb_id) \
+        .first()
+
+
+def insert_if_missing_show_data(session: sqlalchemy.orm.Session, localized_title: str, original_title: str = None,
                                 duration: int = None, synopsis: str = None, year: int = None, genre: str = None,
-                                director: str = None, cast: str = None, audio_languages: str = None,
+                                directors: List[str] = None, cast: str = None, audio_languages: str = None,
                                 countries: str = None, age_classification: str = None, subgenre: Optional[str] = None,
                                 is_movie: Optional[bool] = None) \
         -> [bool, Optional[models.ShowData]]:
@@ -584,12 +612,12 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, portuguese_titl
 
     :param session: the db session.
     :param original_title: the original title.
-    :param portuguese_title: the portuguese title.
+    :param localized_title: the localized title.
     :param duration: the duration.
     :param synopsis: the synopsis.
     :param year: the year of the show.
     :param genre: the type of show (movie, series, documentary, ...).
-    :param director: the director of the show.
+    :param directors: the directors of the show.
     :param cast: the cast of the show.
     :param audio_languages: the languages of the audio.
     :param countries: the countries.
@@ -599,23 +627,23 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, portuguese_titl
     :return: a boolean for whether it is a new show or not and the corresponding show data.
     """
 
-    show_data = None
-
     # Check if there's already an entry with this information
     if original_title is not None:
-        # Year is less reliable, but we can use it when there's no director
-        if director is not None:
-            show_data = search_show_data_by_original_title_and_director(session, original_title, director)
-        elif year is not None:
-            show_data = search_show_data_by_original_title_and_year(session, original_title, year)
+        show_data = search_show_data_by_original_title(session, original_title, is_movie, directors=directors,
+                                                       year=year, genre=genre)
     else:
-        show_data = search_show_data_by_search_title_and_everything_else_empty(session, portuguese_title)
+        show_data = search_show_data_by_search_title_and_everything_else_empty(session, localized_title)
 
     if show_data is not None:
         return False, show_data
 
+    if directors is not None:
+        director = ', '.join(directors)
+    else:
+        director = None
+
     # If not, then add it
-    return True, register_show_data(session, portuguese_title, original_title=original_title, duration=duration,
+    return True, register_show_data(session, localized_title, original_title=original_title, duration=duration,
                                     synopsis=synopsis, year=year, genre=genre, director=director,
                                     cast=cast, audio_languages=audio_languages, countries=countries,
                                     age_classification=age_classification, subgenre=subgenre, is_movie=is_movie)
@@ -1004,6 +1032,82 @@ def search_existing_session(session: sqlalchemy.orm.Session, season: Optional[in
         .filter(models.ShowSession.channel_id == channel_id) \
         .filter(models.ShowSession.date_time >= start_datetime) \
         .filter(models.ShowSession.date_time <= end_datetime)
+
+    return query.first()
+
+
+def register_channel_show_data(session: sqlalchemy.orm.Session, channel_id: int, show_id: int, is_movie: bool,
+                               original_title: str, localized_title: str, year: int = None, directors: List[str] = None,
+                               subgenre: str = None) -> Optional[models.ChannelShowData]:
+    """
+    Register a ChannelShowData.
+
+    :param session: the db session.
+    :param channel_id: the id of the channel.
+    :param show_id: the id of the ShowData.
+    :param is_movie: whether or not it is a movie.
+    :param original_title: the original title.
+    :param localized_title: the localized title.
+    :param year: the year of the show.
+    :param directors: the directors of the show.
+    :param subgenre: the subgenre.
+    :return: a boolean for whether it is a new show or not and the corresponding show data.
+    """
+
+    channel_show_data = models.ChannelShowData(channel_id, show_id, is_movie, original_title, localized_title)
+
+    if is_movie:
+        if directors is not None:
+            channel_show_data.directors = ', '.join(directors)
+
+        if year is not None:
+            channel_show_data.year = year
+
+    if subgenre is not None:
+        channel_show_data.subgenre = subgenre
+
+    session.add(channel_show_data)
+
+    try:
+        session.commit()
+        return channel_show_data
+    except (IntegrityError, InvalidRequestError):
+        session.rollback()
+        return None
+
+
+def search_channel_show_data(session: sqlalchemy.orm.Session, channel_id: int, is_movie: bool,
+                             original_title: str, localized_title: str, year: int = None, directors: List[str] = None,
+                             subgenre: str = None) -> Optional[models.ChannelShowData]:
+    """
+    Check, and return, if there's a matching entry of ShowData and, if not add it.
+
+    :param session: the db session.
+    :param channel_id: the id of the channel.
+    :param is_movie: whether or not it is a movie.
+    :param original_title: the original title.
+    :param localized_title: the localized title.
+    :param year: the year of the show.
+    :param directors: the directors of the show.
+    :param subgenre: the subgenre of the show.
+    :return: a boolean for whether it is a new show or not and the corresponding show data.
+    """
+
+    query = session.query(models.ChannelShowData) \
+        .filter(models.ChannelShowData.channel_id == channel_id) \
+        .filter(models.ChannelShowData.is_movie == is_movie) \
+        .filter(models.ChannelShowData.original_title == original_title) \
+        .filter(models.ChannelShowData.localized_title == localized_title)
+
+    if is_movie:
+        if directors is not None:
+            query = query.filter(models.ChannelShowData.directors == ', '.join(directors))
+
+        if year is not None:
+            query = query.filter(models.ChannelShowData.year == year)
+
+    if subgenre is not None:
+        query = query.filter(models.ChannelShowData.subgenre == subgenre)
 
     return query.first()
 

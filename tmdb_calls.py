@@ -17,7 +17,6 @@ class TmdbShow(object):
 
     id: int
     original_title: str
-    origin_country: str
     original_language: str
     popularity: float
     overview: str
@@ -25,6 +24,7 @@ class TmdbShow(object):
     vote_average: float
     is_movie: bool
     adult: bool
+    genres: List[str]
 
     poster_path: Optional[str]
     origin_country: Optional[str]
@@ -59,6 +59,12 @@ class TmdbShow(object):
         self.vote_average = show_dict['vote_average']
         self.original_language = show_dict['original_language']
         self.overview = show_dict['overview']
+
+        self.genres = []
+
+        if 'genres' in show_dict:
+            for g in show_dict['genres']:
+                self.genres.append(g['name'])
 
         if 'adult' in show_dict:
             self.adult = show_dict['adult']
@@ -107,51 +113,26 @@ class TmdbAlias(object):
         self.title = alias_dict['title']
 
 
-def search_show_by_id(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: bool, language: str = None) \
-        -> Optional[TmdbShow]:
-    """
-    Get a show's information, from TMDB.
+class TmdbCrewMember(object):
+    """The class that will represent a tmdb crew member."""
 
-    :param session: the db session.
-    :param tmdb_id: the tmdb id of the show.
-    :param is_movie: if the show is a movie.
-    :param language: the language in which we want the response (pt-PT, en-US...).
-    :return: the TmdbShow.
-    """
+    name: str
+    jobs: List[str]
 
-    if is_movie:
-        show_type = 'movie'
-    else:
-        show_type = 'tv'
+    def __init__(self, crew_member_dict: dict, is_movie: bool):
+        self.name = crew_member_dict['name']
 
-    cache_key = 'tmdb|id|%s-%s-%s' % (show_type, language, tmdb_id)
+        if is_movie:
+            self.jobs = [crew_member_dict['job']]
+        else:
+            self.jobs = []
 
-    cache_entry = db_calls.get_cache(session, cache_key)
-
-    # If there's a valid entry of cache for this request
-    if cache_entry:
-        response = cache_entry.result
-    else:
-        # Make the request
-        show_request = urllib.request.Request('https://api.themoviedb.org/3/%s/%s?api_key=%s&language=%s'
-                                              % (show_type, tmdb_id, configuration.tmdb_key, language))
-
-        try:
-            response = urllib.request.urlopen(show_request).read()
-        except urllib.error.HTTPError:
-            return None
-
-        # Save the result in the cache
-        db_calls.register_cache(session, cache_key, response.decode("utf-8"))
-
-    # Parse the response to json
-    response_dict = json.loads(response)
-
-    return TmdbShow(response_dict, is_movie)
+            for job in crew_member_dict['jobs']:
+                self.jobs.append(job['job'])
 
 
 def search_shows_by_text(session: sqlalchemy.orm.Session, search_text: str, language: str = None, is_movie: bool = None,
-                         page: int = 1, show_adult: bool = False) -> Tuple[int, List[TmdbShow]]:
+                         page: int = 1, show_adult: bool = False, year: int = None) -> Tuple[int, List[TmdbShow]]:
     """
     Search shows by text, using TMDB.
 
@@ -161,6 +142,7 @@ def search_shows_by_text(session: sqlalchemy.orm.Session, search_text: str, lang
     :param language: the language in which we want the response (pt-PT, en-US...).
     :param page: the page to obtain.
     :param show_adult: whether to show adult results or not.
+    :param year: the year of the show.
     :return: a tuple with the total number of pages and the list of TmdbShow.
     """
 
@@ -178,7 +160,7 @@ def search_shows_by_text(session: sqlalchemy.orm.Session, search_text: str, lang
     else:
         include_adult = 'false'
 
-    cache_key = 'tmdb|text|%s-%s-%s-%s-%s' % (show_type, language, search_text, include_adult, page)
+    cache_key = 'tmdb|text|%s-%s-%s-%s-%s-%s' % (show_type, language, search_text, include_adult, page, year)
 
     cache_entry = db_calls.get_cache(session, cache_key)
 
@@ -186,10 +168,15 @@ def search_shows_by_text(session: sqlalchemy.orm.Session, search_text: str, lang
     if cache_entry:
         response = cache_entry.result
     else:
+        # Create the url
+        url = 'https://api.themoviedb.org/3/search/%s?api_key=%s&language=%s&query=%s&include_adult=%s' \
+            % (show_type, configuration.tmdb_key, language, urllib.parse.quote(search_text), include_adult)
+
+        if year is not None:
+            url += '&year=%d' % year
+
         # Make the request
-        search_request = urllib.request.Request(
-            'https://api.themoviedb.org/3/search/%s?api_key=%s&language=%s&query=%s&include_adult=%s'
-            % (show_type, configuration.tmdb_key, language, urllib.parse.quote(search_text), include_adult))
+        search_request = urllib.request.Request(url)
 
         # Add the page, when it exists
         if page:
@@ -215,6 +202,53 @@ def search_shows_by_text(session: sqlalchemy.orm.Session, search_text: str, lang
             tmdb_shows.append(TmdbShow(entry, is_movie))
 
     return response_dict['total_pages'], tmdb_shows
+
+
+def get_show_using_id(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: bool, language: str = None) \
+        -> Optional[TmdbShow]:
+    """
+    Get a show's information, from TMDB.
+
+    :param session: the db session.
+    :param tmdb_id: the tmdb id of the show.
+    :param is_movie: if the show is a movie.
+    :param language: the language in which we want the response (pt-PT, en-US...).
+    :return: the TmdbShow.
+    """
+
+    if is_movie:
+        show_type = 'movie'
+    else:
+        show_type = 'tv'
+
+    cache_key = 'tmdb|id|%s-%s-%s' % (show_type, language, tmdb_id)
+
+    cache_entry = db_calls.get_cache(session, cache_key)
+
+    # If there's a valid entry of cache for this request
+    if cache_entry:
+        response = cache_entry.result
+    else:
+        # Make the request
+        url = 'https://api.themoviedb.org/3/%s/%s?api_key=%s' % (show_type, tmdb_id, configuration.tmdb_key)
+
+        if language is not None:
+            url += '&language=%s' % language
+
+        show_request = urllib.request.Request(url)
+
+        try:
+            response = urllib.request.urlopen(show_request).read()
+        except urllib.error.HTTPError:
+            return None
+
+        # Save the result in the cache
+        db_calls.register_cache(session, cache_key, response.decode("utf-8"))
+
+    # Parse the response to json
+    response_dict = json.loads(response)
+
+    return TmdbShow(response_dict, is_movie)
 
 
 def get_show_translations(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: bool) \
@@ -317,6 +351,45 @@ def get_show_aliases(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: bo
     return tmdb_aliases
 
 
+def get_show_crew_members(tmdb_id: int, is_movie: bool) \
+        -> List[TmdbCrewMember]:
+    """
+    Search for a show's crew members, using TMDB.
+    It does not save to the cache.
+
+    :param tmdb_id: the tmdb id of the show.
+    :param is_movie: if the show is a movie.
+    :return: the list of TmdbCrewMembers.
+    """
+
+    if is_movie:
+        show_type = 'movie'
+        resource = 'credits'
+    else:
+        show_type = 'tv'
+        resource = 'aggregate_credits'
+
+    # Make the request
+    request = urllib.request.Request('https://api.themoviedb.org/3/%s/%s/%s?api_key=%s'
+                                     % (show_type, tmdb_id, resource, configuration.tmdb_key))
+
+    try:
+        response = urllib.request.urlopen(request).read()
+    except urllib.error.HTTPError:
+        return []
+
+    # Parse the response
+    response_dict = json.loads(response)
+
+    # Create a TmdbCrewMember for each entry
+    tmdb_crew_members = []
+
+    for entry in response_dict['crew']:
+        tmdb_crew_members.append(TmdbCrewMember(entry, is_movie))
+
+    return tmdb_crew_members
+
+
 def collect_titles(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: bool) -> List[str]:
     """
     Get all tmdb titles for a tmdb id.
@@ -328,7 +401,7 @@ def collect_titles(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: bool
     """
 
     # Get the show's information from tmdb
-    tmdb_show = search_show_by_id(session, tmdb_id, is_movie)
+    tmdb_show = get_show_using_id(session, tmdb_id, is_movie)
 
     # If no result is found
     if tmdb_show is None:
