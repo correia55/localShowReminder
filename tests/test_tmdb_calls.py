@@ -23,14 +23,14 @@ class TestTmdbCalls(unittest.TestCase):
     def setUp(self) -> None:
         self.session = unittest.mock.MagicMock()
 
-        configuration_mock.tmdb_key = 'tmdb_key'
-
     @unittest.mock.patch('tmdb_calls.urllib.request')
     @unittest.mock.patch('tmdb_calls.db_calls')
     def test_get_show_using_id_01(self, db_calls_mock, external_request_mock):
         """ Test get_show_using_id with no valid cache. """
 
         # Prepare the calls to the mocks
+        configuration_mock.tmdb_key = 'tmdb_key'
+
         # Prepare the call to read the cache
         db_calls_mock.get_cache.return_value = None
 
