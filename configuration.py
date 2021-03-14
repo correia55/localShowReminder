@@ -81,7 +81,7 @@ same_session_minutes = os.environ.get('SAME_SESSION_MINUTES', None)
 
 if same_session_minutes is None:
     same_session_minutes = 30
-else
+else:
     same_session_minutes = int(same_session_minutes)
 
 # endregion
