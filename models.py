@@ -6,6 +6,8 @@ import sqlalchemy
 from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, DateTime, Date
 from sqlalchemy.ext.declarative import declarative_base
 
+import auxiliary
+
 # Base class for DB Classes
 Base = declarative_base()
 
@@ -15,6 +17,7 @@ class AccountType(Enum):
     GOOGLE = 1
 
 
+@auxiliary.auto_repr
 class ShowData(Base):
     """Used to store all the data associated with a show."""
 

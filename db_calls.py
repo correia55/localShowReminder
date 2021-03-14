@@ -495,6 +495,21 @@ def search_show_data_by_search_title_and_everything_else_empty(session: sqlalche
         .first()
 
 
+def get_show_data_by_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: int) \
+        -> Optional[models.ShowData]:
+    """
+    Get the show data with a given tmdb id.
+
+    :param session: the db session.
+    :param tmdb_id: the TMDB id.
+    :return: the show data with that data.
+    """
+
+    return session.query(models.ShowData) \
+        .filter(models.ShowData.tmdb_id == tmdb_id) \
+        .first()
+
+
 def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, original_title: str = None,
                        duration: int = None, synopsis: str = None, year: int = None, genre: str = None,
                        director: str = None, cast: str = None, audio_languages: str = None, countries: str = None,
@@ -851,6 +866,40 @@ def update_streaming_service_show(session: sqlalchemy.orm.Session, ss_show_id: i
         return True
 
 
+def get_show_sessions_show_id(session: sqlalchemy.orm.Session, show_id: int) \
+        -> List[models.ShowSession]:
+    """
+    Get the sessions with a given show id.
+
+    :param session: the db session.
+    :param show_id: the show id.
+    :return: the list of show sessions.
+    """
+
+    return session.query(models.ShowSession) \
+        .filter(models.ShowSession.show_id == show_id) \
+        .all()
+
+
+def update_show_sessions(session: sqlalchemy.orm.Session, current_show_id: int, new_show_id: int) \
+        -> List[models.ShowSession]:
+    """
+    Change the show id of the sessions with a given show id.
+
+    :param session: the db session.
+    :param current_show_id: the current show id.
+    :param new_show_id: the new show id.
+    :return: the list of show sessions.
+    """
+
+    show_sessions = get_show_sessions_show_id(session, current_show_id)
+
+    for ss in show_sessions:
+        ss.show_id = new_show_id
+
+    return show_sessions
+
+
 def get_streaming_service_show(session: sqlalchemy.orm.Session, show_id: int) -> Optional[models.StreamingServiceShow]:
     """
     Get the streaming service show with a given id.
@@ -1110,6 +1159,24 @@ def search_channel_show_data(session: sqlalchemy.orm.Session, channel_id: int, i
         query = query.filter(models.ChannelShowData.subgenre == subgenre)
 
     return query.first()
+
+
+def get_unmatched_show_data(session: sqlalchemy.orm.Session, limit: int) \
+        -> List[models.ShowData]:
+    """
+    Get the first x shows that do not have a TMDB match.
+
+    :param session: the db session.
+    :param limit: the limit for the number of shows.
+    :return: the list of show data.
+    """
+
+    query = session.query(models.ShowData) \
+        .filter(models.ShowData.original_title.isnot(None)) \
+        .filter(models.ShowData.tmdb_id.is_(None)) \
+        .limit(limit)
+
+    return query.all()
 
 
 def get_last_update(session: sqlalchemy.orm.Session) -> Optional[models.LastUpdate]:

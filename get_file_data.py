@@ -13,6 +13,7 @@ import models
 import process_emails
 import response_models
 import tmdb_calls
+import utilities
 
 unordered_words = ['The', 'A', 'An', 'I', 'Un', 'Le', 'La', 'Les', 'Um']
 
@@ -623,7 +624,7 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
                     show_data = tmdb_show_data
                 # If not, update the information
                 else:
-                    update_show_data_with_tmdb(show_data, tmdb_show)
+                    utilities.update_show_data_with_tmdb(show_data, tmdb_show)
 
                 # If there are differences between the data from the TMDB and the one in the file
                 if show_data.original_title.casefold() != original_title.casefold() \
@@ -823,24 +824,6 @@ def search_tmdb_match(db_session: sqlalchemy.orm.Session, show_data: models.Show
 
         print_message('no TMDB match found', True, str(show_data.id))
         return None
-
-
-def update_show_data_with_tmdb(show_data: models.ShowData, tmdb_show: tmdb_calls.TmdbShow):
-    """
-    Update a show data with the data from TMDB.
-
-    :param show_data: the show data in the DB.
-    :param tmdb_show: the corresponding TMDB show.
-    """
-
-    show_data.tmdb_id = tmdb_show.id
-    show_data.year = tmdb_show.year
-    show_data.original_title = tmdb_show.original_title
-
-    # Delete information that is no longer useful
-    if not show_data.is_movie:
-        show_data.director = None
-        show_data.cast = None
 
 
 def add_file_data(db_session: sqlalchemy.orm.Session, channel_set: int, filename: str) -> ():
