@@ -526,7 +526,7 @@ class TVCine(ChannelInsertion):
             file_start_datetime = first_event_datetime - datetime.timedelta(minutes=5)
             file_end_datetime = date_time + datetime.timedelta(minutes=5)
 
-            nb_deleted_sessions = delete_old_sessions(db_session, file_start_datetime, end_day_at_start,
+            nb_deleted_sessions = delete_old_sessions(db_session, file_start_datetime, file_end_datetime,
                                                       TVCine.channels)
 
             # Set the remaining information
