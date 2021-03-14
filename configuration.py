@@ -74,6 +74,18 @@ max_channels_request = os.environ.get('MAX_CHANNELS_REQUEST', '90')
 
 # endregion
 
+# region Data Gathering from file
+
+# Get the number of minutes to be used for searching for changes in a session
+same_session_minutes = os.environ.get('SAME_SESSION_MINUTES', None)
+
+if same_session_minutes is None:
+    same_session_minutes = 30
+else
+    same_session_minutes = int(same_session_minutes)
+
+# endregion
+
 # region Shows Information Services
 
 # Get the api key for trakt

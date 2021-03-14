@@ -1158,8 +1158,8 @@ def search_existing_session(session: sqlalchemy.orm.Session, season: Optional[in
     :return: the existing session.
     """
 
-    start_datetime = date_time - datetime.timedelta(hours=1)
-    end_datetime = date_time + datetime.timedelta(hours=1)
+    start_datetime = date_time - datetime.timedelta(minutes=configuration.same_session_minutes)
+    end_datetime = date_time + datetime.timedelta(minutes=configuration.same_session_minutes)
 
     query = session.query(models.ShowSession) \
         .filter(models.ShowSession.show_id == show_id) \
