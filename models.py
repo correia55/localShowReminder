@@ -93,6 +93,7 @@ class Channel(Base):
                % (self.id, self.acronym, self.name, self.adult, self.search_epg)
 
 
+@auxiliary.auto_repr
 class ShowSession(Base):
     __tablename__ = 'ShowSession'
 

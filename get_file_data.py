@@ -160,17 +160,16 @@ class Cinemundo(ChannelInsertion):
             db_calls.commit(db_session)
 
             # Delete old sessions for the same time period
-            first_day_at_start = first_event_datetime.replace(hour=0, minute=0, second=0)
-            end_day_at_start = (date_time + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0) \
-                               - datetime.timedelta(seconds=1)
+            file_start_datetime = first_event_datetime - datetime.timedelta(minutes=5)
+            file_end_datetime = date_time + datetime.timedelta(minutes=5)
 
-            nb_deleted_sessions = delete_old_sessions(db_session, first_day_at_start, end_day_at_start,
+            nb_deleted_sessions = delete_old_sessions(db_session, file_start_datetime, file_end_datetime,
                                                       Cinemundo.channels)
 
             # Set the remaining information
             insertion_result.nb_deleted_sessions = nb_deleted_sessions
-            insertion_result.start_datetime = first_day_at_start
-            insertion_result.end_datetime = end_day_at_start
+            insertion_result.start_datetime = file_start_datetime
+            insertion_result.end_datetime = file_end_datetime
 
             return insertion_result
         else:
@@ -321,16 +320,15 @@ class Odisseia(ChannelInsertion):
         db_calls.commit(db_session)
 
         # Delete old sessions for the same time period
-        first_day_at_start = first_event_datetime.replace(hour=0, minute=0, second=0)
-        end_day_at_start = (date_time + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0) \
-                           - datetime.timedelta(seconds=1)
+        file_start_datetime = first_event_datetime - datetime.timedelta(minutes=5)
+        file_end_datetime = date_time + datetime.timedelta(minutes=5)
 
-        nb_deleted_sessions = delete_old_sessions(db_session, first_day_at_start, end_day_at_start, Odisseia.channels)
+        nb_deleted_sessions = delete_old_sessions(db_session, file_start_datetime, file_end_datetime, Odisseia.channels)
 
         # Set the remaining information
         insertion_result.nb_deleted_sessions = nb_deleted_sessions
-        insertion_result.start_datetime = first_day_at_start
-        insertion_result.end_datetime = end_day_at_start
+        insertion_result.start_datetime = file_start_datetime
+        insertion_result.end_datetime = file_end_datetime
 
         return insertion_result
 
@@ -525,16 +523,16 @@ class TVCine(ChannelInsertion):
             db_calls.commit(db_session)
 
             # Delete old sessions for the same time period
-            first_day_at_start = first_event_datetime.replace(hour=0, minute=0, second=0)
-            end_day_at_start = (date_time + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0) \
-                               - datetime.timedelta(seconds=1)
+            file_start_datetime = first_event_datetime - datetime.timedelta(minutes=5)
+            file_end_datetime = date_time + datetime.timedelta(minutes=5)
 
-            nb_deleted_sessions = delete_old_sessions(db_session, first_day_at_start, end_day_at_start, TVCine.channels)
+            nb_deleted_sessions = delete_old_sessions(db_session, file_start_datetime, end_day_at_start,
+                                                      TVCine.channels)
 
             # Set the remaining information
             insertion_result.nb_deleted_sessions = nb_deleted_sessions
-            insertion_result.start_datetime = first_day_at_start
-            insertion_result.end_datetime = end_day_at_start
+            insertion_result.start_datetime = file_start_datetime
+            insertion_result.end_datetime = file_end_datetime
 
             return insertion_result
         else:
