@@ -914,9 +914,45 @@ def get_streaming_service_show(session: sqlalchemy.orm.Session, show_id: int) ->
         .first()
 
 
+def search_show_sessions_data_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: int, season: Optional[int],
+                                           episode: Optional[int], below_datetime: Optional[datetime.datetime] = None) \
+        -> List[Tuple[models.ShowSession, models.Channel, models.ShowData]]:
+    """
+    Search the show sessions, and all associated data, that match a tmdb_id.
+
+    :param session: the db session.
+    :param tmdb_id: the TMDB id.
+    :param season: to specify a season.
+    :param episode: to specify an episode.
+    :param below_datetime: a datetime below to limit the search.
+    :return: the show sessions associated with a given TMDB id.
+    """
+
+    query = session.query(models.ShowSession, models.Channel, models.ShowData) \
+        .filter(models.ShowData.tmdb_id == tmdb_id)
+
+    if season is not None:
+        query = query.filter(models.ShowSession.season == season)
+
+    if episode is not None:
+        query = query.filter(models.ShowSession.episode == episode)
+
+    if below_datetime is not None:
+        query = query.filter(models.ShowSession.update_timestamp > below_datetime)
+        query = query.filter(models.ShowSession.date_time > datetime.datetime.now())
+
+    # Join channels
+    query = query.join(models.Channel)
+
+    # Join show data
+    query = query.join(models.ShowData)
+
+    return query.all()
+
+
 def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: str, is_movie: Optional[bool],
                               season: Optional[int], episode: Optional[int], search_adult: bool, complete_title: bool,
-                              below_datetime: Optional[datetime.datetime] = None) \
+                              below_datetime: Optional[datetime.datetime] = None, ignore_with_tmdb_id: bool = False) \
         -> List[Tuple[models.ShowSession, models.Channel, models.ShowData]]:
     """
     Get the show sessions, and all associated data, that match a given search pattern and criteria.
@@ -929,6 +965,7 @@ def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: s
     :param search_adult: if it should also search in adult channels.
     :param complete_title: whether it is a complete title or not.
     :param below_datetime: a datetime below to limit the search.
+    :param ignore_with_tmdb_id: True if we want to ignore results that have a tmdb id.
     :return: the streaming service show with a given id.
     """
 
@@ -961,6 +998,10 @@ def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: s
         query = query.filter(models.ShowSession.update_timestamp > below_datetime)
         query = query.filter(models.ShowSession.date_time > datetime.datetime.now())
 
+    # Ignore shows that have a TMDB match
+    if ignore_with_tmdb_id:
+        query = query.filter(models.ShowData.tmdb_id.is_(None))
+
     # Join channels
     query = query.join(models.Channel)
 
@@ -970,9 +1011,50 @@ def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: s
     return query.all()
 
 
+def search_streaming_service_shows_data_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: int,
+                                                     season: Optional[int], episode: Optional[int],
+                                                     below_datetime: Optional[datetime.datetime] = None) \
+        -> List[Tuple[models.ShowSession, models.StreamingService, models.ShowData]]:
+    """
+    Search the streaming services' shows, and all associated data, that match a given TMDB id.
+
+    :param session: the db session.
+    :param tmdb_id: the TMDB id.
+    :param season: to specify a season.
+    :param episode: to specify an episode.
+    :param below_datetime: a datetime below to limit the search.
+    :return: the show sessions associated with a given TMDB id.
+    """
+
+    query = session.query(models.StreamingServiceShow, models.StreamingService, models.ShowData) \
+        .filter(models.ShowData.tmdb_id == tmdb_id)
+
+    if season is not None:
+        query = query.filter(models.StreamingServiceShow.first_season_available <= season)
+        query = query.filter(models.StreamingServiceShow.last_season_available >= season)
+
+        query = query.filter(sqlalchemy.or_(models.StreamingServiceShow.prev_first_season_available.is_(None),
+                                            models.StreamingServiceShow.prev_first_season_available > season,
+                                            models.StreamingServiceShow.prev_last_season_available < season))
+
+    # TODO: FILTER THE EPISODE WHEN WE'RE SETTING THE NUMBER OF EPISODES OF THE LAST SEASON
+
+    if below_datetime is not None:
+        query = query.filter(models.StreamingServiceShow.update_timestamp > below_datetime)
+
+    # Join channels
+    query = query.join(models.StreamingService)
+
+    # Join show data
+    query = query.join(models.ShowData)
+
+    return query.all()
+
+
 def search_streaming_service_shows_data(session: sqlalchemy.orm.Session, search_pattern: str, is_movie: Optional[bool],
                                         season: Optional[int], episode: Optional[int], search_adult: bool,
-                                        complete_title: bool, below_datetime: Optional[datetime.datetime] = None) \
+                                        complete_title: bool, below_datetime: Optional[datetime.datetime] = None,
+                                        ignore_with_tmdb_id: bool = False) \
         -> List[Tuple[models.ShowSession, models.StreamingService, models.ShowData]]:
     """
     Get the streaming services' shows, and all associated data, that match a given search pattern and criteria.
@@ -985,6 +1067,7 @@ def search_streaming_service_shows_data(session: sqlalchemy.orm.Session, search_
     :param search_adult: if it should also search in adult channels.
     :param complete_title: whether it is a complete title or not.
     :param below_datetime: a datetime below to limit the search.
+    :param ignore_with_tmdb_id: True if we want to ignore results that have a tmdb id.
     :return: the streaming service show with a given id.
     """
 
@@ -1018,6 +1101,10 @@ def search_streaming_service_shows_data(session: sqlalchemy.orm.Session, search_
 
     if below_datetime is not None:
         query = query.filter(models.StreamingServiceShow.update_timestamp > below_datetime)
+
+    # Ignore shows that have a TMDB match
+    if ignore_with_tmdb_id:
+        query = query.filter(models.ShowData.tmdb_id.is_(None))
 
     # Join channels
     query = query.join(models.StreamingService)

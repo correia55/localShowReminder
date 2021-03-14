@@ -10,10 +10,10 @@ import webargs.flaskparser as fp
 from flask_cors import CORS
 
 import authentication
-import external_authentication
 import auxiliary
 import configuration
 import db_calls
+import external_authentication
 import models
 import processing
 import reminders
@@ -717,19 +717,30 @@ class LocalShowsEP(fr.Resource):
                     return flask.make_response('Invalid request', 400)
 
                 titles = processing.get_show_titles(session, show_id, is_movie)
-                complete_title = True
+
+                db_shows = processing.search_sessions_db_with_tmdb_id(session, show_id)
             else:
                 if len(search_text) < 2:
                     return flask.make_response('Search Text Too Small', 400)
 
                 titles = [search_text]
-                complete_title = False
 
-            db_shows = processing.search_streaming_services_shows_db(session, titles, is_movie=is_movie,
-                                                                     complete_title=complete_title,
-                                                                     search_adult=search_adult)
+                db_shows = []
+
+            # If it is a search with id
+            # - we only want exact title matches
+            # - for those results that don't have a TMDB id
+            complete_title = show_id is not None
+            ignore_with_tmdb_id = show_id is not None
+
+            # db_shows += processing.search_streaming_services_shows_db(session, titles, is_movie=is_movie,
+            #                                                          complete_title=complete_title,
+            #                                                          search_adult=search_adult,
+            #                                                          ignore_with_tmdb_id=ignore_with_tmdb_id)
+
             db_shows += processing.search_sessions_db(session, titles, is_movie=is_movie, complete_title=complete_title,
-                                                      search_adult=search_adult)
+                                                      search_adult=search_adult,
+                                                      ignore_with_tmdb_id=ignore_with_tmdb_id)
 
             if len(db_shows) != 0:
                 return flask.make_response(flask.jsonify({'show_list': auxiliary.list_to_json(db_shows)}), 200)
