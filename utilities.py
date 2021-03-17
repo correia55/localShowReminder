@@ -38,15 +38,22 @@ def update_show_data_with_tmdb(show_data: models.ShowData, tmdb_show: tmdb_calls
         show_data.cast = None
 
 
-def set_tmdb_match(db_session: sqlalchemy.orm.Session, show: models.ShowData, tmdb_id: int, is_movie: bool):
+def set_tmdb_match(db_session: sqlalchemy.orm.Session, show_id: int, tmdb_id: int, is_movie: bool):
     """
     Set a TMDB id as the match for a show.
 
     :param db_session: the DB session.
-    :param show: the show being processed.
+    :param show_id: the id of the show being processed.
     :param tmdb_id: the TMDB id.
     :param is_movie: is the show a movie or not.
     """
+
+    # Get the show
+    show = db_calls.get_show_data_id(db_session, show_id)
+
+    if show is None:
+        print('Show with id %d not found!' % show_id)
+        return
 
     # Check if the tmdb_id is not already present in another entry
     original_show = db_calls.get_show_data_by_tmdb_id(db_session, tmdb_id)
@@ -54,10 +61,10 @@ def set_tmdb_match(db_session: sqlalchemy.orm.Session, show: models.ShowData, tm
     # If it is:
     if original_show is not None:
         # - change all sessions to the previous show_id
-        show_sessions = db_calls.update_show_sessions(db_session, show.id, original_show.id)
+        show_sessions = db_calls.update_show_sessions(db_session, show_id, original_show.id)
         final_show = original_show
     else:
-        show_sessions = db_calls.get_show_sessions_show_id(db_session, show.id)
+        show_sessions = db_calls.get_show_sessions_show_id(db_session, show_id)
         final_show = show
 
     show_correction = None
@@ -114,21 +121,24 @@ def set_tmdb_match_menu(db_session: sqlalchemy.orm.Session, call_count: int):
         option = int(input(question))
 
     if option == 0:
-        shows = db_calls.get_unmatched_show_data(db_session, 1)
+        shows = db_calls.get_unmatched_show_data(db_session, 10)
 
         if len(shows) == 0:
             print('No more shows without a match!')
-            return
 
-        print('%s\n' % shows[0])
+        for s in shows:
+            print('%s\n' % s)
 
-        question = 'What is the id of show?\n'
+        question = 'What is the id of the show?\n'
+        show_id = int(input(question))
+
+        question = 'What is the matching TMBD id?\n'
         tmdb_id = int(input(question))
 
         question = 'Is it a \'movie\' or a \'tv show\'?\n'
         is_movie = input(question) == 'movie'
 
-        set_tmdb_match(db_session, shows[0], tmdb_id, is_movie)
+        set_tmdb_match(db_session, show_id, tmdb_id, is_movie)
 
     if option != 1:
         try:
