@@ -15,7 +15,7 @@ import response_models
 import tmdb_calls
 import utilities
 
-unordered_words = ['The', 'A', 'An', 'I', 'Un', 'Le', 'La', 'Les', 'Um']
+unordered_words = ['the', 'a', 'an', 'i', 'un', 'le', 'la', 'les', 'um']
 
 
 class InsertionResult:
@@ -353,19 +353,9 @@ class TVCine(ChannelInsertion):
         # Replace all quotation marks for the same quotation mark
         title = re.sub('[´`]', '\'', title)
 
-        search_result = auxiliary.search_chars(title, ['(', ')', ','])
+        search_result = auxiliary.search_chars(title, ['(', ')'])
         vp = False
         extended_cut = False
-
-        # If there's at least a comma in the title - it would always be at the end
-        if len(search_result[2]) > 0:
-            last_comma = search_result[2][-1]
-
-            after_comma = title[last_comma + 1:].strip()
-
-            # If it's one of the unordered words
-            if after_comma in unordered_words:
-                title = after_comma + ' ' + title[:last_comma]
 
         # If the number of opening parenthesis is not the same as the closing ones
         if len(search_result[0]) != len(search_result[1]):
@@ -391,6 +381,18 @@ class TVCine(ChannelInsertion):
 
             # Remove the parenthesis and its context
             title = title[:search_result[0][i]] + title[search_result[1][i] + 1:]
+
+        search_result = auxiliary.search_chars(title, [','])
+
+        # If there's at least a comma in the title - it would always be at the end
+        if len(search_result[0]) > 0:
+            last_comma = search_result[0][-1]
+
+            after_comma = title[last_comma + 1:].strip()
+
+            # If it's one of the unordered words
+            if after_comma.lower() in unordered_words:
+                title = after_comma + ' ' + title[:last_comma]
 
         return title.strip(), vp, extended_cut
 

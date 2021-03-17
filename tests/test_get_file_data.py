@@ -101,6 +101,102 @@ class TestGetFileData(unittest.TestCase):
             [unittest.mock.call(reminder_1), unittest.mock.call(reminder_2), unittest.mock.call(show_session_1),
              unittest.mock.call(show_session_2)])
 
+    def test_TVCine_process_title_01(self) -> None:
+        """ Test the function TvCine.process_title with a title with "(VO)". """
+
+        # The expected result
+        expected_result = ('The Angry Birds Movie 2', False, False)
+
+        # Call the function
+        actual_result = get_file_data.TVCine.process_title('Angry Birds Movie 2, The (VO)')
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_TVCine_process_title_02(self) -> None:
+        """ Test the function TvCine.process_title with a title with "(VP)". """
+
+        # The expected result
+        expected_result = ('The Angry Birds Movie 2', True, False)
+
+        # Call the function
+        actual_result = get_file_data.TVCine.process_title('Angry Birds Movie 2, The (VP)')
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_TVCine_process_title_03(self) -> None:
+        """ Test the function TvCine.process_title with the year in the title. """
+
+        # The expected result
+        expected_result = ('Endings, Beginnings', False, False)
+
+        # Call the function
+        actual_result = get_file_data.TVCine.process_title('Endings, Beginnings (2019)')
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_TVCine_process_title_04(self) -> None:
+        """ Test the function TvCine.process_title with an inverted section at the end. """
+
+        # The expected result
+        expected_result = ('A Beautiful Day In The Neighborhood', False, False)
+
+        # Call the function
+        actual_result = get_file_data.TVCine.process_title('Beautiful Day In The Neighborhood, A')
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_TVCine_process_title_05(self) -> None:
+        """ Test the function TvCine.process_title with year and "VO". """
+
+        # The expected result
+        expected_result = ('Abominable', False, False)
+
+        # Call the function
+        actual_result = get_file_data.TVCine.process_title('Abominable (2019) (VO)')
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_TVCine_process_title_06(self) -> None:
+        """ Test the function TvCine.process_title with year and "VP". """
+
+        # The expected result
+        expected_result = ('Abominable', True, False)
+
+        # Call the function
+        actual_result = get_file_data.TVCine.process_title('Abominable (2019) (VP)')
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_TVCine_process_title_07(self) -> None:
+        """ Test the function TvCine.process_title with year, "VP" and an inverted section. """
+
+        # The expected result
+        expected_result = ('The Addams Family', True, False)
+
+        # Call the function
+        actual_result = get_file_data.TVCine.process_title('Addams Family, The (2019) (VP)')
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_TVCine_process_title_08(self) -> None:
+        """ Test the function TvCine.process_title with the extended cut. """
+
+        # The expected result
+        expected_result = ('Furious 7', False, True)
+
+        # Call the function
+        actual_result = get_file_data.TVCine.process_title('Furious 7 (extended cut)')
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
 
 if __name__ == '__main__':
     unittest.main()
