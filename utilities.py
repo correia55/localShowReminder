@@ -60,47 +60,36 @@ def set_tmdb_match(db_session: sqlalchemy.orm.Session, show_id: int, tmdb_id: in
 
     # If it is:
     if original_show is not None:
+        final_show = original_show
+
         # - change all sessions to the previous show_id
         show_sessions = db_calls.update_show_sessions(db_session, show_id, original_show.id)
-        final_show = original_show
-    else:
-        show_sessions = db_calls.get_show_sessions_show_id(db_session, show_id)
-        final_show = show
 
-    show_correction = None
-
-    # Create a correction either way
-    if len(show_sessions) > 0:
-        # But only if the info is different
-        if show.original_title.casefold() != final_show.original_title.casefold() \
-                or (show.year is not None and show.year != final_show.year):
-            show_correction = db_calls.register_channel_show_data(db_session, show_sessions[0].channel_id,
-                                                                  final_show.id, show.is_movie, show.original_title,
-                                                                  show.portuguese_title, directors=show.director,
-                                                                  year=show.year, subgenre=show.subgenre)
-
-    # If it is:
-    if original_show is not None:
         # - delete show
         db_session.delete(show)
-
-    # If it isn't:
     else:
+        final_show = show
+
+        # Get show sessions
+        show_sessions = db_calls.get_show_sessions_show_id(db_session, show_id)
+
         # Get the data from TMDB
         tmdb_show = tmdb_calls.get_show_using_id(db_session, tmdb_id, is_movie)
 
         # - update the show data with the correct data
         update_show_data_with_tmdb(show, tmdb_show)
 
-    if show_correction is not None:
+    # If there are sessions
+    if len(show_sessions) > 0:
         # Check if the correction is needed
         show_data = db_calls.search_show_data_by_original_title(db_session, show.original_title, show.is_movie,
                                                                 directors=show.directors, year=show.year,
                                                                 genre=show.genre)
-
         # If it isn't: delete it
-        if show_data is not None and show_data.id == final_show.id:
-            db_session.delete(show_correction)
+        if show_data is None or show_data.id != final_show.id:
+            db_calls.register_channel_show_data(db_session, show_sessions[0].channel_id, final_show.id, show.is_movie,
+                                                show.original_title, show.portuguese_title, directors=show.director,
+                                                year=show.year, subgenre=show.subgenre)
 
 
 def set_tmdb_match_menu(db_session: sqlalchemy.orm.Session, call_count: int):
