@@ -1,0 +1,36 @@
+<?xml version="1.02" encoding="ISO-8859-1"?>
+<!DOCTYPE TVListing SYSTEM "TVListing.dtd">
+<TVListing creationDate="20210318133527">
+<ProviderInfo>
+<ProviderId>"FACTORIADECANALES"</ProviderId>
+<ProviderName>"Factoría de Canales, S.L."</ProviderName>
+</ProviderInfo>
+<ScheduleData>
+<ChannelPeriod beginTime="20210319051516" endTime="20210324041127">
+<ChannelId>ODP</ChannelId>
+<Event beginTime="20210319051516" duration="1390">
+<EpgProduction>
+<EpgText language="por">
+<Name>Ataque e Defesa</Name>
+<BroadcastName>Mestres da Defesa</BroadcastName>
+<ShortDescription>Os predadores mais poderosos do planeta e as presas mais letais vivem numa batalha contínua pela sobrevivência.</ShortDescription>
+<ExtendedInfo name="OriginalEventName">Attack and Defend</ExtendedInfo>
+<ExtendedInfo name="Year">2015</ExtendedInfo>
+<ExtendedInfo name="Nationality">CAN</ExtendedInfo>
+<ExtendedInfo name="Director">Seaton McLean</ExtendedInfo>
+<ExtendedInfo name="Casting"></ExtendedInfo>
+<ExtendedInfo name="MainEventDuration">23</ExtendedInfo>
+<ExtendedInfo name="OriginalEpisodeName">Masters of Defence</ExtendedInfo>
+<ExtendedInfo name="EpisodeName">Mestres da Defesa</ExtendedInfo>
+<ExtendedInfo name="EpisodeNumber">5</ExtendedInfo>
+<ExtendedInfo name="Cycle">1</ExtendedInfo>
+</EpgText>
+<Genere>Documentários</Genere>
+<Subgenere>Natureza</Subgenere>
+<ParentalRating>General</ParentalRating>
+<Showing>0</Showing>
+</EpgProduction>
+</Event>
+</ChannelPeriod>
+</ScheduleData>
+</TVListing>

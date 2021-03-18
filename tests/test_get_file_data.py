@@ -1,4 +1,5 @@
 import datetime
+import os
 import sys
 import unittest.mock
 
@@ -19,6 +20,12 @@ process_emails_mock = unittest.mock.MagicMock()
 sys.modules['process_emails'] = process_emails_mock
 
 import get_file_data
+
+# To ensure the tests find the data folder no matter where it runs
+if 'tests' in os.getcwd():
+    base_path = ''
+else:
+    base_path = 'tests/'
 
 
 class TestGetFileData(unittest.TestCase):
@@ -100,6 +107,50 @@ class TestGetFileData(unittest.TestCase):
         self.session.delete.assert_has_calls(
             [unittest.mock.call(reminder_1), unittest.mock.call(reminder_2), unittest.mock.call(show_session_1),
              unittest.mock.call(show_session_2)])
+
+
+class TestCinemundo(unittest.TestCase):
+    session: sqlalchemy.orm.Session
+
+    def test_Cinemundo_process_title_01(self) -> None:
+        """ Test the function Cinemundo.process_title with nothing in particular. """
+
+        # The expected result
+        expected_result = ('Mortadela e Salamão: Missão Não Possível', True, None)
+
+        # Call the function
+        actual_result = get_file_data.Cinemundo.process_title('Mortadela e Salamão: Missão Não Possível VP')
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_Cinemundo_process_title_02(self) -> None:
+        """ Test the function Cinemundo.process_title with quotation marks. """
+
+        # The expected result
+        expected_result = ('Je m\'appelle Bernadette', False, None)
+
+        # Call the function
+        actual_result = get_file_data.Cinemundo.process_title('Je m´appelle Bernadette')
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_Cinemundo_process_title_03(self) -> None:
+        """ Test the function Cinemundo.process_title with season. """
+
+        # The expected result
+        expected_result = ('True Justice', False, 2)
+
+        # Call the function
+        actual_result = get_file_data.Cinemundo.process_title('True Justice S2: Vengeance is Mine')
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+
+class TestTvCine(unittest.TestCase):
+    session: sqlalchemy.orm.Session
 
     def test_TVCine_process_title_01(self) -> None:
         """ Test the function TvCine.process_title with a title with "(VO)". """
@@ -196,6 +247,121 @@ class TestGetFileData(unittest.TestCase):
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
+
+    def test_TVCine_process_title_09(self) -> None:
+        """ Test the function TvCine.process_title with a quotation mark. """
+
+        # The expected result
+        expected_result = ('Child\'s Play', False, False)
+
+        # Call the function
+        actual_result = get_file_data.TVCine.process_title('Child`s Play (2019)')
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_TVCine_process_title_10(self) -> None:
+        """ Test the function TvCine.process_title with nothing in particular. """
+
+        # The expected result
+        expected_result = ('Birds Of Prey (And The Fantabulous Emancipation Of One Harley Quinn)', False, False)
+
+        # Call the function
+        actual_result = get_file_data.TVCine.process_title(
+            'Birds Of Prey (And The Fantabulous Emancipation Of One Harley Quinn)')
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+
+class TestOdisseia(unittest.TestCase):
+    session: sqlalchemy.orm.Session
+
+    def setUp(self) -> None:
+        self.session = unittest.mock.MagicMock()
+
+    def test_Odisseia_process_title_01(self) -> None:
+        """ Test the function Odisseia.process_title with nothing in particular. """
+
+        # The expected result
+        expected_result = 'Attack and Defend'
+
+        # Call the function
+        actual_result = get_file_data.Odisseia.process_title('Attack and Defend')
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_Odisseia_process_title_02(self) -> None:
+        """ Test the function Odisseia.process_title with quotation marks. """
+
+        # The expected result
+        expected_result = 'History\'s Greatest Lies'
+
+        # Call the function
+        actual_result = get_file_data.Odisseia.process_title('History´s Greatest Lies')
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_Odisseia_add_file_data_01(self) -> None:
+        """ Test the function Odisseia.add_file_data with a new session of a show with a channel correction. """
+
+        # Prepare the mocks
+        # Prepare the call to get_channel_name
+        channel_data = models.Channel('Acronym', 'Channel Name')
+        channel_data.id = 8373
+
+        db_calls_mock.get_channel_name.return_value = channel_data
+
+        # Prepare the call to search_channel_show_data
+        channel_show_data = models.ChannelShowData(8373, 2, False, 'Attack and Defend', 'Ataque e Defesa')
+        channel_show_data.show_id = 51474
+
+        db_calls_mock.search_channel_show_data.return_value = channel_show_data
+
+        # Prepare the call to get_show_data_id
+        show_data = models.ShowData('Search Title', 'Localized Title')
+        show_data.id = 51474
+
+        db_calls_mock.get_show_data_id.return_value = show_data
+
+        # Prepare the call to search_existing_session
+        db_calls_mock.search_existing_session.return_value = None
+
+        # Prepare the call to register_show_session
+        show_session = models.ShowSession(1, 5, datetime.datetime(2021, 3, 19, 5, 15, 16), 8373, 51474)
+
+        db_calls_mock.register_show_session.return_value = show_session
+
+        # Call the function
+        actual_result = get_file_data.Odisseia.add_file_data(self.session, base_path + 'data/odisseia_example.xml')
+
+        # Verify the result
+        self.assertEqual(datetime.datetime(2021, 3, 19, 5, 10, 16), actual_result.start_datetime)
+        self.assertEqual(datetime.datetime(2021, 3, 19, 5, 20, 16), actual_result.end_datetime)
+        self.assertEqual(1, actual_result.total_nb_sessions_in_file)
+        self.assertEqual(0, actual_result.nb_updated_sessions)
+        self.assertEqual(1, actual_result.nb_added_sessions)
+        self.assertEqual(0, actual_result.nb_deleted_sessions)
+
+        # Verify the calls to the mocks
+        db_calls_mock.get_channel_name.assert_called_with(self.session, 'Odisseia')
+
+        db_calls_mock.search_channel_show_data.assert_called_with(self.session, 8373, False, 'Attack and Defend',
+                                                                  'Ataque e Defesa', directors=['Seaton McLean'],
+                                                                  year=2015, subgenre='Natureza')
+
+        db_calls_mock.get_show_data_id.assert_called_with(self.session, 51474)
+
+        db_calls_mock.search_existing_session.assert_called_with(self.session, 1, 5,
+                                                                 datetime.datetime(2021, 3, 19, 5, 15, 16),
+                                                                 8373, 51474)
+
+        db_calls_mock.register_show_session.assert_called_with(self.session, 1, 5,
+                                                               datetime.datetime(2021, 3, 19, 5, 15, 16), 8373, 51474,
+                                                               audio_language=None, extended_cut=False,
+                                                               should_commit=False)
 
 
 if __name__ == '__main__':

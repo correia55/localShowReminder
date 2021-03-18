@@ -77,7 +77,7 @@ class Cinemundo(ChannelInsertion):
         series = re.search(r'S[0-9]+', title.strip())
 
         if series is not None:
-            season = series.group(0)[1:]
+            season = int(series.group(0)[1:])
             title = title[:series.span(0)[0]]
         else:
             season = None
@@ -146,7 +146,7 @@ class Cinemundo(ChannelInsertion):
                 directors = re.split(',| e ', directors)
 
             # Get the channel id
-            channel_id = db_session.query(models.Channel).filter(models.Channel.name == 'Cinemundo').first().id
+            channel_id = db_calls.get_channel_name(db_session, 'Cinemundo').id
 
             process_file_entry(db_session, insertion_result, original_title, localized_title, is_movie, genre,
                                date_time,
@@ -288,8 +288,7 @@ class Odisseia(ChannelInsertion):
                     episode = int(extended_info.firstChild.nodeValue)
 
             # Get the channel's id
-            channel_name = 'Odisseia'
-            channel_id = db_session.query(models.Channel).filter(models.Channel.name == channel_name).first().id
+            channel_id = db_calls.get_channel_name(db_session, 'Odisseia').id
 
             # Process titles
             original_title = Odisseia.process_title(original_title)
@@ -508,7 +507,7 @@ class TVCine(ChannelInsertion):
                 year = None
 
             channel_name = 'TVCine ' + channel_name.strip().split()[1]
-            channel_id = db_session.query(models.Channel).filter(models.Channel.name == channel_name).first().id
+            channel_id = db_calls.get_channel_name(db_session, channel_name).id
 
             # Process file entry
             insertion_result = process_file_entry(db_session, insertion_result, original_title, localized_title,
@@ -689,8 +688,13 @@ def process_show_session(db_session: sqlalchemy.orm.Session, insertion_result: I
 
     # Insert the new session
     if add_show:
-        db_calls.register_show_session(db_session, season, episode, date_time, channel_id, show_data.id,
-                                       audio_language=audio_language, extended_cut=extended_cut, should_commit=False)
+        show_session = db_calls.register_show_session(db_session, season, episode, date_time, channel_id, show_data.id,
+                                                      audio_language=audio_language, extended_cut=extended_cut,
+                                                      should_commit=False)
+
+        if show_session is None:
+            print('Session insertion failed!')
+            return insertion_result
 
         insertion_result.nb_added_sessions += 1
     else:
