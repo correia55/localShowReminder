@@ -334,6 +334,9 @@ class TestOdisseia(unittest.TestCase):
 
         db_calls_mock.register_show_session.return_value = show_session
 
+        # Prepare the call to search_old_sessions
+        db_calls_mock.search_old_sessions.return_value = []
+
         # Call the function
         actual_result = get_file_data.Odisseia.add_file_data(self.session, base_path + 'data/odisseia_example.xml')
 
@@ -362,6 +365,9 @@ class TestOdisseia(unittest.TestCase):
                                                                datetime.datetime(2021, 3, 19, 5, 15, 16), 8373, 51474,
                                                                audio_language=None, extended_cut=False,
                                                                should_commit=False)
+
+        db_calls_mock.search_old_sessions.assert_called_with(self.session, datetime.datetime(2021, 3, 19, 5, 10, 16),
+                                                             datetime.datetime(2021, 3, 19, 5, 20, 16), ['Odisseia'])
 
 
 if __name__ == '__main__':
