@@ -134,9 +134,6 @@ class Cinemundo(ChannelInsertion):
             if season is not None:
                 is_movie = False
                 genre = 'Series'
-
-                if season != 1:
-                    year = None
             else:
                 is_movie = True
                 genre = 'Movie'
@@ -145,13 +142,14 @@ class Cinemundo(ChannelInsertion):
             if directors is not None:
                 directors = re.split(',| e ', directors)
 
-            # Get the channel id
+            # Get the channel's id
             channel_id = db_calls.get_channel_name(db_session, 'Cinemundo').id
 
-            process_file_entry(db_session, insertion_result, original_title, localized_title, is_movie, genre,
-                               date_time,
-                               channel_id, year, directors, subgenre, synopsis, season, None, cast=cast,
-                               age_classification=age_classification, audio_languages=audio_language)
+            # Process an entry
+            insertion_result = process_file_entry(db_session, insertion_result, original_title, localized_title,
+                                                  is_movie, genre, date_time, channel_id, year, directors, subgenre,
+                                                  synopsis, season, None, cast=cast,
+                                                  age_classification=age_classification, audio_languages=audio_language)
 
             if insertion_result is None:
                 return None
@@ -300,10 +298,6 @@ class Odisseia(ChannelInsertion):
 
             is_movie = season is None
             genre = 'Documentary'
-
-            # Keep the year only if it is the first season
-            if season is not None and season != 1:
-                year = None
 
             # --- END DATA GATHERING ---
 
@@ -464,9 +458,6 @@ class TVCine(ChannelInsertion):
 
                 if series:
                     original_title = series.group(1)
-
-                # Because the year in the series is the year of the season
-                year = None
             else:
                 season = None
                 episode = None
@@ -501,10 +492,6 @@ class TVCine(ChannelInsertion):
             else:
                 genre = 'Documentary'
                 subgenre = None
-
-            # Keep the year only if it is the first season
-            if season is not None and season != 1:
-                year = None
 
             channel_name = 'TVCine ' + channel_name.strip().split()[1]
             channel_id = db_calls.get_channel_name(db_session, channel_name).id
@@ -563,7 +550,8 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
                        synopsis: Optional[str], season: Optional[int], episode: Optional[int],
                        cast: Optional[str] = None, duration: Optional[int] = None, audio_languages: str = None,
                        countries: str = None, age_classification: Optional[str] = None,
-                       session_audio_language: Optional[str] = None, extended_cut: bool = False):
+                       session_audio_language: Optional[str] = None, extended_cut: bool = False) \
+        -> Optional[InsertionResult]:
     """
     Process an entry in the file, inserting all of the needed data.
 
@@ -594,9 +582,9 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
     new_show = False
 
     # Search the ChannelShowDataCorrection
-    channel_show_data = db_calls.search_channel_show_data(db_session, channel_id, is_movie, original_title,
-                                                          localized_title, directors=directors, year=year,
-                                                          subgenre=subgenre)
+    channel_show_data = db_calls.search_channel_show_data_correction(db_session, channel_id, is_movie, original_title,
+                                                                     localized_title, directors=directors, year=year,
+                                                                     subgenre=subgenre)
 
     # If no match was found
     if channel_show_data is None:
@@ -607,20 +595,21 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
                                                                    subgenre=subgenre, audio_languages=audio_languages,
                                                                    countries=countries, directors=directors,
                                                                    age_classification=age_classification,
-                                                                   is_movie=is_movie)
+                                                                   is_movie=is_movie, season=season)
 
         # If it is a new show, search the TMDB
         if new_show:
-            tmdb_show = search_tmdb_match(db_session, show_data, directors)
+            tmdb_show = search_tmdb_match(db_session, show_data)
 
             # If it found a match in TMDB
             if tmdb_show:
                 tmdb_show_data = db_calls.get_show_data_tmdb_id(db_session, tmdb_show.id)
 
-                # If an entry with that TMDB id already exists, delete this new one
+                # If an entry with that TMDB id already exists, delete the new one
                 if tmdb_show_data is not None:
                     db_session.delete(show_data)
                     show_data = tmdb_show_data
+
                 # If not, update the information
                 else:
                     utilities.update_show_data_with_tmdb(show_data, tmdb_show)
@@ -628,9 +617,9 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
                 # If there are differences between the data from the TMDB and the one in the file
                 if show_data.original_title.casefold() != original_title.casefold() \
                         or (year is not None and show_data.year != year):
-                    db_calls.register_channel_show_data(db_session, channel_id, show_data.id, is_movie,
-                                                        original_title, localized_title,
-                                                        directors=directors, year=year, subgenre=subgenre)
+                    db_calls.register_channel_show_data_correction(db_session, channel_id, show_data.id, is_movie,
+                                                                   original_title, localized_title,
+                                                                   directors=directors, year=year, subgenre=subgenre)
 
     # If it found a matching ChannelShowData
     else:
@@ -674,8 +663,8 @@ def process_show_session(db_session: sqlalchemy.orm.Session, insertion_result: I
     if new_show:
         add_show = True
     else:
-        existing_show_session = db_calls.search_existing_session(db_session, season, episode, date_time,
-                                                                 channel_id, show_data.id)
+        existing_show_session = db_calls.search_existing_session(db_session, season, episode, date_time, channel_id,
+                                                                 show_data.id)
 
         # If there's already an existing session
         if existing_show_session is not None:
@@ -750,14 +739,13 @@ def delete_old_sessions(db_session: sqlalchemy.orm.Session, start_datetime: date
     return nb_deleted_sessions
 
 
-def search_tmdb_match(db_session: sqlalchemy.orm.Session, show_data: models.ShowData, directors: Optional[List[str]],
-                      use_year: bool = True) -> Optional[tmdb_calls.TmdbShow]:
+def search_tmdb_match(db_session: sqlalchemy.orm.Session, show_data: models.ShowData, use_year: bool = True) \
+        -> Optional[tmdb_calls.TmdbShow]:
     """
     Search for a TMDB match.
 
     :param db_session: the DB session.
     :param show_data: the data of the show.
-    :param directors: some of the directors of the show.
     :param use_year: whether to use the year in the search or not.
     :return: the TMDB show that matches.
     """
@@ -792,7 +780,9 @@ def search_tmdb_match(db_session: sqlalchemy.orm.Session, show_data: models.Show
             score += 20
 
         # Otherwise search for the director
-        if directors is not None:
+        if show_data.director is not None and score < 25:
+            directors = show_data.director.split(',')
+
             crew_list = tmdb_calls.get_show_crew_members(t.id, t.is_movie)
 
             found_director = False
@@ -823,8 +813,8 @@ def search_tmdb_match(db_session: sqlalchemy.orm.Session, show_data: models.Show
         return best
     else:
         # If it found not results, search again without year
-        if use_year:
-            return search_tmdb_match(db_session, show_data, directors, use_year=False)
+        if use_year and year is not None:
+            return search_tmdb_match(db_session, show_data, use_year=False)
 
         print_message('no TMDB match found', True, str(show_data.id))
         return None

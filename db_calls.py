@@ -462,16 +462,27 @@ def search_show_data_by_original_title(session: sqlalchemy.orm.Session, original
         .filter(models.ShowData.is_movie == is_movie) \
         .filter(sqlalchemy.func.lower(models.ShowData.original_title) == original_title.lower())
 
-    if is_movie and directors is not None:
-        query = query.filter(sqlalchemy.or_(models.ShowData.director.contains(d) for d in directors))
+    if is_movie:
+        if directors is not None:
+            query = query.filter(sqlalchemy.or_(models.ShowData.director.contains(d) for d in directors))
 
-    if year is not None:
-        query = query.filter(models.ShowData.year == year)
+        if year is not None:
+            query = query.filter(models.ShowData.year == year)
 
     if genre is not None:
         query = query.filter(models.ShowData.genre == genre)
 
-    return query.first()
+    # Checking if there's more than one match
+    results = query.all()
+
+    if len(results) > 0:
+        if len(results) > 1:
+            print('Warning: There were multiple matches for search_show_data_by_original_title: ' + results[0])
+
+        return results[0]
+
+    else:
+        return None
 
 
 def search_show_data_by_search_title_and_everything_else_empty(session: sqlalchemy.orm.Session, portuguese_title: str) \
@@ -620,7 +631,7 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, localized_title
                                 duration: int = None, synopsis: str = None, year: int = None, genre: str = None,
                                 directors: List[str] = None, cast: str = None, audio_languages: str = None,
                                 countries: str = None, age_classification: str = None, subgenre: Optional[str] = None,
-                                is_movie: Optional[bool] = None) \
+                                is_movie: Optional[bool] = None, season: Optional[int] = None) \
         -> [bool, Optional[models.ShowData]]:
     """
     Check, and return, if there's a matching entry of ShowData and, if not add it.
@@ -639,6 +650,7 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, localized_title
     :param age_classification: the age classification.
     :param subgenre: the subgenre of the show (Comedy, thriller, ...).
     :param is_movie: True if it is a movie, False if it is TV.
+    :param season: the season of the session from which the data comes from.
     :return: a boolean for whether it is a new show or not and the corresponding show data.
     """
 
@@ -656,6 +668,9 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, localized_title
         director = ', '.join(directors)
     else:
         director = None
+
+    if season != 1:
+        year = None
 
     # If not, then add it
     return True, register_show_data(session, localized_title, original_title=original_title, duration=duration,
@@ -1172,9 +1187,10 @@ def search_existing_session(session: sqlalchemy.orm.Session, season: Optional[in
     return query.first()
 
 
-def register_channel_show_data(session: sqlalchemy.orm.Session, channel_id: int, show_id: int, is_movie: bool,
-                               original_title: str, localized_title: str, year: int = None, directors: List[str] = None,
-                               subgenre: str = None) -> Optional[models.ChannelShowData]:
+def register_channel_show_data_correction(session: sqlalchemy.orm.Session, channel_id: int, show_id: int,
+                                          is_movie: bool, original_title: str, localized_title: str, year: int = None,
+                                          directors: List[str] = None, subgenre: str = None) \
+        -> Optional[models.ChannelShowData]:
     """
     Register a ChannelShowData.
 
@@ -1212,11 +1228,13 @@ def register_channel_show_data(session: sqlalchemy.orm.Session, channel_id: int,
         return None
 
 
-def search_channel_show_data(session: sqlalchemy.orm.Session, channel_id: int, is_movie: bool,
-                             original_title: str, localized_title: str, year: int = None, directors: List[str] = None,
-                             subgenre: str = None) -> Optional[models.ChannelShowData]:
+def search_channel_show_data_correction(session: sqlalchemy.orm.Session, channel_id: int, is_movie: bool,
+                                        original_title: str, localized_title: str, year: int = None,
+                                        directors: List[str] = None, subgenre: str = None) \
+        -> Optional[models.ChannelShowData]:
     """
-    Check, and return, if there's a matching entry of ShowData and, if not add it.
+    Check, and return, if there's a matching entry of a ChannelShowDataCorrection and, if not add it.
+    Ignores the directors and year if the show is not a movie.
 
     :param session: the db session.
     :param channel_id: the id of the channel.
@@ -1226,7 +1244,7 @@ def search_channel_show_data(session: sqlalchemy.orm.Session, channel_id: int, i
     :param year: the year of the show.
     :param directors: the directors of the show.
     :param subgenre: the subgenre of the show.
-    :return: a boolean for whether it is a new show or not and the corresponding show data.
+    :return: the matching ChannelShowDataCorrection.
     """
 
     query = session.query(models.ChannelShowData) \
@@ -1245,7 +1263,17 @@ def search_channel_show_data(session: sqlalchemy.orm.Session, channel_id: int, i
     if subgenre is not None:
         query = query.filter(models.ChannelShowData.subgenre == subgenre)
 
-    return query.first()
+    # Checking if there's more than one match
+    results = query.all()
+
+    if len(results) > 0:
+        if len(results) > 1:
+            print('Warning: There were multiple matches for search_channel_show_data_correction: ' + results[0])
+
+        return results[0]
+
+    else:
+        return None
 
 
 def get_unmatched_show_data(session: sqlalchemy.orm.Session, limit: int) \

@@ -22,9 +22,6 @@ class ShowData(Base):
     """Used to store all the data associated with a show."""
 
     __tablename__ = 'ShowData'
-    __table_args__ = (
-        sqlalchemy.UniqueConstraint("search_title", "tmdb_id"),
-    )
 
     # Technical
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -124,6 +121,7 @@ class ShowSession(Base):
         self.extended_cut = extended_cut
 
 
+@auxiliary.auto_repr
 class ChannelShowData(Base):
     """Used to store corrections on names of the shows for a given channel."""
 

@@ -30,13 +30,15 @@ class TmdbShow(object):
     origin_country: Optional[str]
     year: Optional[int]
 
-    def __init__(self, show_dict: dict, is_movie: bool = None):
+    def __init__(self):
+        self.genres = []
+        return
+
+    def fill_from_dict(self, show_dict: dict, is_movie: bool = None):
         if is_movie is not None:
             self.is_movie = is_movie
         else:
             self.is_movie = show_dict['media_type'] == 'movie'
-
-        self.year = None
 
         if self.is_movie:
             self.original_title = show_dict['original_title']
@@ -60,8 +62,6 @@ class TmdbShow(object):
         self.original_language = show_dict['original_language']
         self.overview = show_dict['overview']
 
-        self.genres = []
-
         if 'genres' in show_dict:
             for g in show_dict['genres']:
                 self.genres.append(g['name'])
@@ -71,8 +71,6 @@ class TmdbShow(object):
 
         if 'poster_path' in show_dict and show_dict['poster_path']:
             self.poster_path = 'https://image.tmdb.org/t/p/w220_and_h330_face' + show_dict['poster_path']
-        else:
-            self.poster_path = None
 
 
 class TmdbTranslation(object):
@@ -83,7 +81,10 @@ class TmdbTranslation(object):
     overview: str
     language_country: str
 
-    def __init__(self, tmdb_id: int, translation_dict: dict, is_movie: bool = None):
+    def __init__(self):
+        return
+
+    def fill_from_dict(self, tmdb_id: int, translation_dict: dict, is_movie: bool = None):
         self.tmdb_id = tmdb_id
 
         self.language_country = '%s-%s' % (
@@ -106,7 +107,10 @@ class TmdbAlias(object):
     title: str
     country: str
 
-    def __init__(self, tmdb_id: int, alias_dict: dict):
+    def __init__(self):
+        return
+
+    def fill_from_dict(self, tmdb_id: int, alias_dict: dict):
         self.tmdb_id = tmdb_id
 
         self.country = alias_dict['iso_3166_1']
@@ -119,7 +123,10 @@ class TmdbCrewMember(object):
     name: str
     jobs: List[str]
 
-    def __init__(self, crew_member_dict: dict, is_movie: bool):
+    def __init__(self):
+        return
+
+    def fill_from_dict(self, crew_member_dict: dict, is_movie: bool):
         self.name = crew_member_dict['name']
 
         if is_movie:
@@ -170,7 +177,7 @@ def search_shows_by_text(session: sqlalchemy.orm.Session, search_text: str, lang
     else:
         # Create the url
         url = 'https://api.themoviedb.org/3/search/%s?api_key=%s&language=%s&query=%s&include_adult=%s' \
-            % (show_type, configuration.tmdb_key, language, urllib.parse.quote(search_text), include_adult)
+              % (show_type, configuration.tmdb_key, language, urllib.parse.quote(search_text), include_adult)
 
         if year is not None:
             url += '&year=%d' % year
@@ -199,7 +206,10 @@ def search_shows_by_text(session: sqlalchemy.orm.Session, search_text: str, lang
     for entry in response_dict['results']:
         # TODO: Need to change this, if I want to allow for searches to include people
         if show_type != 'multi' or entry['media_type'] == 'tv' or entry['media_type'] == 'movie':
-            tmdb_shows.append(TmdbShow(entry, is_movie))
+            tmdb_show = TmdbShow()
+            tmdb_show.fill_from_dict(entry, is_movie)
+
+            tmdb_shows.append(tmdb_show)
 
     return response_dict['total_pages'], tmdb_shows
 
@@ -248,7 +258,10 @@ def get_show_using_id(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: b
     # Parse the response to json
     response_dict = json.loads(response)
 
-    return TmdbShow(response_dict, is_movie)
+    tmdb_show = TmdbShow()
+    tmdb_show.fill_from_dict(response_dict, is_movie)
+
+    return tmdb_show
 
 
 def get_show_translations(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: bool) \
@@ -294,7 +307,10 @@ def get_show_translations(session: sqlalchemy.orm.Session, tmdb_id: int, is_movi
     tmdb_translations = []
 
     for entry in response_dict['translations']:
-        tmdb_translations.append(TmdbTranslation(tmdb_id, entry, is_movie))
+        tmdb_translation = TmdbTranslation()
+        tmdb_translation.fill_from_dict(tmdb_id, entry, is_movie)
+
+        tmdb_translations.append(tmdb_translation)
 
     return tmdb_translations
 
@@ -343,10 +359,16 @@ def get_show_aliases(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: bo
 
     if is_movie:
         for entry in response_dict['titles']:
-            tmdb_aliases.append(TmdbAlias(tmdb_id, entry))
+            tmdb_alias = TmdbAlias()
+            tmdb_alias.fill_from_dict(tmdb_id, entry)
+
+            tmdb_aliases.append(tmdb_alias)
     else:
         for entry in response_dict['results']:
-            tmdb_aliases.append(TmdbAlias(tmdb_id, entry))
+            tmdb_alias = TmdbAlias()
+            tmdb_alias.fill_from_dict(tmdb_id, entry)
+
+            tmdb_aliases.append(tmdb_alias)
 
     return tmdb_aliases
 
@@ -385,7 +407,10 @@ def get_show_crew_members(tmdb_id: int, is_movie: bool) \
     tmdb_crew_members = []
 
     for entry in response_dict['crew']:
-        tmdb_crew_members.append(TmdbCrewMember(entry, is_movie))
+        tmdb_crew_member = TmdbCrewMember()
+        tmdb_crew_member.fill_from_dict(entry, is_movie)
+
+        tmdb_crew_members.append(tmdb_crew_member)
 
     return tmdb_crew_members
 
