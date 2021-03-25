@@ -83,13 +83,14 @@ def set_tmdb_match(db_session: sqlalchemy.orm.Session, show_id: int, tmdb_id: in
     if len(show_sessions) > 0:
         # Check if the correction is needed
         show_data = db_calls.search_show_data_by_original_title(db_session, show.original_title, show.is_movie,
-                                                                directors=show.directors, year=show.year,
+                                                                directors=show.director, year=show.year,
                                                                 genre=show.genre)
         # If it isn't: delete it
         if show_data is None or show_data.id != final_show.id:
-            db_calls.register_channel_show_data_correction(db_session, show_sessions[0].channel_id, final_show.id, show.is_movie,
-                                                           show.original_title, show.portuguese_title, directors=show.director,
-                                                           year=show.year, subgenre=show.subgenre)
+            db_calls.register_channel_show_data_correction(db_session, show_sessions[0].channel_id, final_show.id,
+                                                           show.is_movie, show.original_title, show.portuguese_title,
+                                                           directors=show.director, year=show.year,
+                                                           subgenre=show.subgenre)
 
 
 def set_tmdb_match_menu(db_session: sqlalchemy.orm.Session, call_count: int):
