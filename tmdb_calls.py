@@ -31,6 +31,7 @@ class TmdbShow(object):
     year: Optional[int]
 
     def __init__(self):
+        self.poster_path = None
         self.genres = []
         return
 
