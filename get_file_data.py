@@ -15,7 +15,7 @@ import response_models
 import tmdb_calls
 import utilities
 
-unordered_words = ['the', 'a', 'an', 'i', 'un', 'le', 'la', 'les', 'um', 'o']
+unordered_words = ['the', 'a', 'an', 'i', 'un', 'le', 'la', 'les', 'um', 'o', 'el']
 
 
 class InsertionResult:
@@ -328,6 +328,35 @@ class TVCine(ChannelInsertion):
     channels = ['TVCine Top', 'TVCine Edition', 'TVCine Emotion', 'TVCine Action']
 
     @staticmethod
+    def fix_title_order(title: str):
+        """
+        Fix the unordered parts of the title, if any.
+
+        :param title: the title as is in the file.
+        :return: the final title.
+        """
+
+        building = False
+        start = 0
+
+        for i in range(len(title)):
+            if title[i] == ',':
+                building = True
+                start = i
+            elif building:
+                if re.match('[0-9a-zA-Z ]', title[i]) is None:
+                    building = False
+
+                    if title[start + 1:i - 1].strip().lower() in unordered_words:
+                        title = (' '.join([title[start + 1:i].strip(), title[:start].strip(), title[i:].strip()]))
+                        break
+
+        if building and title[start + 1:].strip().lower() in unordered_words:
+            title = (' '.join([title[start + 1:].strip(), title[:start].strip()]))
+
+        return title
+
+    @staticmethod
     def process_title(title: str) -> [str, bool, bool]:
         """
         Process the title, removing special markers and reformatting the title:
@@ -373,19 +402,7 @@ class TVCine(ChannelInsertion):
             # Remove the parenthesis and its context
             title = title[:search_result[0][i]] + title[search_result[1][i] + 1:]
 
-        search_result = auxiliary.search_chars(title, [','])
-
-        # If there's at least a comma in the title - it would always be at the end
-        if len(search_result[0]) > 0:
-            last_comma = search_result[0][-1]
-
-            after_comma = title[last_comma + 1:].strip()
-
-            # If it's one of the unordered words
-            if after_comma.lower() in unordered_words:
-                title = after_comma + ' ' + title[:last_comma]
-
-        return title.strip(), vp, extended_cut
+        return TVCine.fix_title_order(title).strip(), vp, extended_cut
 
     @staticmethod
     def add_file_data(db_session: sqlalchemy.orm.Session, filename: str) -> Optional[InsertionResult]:

@@ -317,6 +317,19 @@ class TestTvCine(unittest.TestCase):
         # Verify the result
         self.assertEqual(expected_result, actual_result)
 
+    def test_TVCine_process_title_11(self) -> None:
+        """ Test the function TvCine.process_title with parts of the title switched but not at the end. """
+
+        # The expected result
+        expected_result = ('Le Ninfee di Monet - Un Incantesimo di Acqua e Luce', False, False)
+
+        # Call the function
+        actual_result = get_file_data.TVCine.process_title(
+            'Ninfee di Monet, Le - Un Incantesimo di Acqua e Luce')
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
 
 class TestOdisseia(unittest.TestCase):
     session: sqlalchemy.orm.Session
