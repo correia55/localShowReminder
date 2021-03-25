@@ -15,7 +15,7 @@ import response_models
 import tmdb_calls
 import utilities
 
-unordered_words = ['the', 'a', 'an', 'i', 'un', 'le', 'la', 'les', 'um']
+unordered_words = ['the', 'a', 'an', 'i', 'un', 'le', 'la', 'les', 'um', 'o']
 
 
 class InsertionResult:
