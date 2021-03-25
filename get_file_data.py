@@ -27,16 +27,14 @@ class InsertionResult:
     nb_updated_sessions: int
     nb_added_sessions: int
     nb_deleted_sessions: int
+    nb_new_shows: int
 
-    def __init__(self, start_datetime: datetime.datetime = None, end_datetime: datetime.datetime = None,
-                 total_nb_sessions_in_file: int = 0, nb_updated_sessions: int = 0, nb_added_sessions: int = 0,
-                 nb_deleted_sessions: int = 0):
-        self.start_datetime = start_datetime
-        self.end_datetime = end_datetime
-        self.total_nb_sessions_in_file = total_nb_sessions_in_file
-        self.nb_updated_sessions = nb_updated_sessions
-        self.nb_added_sessions = nb_added_sessions
-        self.nb_deleted_sessions = nb_deleted_sessions
+    def __init__(self):
+        self.total_nb_sessions_in_file = 0
+        self.nb_updated_sessions = 0
+        self.nb_added_sessions = 0
+        self.nb_deleted_sessions = 0
+        self.nb_new_shows = 0
 
 
 class ChannelInsertion:
@@ -599,6 +597,7 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
 
         # If it is a new show, search the TMDB
         if new_show:
+            insertion_result.nb_new_shows += 1
             tmdb_show = search_tmdb_match(db_session, show_data)
 
             # If it found a match in TMDB
@@ -841,6 +840,7 @@ def add_file_data(db_session: sqlalchemy.orm.Session, channel_set: int, filename
         print('%4d show sessions updated!' % result.nb_updated_sessions)
         print('%4d show sessions added!' % result.nb_added_sessions)
         print('%4d show sessions deleted!' % result.nb_deleted_sessions)
+        print('%4d new shows!' % result.nb_new_shows)
 
 
 def execute_data_insertion():
