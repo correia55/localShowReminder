@@ -32,8 +32,10 @@ class TmdbShow(object):
 
     def __init__(self):
         self.poster_path = None
+        self.year = None
+        self.origin_country = None
+        self.adult = None
         self.genres = []
-        return
 
     def fill_from_dict(self, show_dict: dict, is_movie: bool = None):
         if is_movie is not None:
