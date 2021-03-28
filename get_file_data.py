@@ -347,7 +347,7 @@ class TVCine(ChannelInsertion):
                 if re.match('[0-9a-zA-Z ]', title[i]) is None:
                     building = False
 
-                    if title[start + 1:i - 1].strip().lower() in unordered_words:
+                    if title[start + 1:i].strip().lower() in unordered_words:
                         title = (' '.join([title[start + 1:i].strip(), title[:start].strip(), title[i:].strip()]))
                         break
 

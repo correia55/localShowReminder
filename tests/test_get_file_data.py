@@ -321,6 +321,18 @@ class TestTvCine(unittest.TestCase):
         """ Test the function TvCine.process_title with parts of the title switched but not at the end. """
 
         # The expected result
+        expected_result = ('The Lost World : Jurassic Park', False, False)
+
+        # Call the function
+        actual_result = get_file_data.TVCine.process_title('Lost World, The: Jurassic Park')
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_TVCine_process_title_12(self) -> None:
+        """ Test the function TvCine.process_title with parts of the title switched but not at the end. """
+
+        # The expected result
         expected_result = ('Le Ninfee di Monet - Un Incantesimo di Acqua e Luce', False, False)
 
         # Call the function
