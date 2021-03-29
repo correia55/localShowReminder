@@ -1,8 +1,11 @@
+from typing import List
+
 import sqlalchemy.orm
 
 import auxiliary
 import configuration
 import db_calls
+import get_file_data
 import models
 import tmdb_calls
 
@@ -140,12 +143,75 @@ def set_tmdb_match_menu(db_session: sqlalchemy.orm.Session, call_count: int):
         set_tmdb_match_menu(db_session, call_count + 1)
 
 
+def search_tmdb_match(db_session: sqlalchemy.orm.Session):
+    """
+    Try to find a TMDB match for a given show.
+
+    :param db_session: the DB session.
+    """
+
+    show_data = db_calls.get_show_data_id(db_session, int(input('Id of the show?')))
+
+    if show_data is None:
+        print('ShowData NOT found!')
+        exit(0)
+
+    tmdb_show = get_file_data.search_tmdb_match(db_session, show_data)
+
+    if tmdb_show is None:
+        print('TMDB Show NOT found!')
+    else:
+        print('TMDB Show found!')
+
+
+def search_db_match(db_session: sqlalchemy.orm.Session):
+    """
+    Try to find a DB match for a given show.
+
+    :param db_session: the DB session.
+    """
+
+    show_data = db_calls.get_show_data_id(db_session, int(input('Id of the show?')))
+
+    if show_data is None:
+        print('ShowData NOT found!')
+        exit(0)
+
+    query = db_session.query(models.ShowData) \
+        .filter(models.ShowData.is_movie == show_data.is_movie) \
+        .filter(sqlalchemy.func.lower(models.ShowData.original_title) == show_data.original_title.lower())
+
+    if show_data.is_movie:
+        if show_data.director is not None:
+            directors = show_data.director.split(',')
+
+            query = query.filter(sqlalchemy.or_(models.ShowData.director.contains(d) for d in directors))
+
+        if show_data.year is not None:
+            query = query.filter(models.ShowData.year == show_data.year)
+
+    if show_data.genre is not None:
+        query = query.filter(models.ShowData.genre == show_data.genre)
+
+    # Checking if there's more than one match
+    results: List[models.ShowData] = query.all()
+
+    for r in results:
+        if r.id != show_data.id:
+            print('Found another match!')
+            return
+
+    print('Match NOT found!')
+
+
 def menu():
     """ Menu for choosing the utility function being run. """
 
     question = 'Choose one utility function:\n'
     question += '0 - Update search title\n'
     question += '1 - Set tmdb match\n'
+    question += '2 - Search tmdb match (for verification)\n'
+    question += '3 - Search DB match (for verification)\n'
 
     option = int(input(question))
 
@@ -154,8 +220,12 @@ def menu():
     try:
         if option == 0:
             update_searchable_titles_db(session)
-        else:
+        elif option == 1:
             set_tmdb_match_menu(session, 0)
+        elif option == 2:
+            search_tmdb_match(session)
+        elif option == 3:
+            search_db_match(session)
 
         session.commit()
     except:
