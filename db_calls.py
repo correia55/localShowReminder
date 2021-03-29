@@ -477,7 +477,7 @@ def search_show_data_by_original_title(session: sqlalchemy.orm.Session, original
 
     if len(results) > 0:
         if len(results) > 1:
-            print('Warning: There were multiple matches for search_show_data_by_original_title: ' + results[0])
+            print('Warning: There were multiple matches for search_show_data_by_original_title: ' + repr(results[0]))
 
         return results[0]
 
@@ -1268,7 +1268,7 @@ def search_channel_show_data_correction(session: sqlalchemy.orm.Session, channel
 
     if len(results) > 0:
         if len(results) > 1:
-            print('Warning: There were multiple matches for search_channel_show_data_correction: ' + results[0])
+            print('Warning: There were multiple matches for search_channel_show_data_correction: ' + repr(results[0]))
 
         return results[0]
 
