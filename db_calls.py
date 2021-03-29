@@ -669,7 +669,7 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, localized_title
     else:
         director = None
 
-    if season != 1:
+    if is_movie or season != 1:
         year = None
 
     # If not, then add it
