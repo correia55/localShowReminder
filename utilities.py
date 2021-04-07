@@ -54,6 +54,11 @@ def set_tmdb_match(db_session: sqlalchemy.orm.Session, show_id: int, tmdb_id: in
     # Get the show
     show = db_calls.get_show_data_id(db_session, show_id)
 
+    # Save the original information for the creation of the corrections
+    original_title = show.original_title
+    year = show.year
+    directors = show.director
+
     if show is None:
         print('Show with id %d not found!' % show_id)
         return
@@ -85,15 +90,14 @@ def set_tmdb_match(db_session: sqlalchemy.orm.Session, show_id: int, tmdb_id: in
     # If there are sessions
     if len(show_sessions) > 0:
         # Check if the correction is needed
-        show_data = db_calls.search_show_data_by_original_title(db_session, show.original_title, show.is_movie,
-                                                                directors=show.director, year=show.year,
-                                                                genre=show.genre)
+        show_data = db_calls.search_show_data_by_original_title(db_session, original_title, show.is_movie,
+                                                                directors=directors, year=year, genre=show.genre)
+
         # If it isn't: delete it
         if show_data is None or show_data.id != final_show.id:
             db_calls.register_channel_show_data_correction(db_session, show_sessions[0].channel_id, final_show.id,
-                                                           show.is_movie, show.original_title, show.portuguese_title,
-                                                           directors=show.director, year=show.year,
-                                                           subgenre=show.subgenre)
+                                                           show.is_movie, original_title, show.portuguese_title,
+                                                           directors=directors, year=year, subgenre=show.subgenre)
 
 
 def set_tmdb_match_menu(db_session: sqlalchemy.orm.Session, call_count: int):
