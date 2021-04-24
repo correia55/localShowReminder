@@ -32,10 +32,10 @@ Eurochannel;False;EURCH;True
 Discovery Channel;False;DISCV;True
 Odisseia;False;ODISS;False
 National Geographic;False;NGC;True
-Nat Geo Wild;False;NGWIL;False
+Nat Geo Wild;False;WILD;False
 História;False;HIST;True
 Travel Channel;False;TRAV;True
-MCM TOP;False;MCM True;True
+MCM TOP;False;MCM T;True
 MCM POP;False;MCM P;True
 Trace TV;False;TRACE;True
 VH1;False;VH1;True
@@ -57,7 +57,6 @@ TV Galicia;False;TVGAL;True
 TVEi;False;TVEIHD;True
 Cubavisión;False;CUBAV;True
 TV5 Monde;False;TV5;True
-Playboy TV;True;PLAY;True
 RTP Madeira;False;RTPMA;True
 RTP Açores;False;RTPACR;True
 Disney Channel;False;DISNY;True
@@ -75,7 +74,6 @@ Russia Today;False;RUSST;False
 PRO TV Internacional;False;PROTV;True
 Phoenix CNE;False;PHCNE;True
 SET MAX;False;MAX;True
-Vénus;True;VENUS;True
 SyFy;False;SYFY;True
 Globovision;False;G VIS;False
 TVI24;False;TVI24;True
@@ -104,7 +102,6 @@ ZEE TV;False;ZEETV;True
 ZEE CINEMA;False;ZEECIN;True
 Caça e Pesca;False;CAÇAP;True
 CCTV 4;False;CCTV4;True
-SexTreme;True;SEXTRM;True
 TCV Internacional;False;TCV;True
 SPORT.TV4;False;SPTV4;True
 SPORT.TV5;False;SPTV5;True
@@ -141,7 +138,6 @@ STORIA;False;STORIA;True
 Globo;False;GLOB;True
 Globo Premium;False;GNOWHD;True
 BVN;False;BVN;True
-BODY SEX;True;BODYSEX;True
 Kuriakos TV;False;KURIAKO;True
 Hispasat 4K;False;HISPA4K;False
 VIVID RED;False;VIVID;True
@@ -155,7 +151,6 @@ Purescreens Museums Fr;False;PMUSF;False
 Clubbing TV;False;CLUBB;True
 24 Kitchen;False;24KITC;True
 MTV Music;False;MTMM;False
-HOT;True;HOT;True
 BFM Business;False;BFMB;True
 TVI Reality;False;TVIBB;True
 Blaze;False;BLAZEHD;True
@@ -181,6 +176,6 @@ Somos;False;SOMOS;True
 Sol Música;False;SOLMUSI;True
 Cocina;False;CCOCINA;True
 Decasa;False;DECASA;True
-FRANCE 2;False;FRANCE 2;True
-FRANCE 3;False;FRANCE 3;True
-FRANCE 5;False;FRANCE 5;True
+FRANCE 2;False;FR2HD;True
+FRANCE 3;False;FR3HD;True
+FRANCE 5;False;FR5HD;True

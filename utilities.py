@@ -118,7 +118,7 @@ def set_tmdb_match_menu(db_session: sqlalchemy.orm.Session, call_count: int):
         option = int(input(question))
 
     if option == 0:
-        shows = db_calls.get_unmatched_show_data(db_session, 10)
+        shows = db_calls.get_unmatched_show_data(db_session, 5)
 
         if len(shows) == 0:
             print('No more shows without a match!')
