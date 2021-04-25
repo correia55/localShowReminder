@@ -281,6 +281,19 @@ class Reminder(Base):
         self.user_id = user_id
 
 
+class UserExcludedChannel(Base):
+    """Used to store the channels whose content the user does not care."""
+
+    __tablename__ = 'UserExcludedChannel'
+
+    user_id = Column(Integer, ForeignKey('User.id'), primary_key=True)
+    channel_id = Column(Integer, ForeignKey('Channel.id'), primary_key=True)
+
+    def __init__(self, user_id: int, channel_id: int):
+        self.user_id = user_id
+        self.channel_id = channel_id
+
+
 class Token(Base):
     """Used to store user's valid refresh tokens."""
 
@@ -302,9 +315,9 @@ class LastUpdate(Base):
     epg_date = Column(Date)
     alarms_datetime = Column(DateTime)
 
-    def __init__(self, epg_date: datetime.date, reminders_datetime: datetime.datetime):
+    def __init__(self, epg_date: datetime.date, alarms_datetime: datetime.datetime):
         self.epg_date = epg_date
-        self.alarms_datetime = reminders_datetime
+        self.alarms_datetime = alarms_datetime
 
 
 class Cache(Base):

@@ -123,7 +123,8 @@ def search_show_information(session: sqlalchemy.orm.Session, search_text: str, i
 
 def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], is_movie: bool = None,
                        complete_title: bool = False, only_new: bool = False, show_season: int = None,
-                       show_episode: int = None, search_adult: bool = False, ignore_with_tmdb_id: bool = False) \
+                       show_episode: int = None, search_adult: bool = False, ignore_with_tmdb_id: bool = False,
+                       use_excluded_channels: bool = False, user_id: int = None) \
         -> List[response_models.LocalShowResult]:
     """
     Get the results of the search in the DB, using all the texts from the search list.
@@ -137,6 +138,8 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
     :param show_episode: to specify an episode.
     :param search_adult: if it should also search in adult channels.
     :param ignore_with_tmdb_id: True if we want to ignore results that have a tmdb id.
+    :param use_excluded_channels: take into account the excluded channels of the user.
+    :param user_id: the id of the user (only necessary if use_excluded_channels is True).
     :return: results of the search in the DB.
     """
 
@@ -146,6 +149,11 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
         below_datetime = None
 
     results = dict()
+
+    excluded_channels = []
+
+    if use_excluded_channels and user_id is not None:
+        excluded_channels = db_calls.get_user_excluded_channels(session, user_id)
 
     for search_text in search_list:
         print('Original search text: %s' % search_text)
@@ -162,6 +170,10 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
                                                       ignore_with_tmdb_id=ignore_with_tmdb_id)
 
         for s in db_shows:
+            # Skip sessions from excluded channels
+            if s[1].id in excluded_channels:
+                continue
+
             show = response_models.LocalShowResult.create_from_show_session(s[0], s[1], s[2])
             results[show.id] = show
 
@@ -175,7 +187,8 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
 
 
 def search_sessions_db_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: int, only_new: bool = False,
-                                    show_season: int = None, show_episode: int = None) \
+                                    show_season: int = None, show_episode: int = None,
+                                    use_excluded_channels: bool = False, user_id: int = None) \
         -> List[response_models.LocalShowResult]:
     """
     Get the results of the search in the DB, using all the texts from the search list.
@@ -185,6 +198,8 @@ def search_sessions_db_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: in
     :param only_new: search only new shows (updated yesterday).
     :param show_season: to specify a season.
     :param show_episode: to specify an episode.
+    :param use_excluded_channels: take into account the excluded channels of the user.
+    :param user_id: the id of the user (only necessary if use_excluded_channels is True).
     :return: results of the search in the DB.
     """
 
@@ -198,7 +213,16 @@ def search_sessions_db_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: in
     db_shows = db_calls.search_show_sessions_data_with_tmdb_id(session, tmdb_id, show_season, show_episode,
                                                                below_datetime=below_datetime)
 
+    excluded_channels = []
+
+    if use_excluded_channels:
+        excluded_channels = db_calls.get_user_excluded_channels(session, user_id)
+
     for s in db_shows:
+        # Skip sessions from excluded channels
+        if s[1].id in excluded_channels:
+            continue
+
         show = response_models.LocalShowResult.create_from_show_session(s[0], s[1], s[2])
         results[show.id] = show
 
@@ -429,27 +453,24 @@ def process_alarms(session: sqlalchemy.orm.Session):
 
     alarms = db_calls.get_alarms(session)
 
-    for r in alarms:
-        user = session.query(models.User).filter(models.User.id == r.user_id).first()
+    for a in alarms:
+        user = db_calls.get_user_id(session, a.user_id)
         search_adult = user.show_adult if user is not None else False
 
-        if r.alarm_type == response_models.AlarmType.LISTINGS.value:
-            titles = [r.show_name]
+        if a.alarm_type == response_models.AlarmType.LISTINGS.value:
+            titles = [a.show_name]
 
             db_shows = []
         else:
-            titles = get_show_titles(session, r.trakt_id, r.is_movie)
+            titles = get_show_titles(session, a.trakt_id, a.is_movie)
 
-            db_shows = search_sessions_db_with_tmdb_id(session, r.trakt_id, only_new=True, show_season=r.show_season,
-                                                       show_episode=r.show_episode)
+            db_shows = search_sessions_db_with_tmdb_id(session, a.trakt_id, only_new=True, show_season=a.show_season,
+                                                       show_episode=a.show_episode, use_excluded_channels=True,
+                                                       user_id=user.id)
 
-        # db_shows += search_streaming_services_shows_db(session, titles, r.is_movie, complete_title=True,
-        #                                               only_new=True, show_season=r.show_season,
-        #                                               show_episode=r.show_episode, search_adult=search_adult)
-
-        db_shows += search_sessions_db(session, titles, r.is_movie, complete_title=True, only_new=True,
-                                       show_season=r.show_season, show_episode=r.show_episode,
-                                       search_adult=search_adult)
+        db_shows += search_sessions_db(session, titles, a.is_movie, complete_title=True, only_new=True,
+                                       show_season=a.show_season, show_episode=a.show_episode,
+                                       search_adult=search_adult, use_excluded_channels=True, user_id=user.id)
 
         if len(db_shows) > 0:
             process_emails.set_language(user.language)

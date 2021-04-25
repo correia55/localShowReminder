@@ -1334,3 +1334,77 @@ class TestDBCalls(unittest.TestCase):
 
         # Verify the result
         self.assertIsNotNone(actual_result)
+
+
+class TestUserExcludedChannel(unittest.TestCase):
+    session: sqlalchemy.orm.Session
+
+    def setUp(self) -> None:
+        self.session = configuration.Session()
+
+    def tearDown(self) -> None:
+        self.session.query(models.UserExcludedChannel).delete()
+        self.session.query(models.Channel).delete()
+        self.session.query(models.User).delete()
+
+        self.session.commit()
+
+        self.session.close()
+
+    def test_get_user_excluded_channels_error(self) -> None:
+        """ Test the function get_user_excluded_channels without any entries. """
+
+        # The expected result
+        expected_result = []
+
+        # Prepare the DB
+        user = db_calls.register_user(self.session, 'email', 'password')
+        self.assertIsNotNone(user)
+
+        # Call the function
+        actual_result = db_calls.get_user_excluded_channels(self.session, user.id)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_get_user_excluded_channels_ok(self) -> None:
+        """ Test the function get_user_excluded_channels with entries. """
+
+        # Prepare the DB
+        user = db_calls.register_user(self.session, 'email', 'password')
+        self.assertIsNotNone(user)
+
+        channel_1 = db_calls.register_channel(self.session, 'CH', 'Channel')
+        self.assertIsNotNone(channel_1)
+
+        channel_3 = db_calls.register_channel(self.session, 'CH3', 'Channel 3')
+        self.assertIsNotNone(channel_3)
+
+        user_excluded_channel_1 = models.UserExcludedChannel(user.id, channel_1.id)
+        self.session.add(user_excluded_channel_1)
+
+        user_excluded_channel_3 = models.UserExcludedChannel(user.id, channel_3.id)
+        self.session.add(user_excluded_channel_3)
+
+        user_2 = db_calls.register_user(self.session, 'email 2', 'password2')
+        self.assertIsNotNone(user_2)
+
+        channel_2 = db_calls.register_channel(self.session, 'CH2', 'Channel 2')
+        self.assertIsNotNone(channel_2)
+
+        user_excluded_channel_2 = models.UserExcludedChannel(user_2.id, channel_2.id)
+        self.session.add(user_excluded_channel_2)
+
+        self.session.commit()
+
+        # Call the function
+        actual_result = db_calls.get_user_excluded_channels(self.session, user.id)
+
+        # Verify the result
+        self.assertEqual(2, len(actual_result))
+
+        self.assertEqual(user.id, actual_result[0].user_id)
+        self.assertEqual(channel_1.id, actual_result[0].channel_id)
+
+        self.assertEqual(user.id, actual_result[1].user_id)
+        self.assertEqual(channel_3.id, actual_result[1].channel_id)

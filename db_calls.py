@@ -1276,8 +1276,7 @@ def search_channel_show_data_correction(session: sqlalchemy.orm.Session, channel
         return None
 
 
-def get_unmatched_show_data(session: sqlalchemy.orm.Session, limit: int) \
-        -> List[models.ShowData]:
+def get_unmatched_show_data(session: sqlalchemy.orm.Session, limit: int) -> List[models.ShowData]:
     """
     Get the first x shows that do not have a TMDB match.
 
@@ -1292,6 +1291,47 @@ def get_unmatched_show_data(session: sqlalchemy.orm.Session, limit: int) \
         .limit(limit)
 
     return query.all()
+
+
+def get_user_excluded_channels(session: sqlalchemy.orm.Session, user_id: int) -> List[models.UserExcludedChannel]:
+    """
+    Get a user's excluded channels.
+
+    :param session: the db session.
+    :param user_id: the id of the user.
+    :return: the list of show data.
+    """
+
+    query = session.query(models.UserExcludedChannel) \
+        .filter(models.UserExcludedChannel.user_id == user_id)
+
+    return query.all()
+
+
+def register_user_excluded_channel(session: sqlalchemy.orm.Session, user_id: int, channel_id: int,
+                                   should_commit: bool = True) -> Optional[models.StreamingServiceShow]:
+    """
+    Register a user excluded channel.
+
+    :param session: the db session.
+    :param user_id: the id of the user.
+    :param channel_id: the id of the channel.
+    :param should_commit: True it the data should be committed right away.
+    :return: the created object.
+    """
+
+    ss_show = models.UserExcludedChannel(user_id, channel_id)
+    session.add(ss_show)
+
+    if should_commit:
+        try:
+            session.commit()
+            return ss_show
+        except (IntegrityError, InvalidRequestError):
+            session.rollback()
+            return None
+    else:
+        return ss_show
 
 
 def get_last_update(session: sqlalchemy.orm.Session) -> Optional[models.LastUpdate]:
