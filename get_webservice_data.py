@@ -23,6 +23,7 @@ def update_channel_list(session: sqlalchemy.orm.Session):
     # Delete channels without shows
     for channel in db_channels:
         if session.query(models.ShowSession).filter(models.ShowSession.channel_id == channel.id).count() == 0:
+            print('Deleted channel without content: %s!' % channel.name)
             session.delete(channel)
 
     session.commit()

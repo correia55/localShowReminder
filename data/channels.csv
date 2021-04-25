@@ -3,20 +3,11 @@ RTP 1;False;RTP1;True
 RTP 2;False;RTP2;True
 SIC;False;SIC;True
 TVI;False;TVI;True
-SIC Notícias;False;SICN;True
 SIC Mulher;False;SICM;True
 SIC Radical;False;SICR;True
 RTP Memória;False;RTPM;True
 RTP África;False;RTPA;True
-SPORT.TV1;False;SPTV1;True
-SPORT.TV2;False;SPTV2;True
-SPORT.TV3;False;SPTV3;True
-Eurosport;False;EURSP;True
-Eurosport 2;False;EURS2;True
-Benfica TV 1;False;SLB;True
 Cartoon Network;False;CART;True
-PFC;False;PFC;True
-Real Madrid;False;RMTV;False
 Panda;False;PANDA;True
 TVCine Top;False;TVCTOP;False
 TVCine Edition;False;TVCED;False
@@ -26,156 +17,56 @@ Hollywood;False;HOLLW;True
 AXN;False;AXN;True
 FOX;False;FOX;True
 FOX Crime;False;FOXCR;True
-MTV Portugal;False;MTV;True
-E! ENTERTAINMENT;False;E!;True
-Eurochannel;False;EURCH;True
+Eurochannel;False;EURCH;False
 Discovery Channel;False;DISCV;True
 Odisseia;False;ODISS;False
 National Geographic;False;NGC;True
-Nat Geo Wild;False;WILD;False
+Nat Geo Wild;False;WILD;True
 História;False;HIST;True
 Travel Channel;False;TRAV;True
-MCM TOP;False;MCM T;True
-MCM POP;False;MCM P;True
-Trace TV;False;TRACE;True
-VH1;False;VH1;True
-Afro Music;False;AFRO;True
-MEZZO;False;MEZZO;True
-Euronews;False;EURN;True
-CNN;False;CNN;True
-FOX News;False;FNEWS;True
-BBC World;False;BBC W;False
-Aljazeera;False;ALJAZ;True
-France 24 (I);False;FR24I;True
-TVE24H;False;TVE24;False
-ARTV;False;ARTV;True
-M6;False;M6;False
-France 24 (F);False;FR24F;True
-CNBC Europe;False;CNBC;False
-Bloomberg;False;BLOOM;True
-TV Galicia;False;TVGAL;True
-TVEi;False;TVEIHD;True
-Cubavisión;False;CUBAV;True
-TV5 Monde;False;TV5;True
-RTP Madeira;False;RTPMA;True
-RTP Açores;False;RTPACR;True
 Disney Channel;False;DISNY;True
-JimJam;False;JJAM;True
-Sky News;False;SKYN;True
-Deutsche Welle;False;DW-TV;True
 SET Asia;False;SETAS;True
 Q;False;Q;True
 FOX Life;False;FLIFE;True
-CAÇAVISION;False;CAÇAV;True
-TPA Internacional;False;TPA;True
-INTER+;False;INTER+;False
-CHANNEL 1 RUSSIA;False;1RUSS;True
-Russia Today;False;RUSST;False
-PRO TV Internacional;False;PROTV;True
-Phoenix CNE;False;PHCNE;True
 SET MAX;False;MAX;True
 SyFy;False;SYFY;True
-Globovision;False;G VIS;False
 TVI24;False;TVI24;True
-Porto Canal;False;PORTO;True
 BBC Entertainment;False;BBC E;True
 AXN Movies;False;AXNM;True
-Baby First TV;False;BABYT;True
-iConcerts;False;ICOHD;True
 Fox Movies;False;FOXM;True
 TLC;False;TLC;True
-TOROTV;False;TOROTV;True
-Record News;False;RECNEW;True
 AXN White;False;AXNWH;True
 Panda Biggs;False;BIGGS;True
-A Bola TV;False;ABOLA;True
 TVI Ficção;False;TVIFIC;True
 CBS Reality;False;CBSR;True
-Localvisão TV;False;LVTV;True
 SIC K;False;SICK;True
-KBS World;False;KBS;True
-Canal MEO Destaques;False;DEST;True
-CMTV;False;CMTV;True
-Destaques MEO Videoclube;False;VOD;True
 Disney Junior;False;DISNYJ;True
 ZEE TV;False;ZEETV;True
 ZEE CINEMA;False;ZEECIN;True
-Caça e Pesca;False;CAÇAP;True
-CCTV 4;False;CCTV4;True
-TCV Internacional;False;TCV;True
-SPORT.TV4;False;SPTV4;True
-SPORT.TV5;False;SPTV5;True
 Cinemundo;False;CINE;False
 TV Record;False;TVREC;True
-Sporting TV;False;SCP;True
 AMC;False;AMC;True
-DOGTV;False;DOGTV;True
-FTV;False;FTV;True
-Mas Chic;False;MCHIC;True
 RTP 3;False;RTP3;True
-i24 News (I);False;I24I;True
-i24 News (F);False;I24F;True
 FOX Comedy;False;FOXCOM;True
-Canção Nova;False;CNOVA;True
-TV Mundial;False;TVMUND;False
 SIC Caras;False;SICC;True
-CCTV News;False;CGTN;True
-Angelus TV;False;ANGELUS;False
-Kombat Sport;False;KOMBAT;True
 CANAL 180;False;C180;True
-SPORT.TV+;False;SPTV;True
-Canal I U;False;IU;True
-My Cuisine;False;MYC;False
-UM Europa;False;UME;True
-Especial Stingray;False;M ESP;False
 Cartoon Network Premium;False;CNPREM;True
 RAI1;False;RAI1;True
 RAI2;False;RAI2;True
 RAI3;False;RAI3;True
-RAINEWS;False;RAINEWS;True
-SCUOLA;False;SCUOLA;True
-STORIA;False;STORIA;True
 Globo;False;GLOB;True
 Globo Premium;False;GNOWHD;True
 BVN;False;BVN;True
-Kuriakos TV;False;KURIAKO;True
-Hispasat 4K;False;HISPA4K;False
-VIVID RED;False;VIVID;True
-NBA TV;False;NBATV;False
 Arte;False;ARTEHD;True
-Stingray Classica;False;CLASSIC;True
 BNT 4;False;BNT4;True
 CGTN Documentary;False;CGTNDHD;True
-Purescreens Museums Eng;False;PMUSE;False
-Purescreens Museums Fr;False;PMUSF;False
-Clubbing TV;False;CLUBB;True
-24 Kitchen;False;24KITC;True
-MTV Music;False;MTMM;False
-BFM Business;False;BFMB;True
 TVI Reality;False;TVIBB;True
 Blaze;False;BLAZEHD;True
-Fuel TV;False;FUELTV;True
-Game Toon;False;GAMET;True
 Crime + Investigation;False;CI;True
-Galeria;False;GALERIA;True
-S+;False;SMAISHD;True
-MCS TV;False;MCSUHD;True
-Canal 11;False;C11;True
 Nickelodeon;False;NICKELO;True
-Luxe TV;False;LUXHD;True
-TV Verdade;False;TVVERHD;True
-ELEVEN 1;False;ELEVEN1;True
-ELEVEN 2;False;ELEVEN2;True
-ELEVEN 3;False;ELEVEN3;True
-ELEVEN 4;False;ELEVEN4;True
-ELEVEN 5;False;ELEVEN5;True
-ELEVEN 6;False;ELEVEN6;True
+Luxe TV;False;LUXHD;False
 A3Series;False;A3SERIE;True
 A3Cine;False;A3CINE;True
-Somos;False;SOMOS;True
-Sol Música;False;SOLMUSI;True
-Cocina;False;CCOCINA;True
-Decasa;False;DECASA;True
 FRANCE 2;False;FR2HD;True
 FRANCE 3;False;FR3HD;True
 FRANCE 5;False;FR5HD;True
