@@ -7,6 +7,10 @@ import sqlalchemy.orm
 import models
 import response_models
 
+# Configure a mock for the db_calls file
+configuration_mock = unittest.mock.MagicMock()
+sys.modules['configuration'] = configuration_mock
+
 # These are still needed to prevent the problems with the reading of the configuration
 # Configure a mock for the db_calls file
 db_calls_mock = unittest.mock.MagicMock()
@@ -24,6 +28,7 @@ class TestProcessing(unittest.TestCase):
 
     def setUp(self) -> None:
         self.session = unittest.mock.MagicMock()
+        configuration_mock.cache_validity_days = 1
 
     @unittest.mock.patch('processing.db_calls')
     def test_process_alarms_ok_01(self, db_calls_mock) -> None:
