@@ -171,9 +171,11 @@ class TestProcessing(unittest.TestCase):
 
         self.assertEqual(1, len(send_alarms_email_calls))
 
-        self.assertEqual('email', send_alarms_email_calls[0].args[0])
+        call_args, _ = send_alarms_email_calls[0]
 
-        actual_results = send_alarms_email_calls[0].args[1]
+        self.assertEqual('email', call_args[0])
+
+        actual_results = call_args[1]
 
         self.assertEqual(2, len(actual_results))
 
