@@ -159,11 +159,11 @@ class TestProcessing(unittest.TestCase):
         db_calls_mock.search_show_sessions_data.assert_has_calls([unittest.mock.call(self.session, '_Title_1_', True,
                                                                                      None, None, False, True,
                                                                                      below_datetime=original_datetime,
-                                                                                     ignore_with_tmdb_id=False),
+                                                                                     ignore_with_tmdb_id=True),
                                                                   unittest.mock.call(self.session, '_Title_2_', True,
                                                                                      None, None, False, True,
                                                                                      below_datetime=original_datetime,
-                                                                                     ignore_with_tmdb_id=False)])
+                                                                                     ignore_with_tmdb_id=True)])
 
         process_emails_mock.set_language.assert_called_with('pt')
 
@@ -284,11 +284,11 @@ class TestProcessing(unittest.TestCase):
         db_calls_mock.search_show_sessions_data.assert_has_calls([unittest.mock.call(self.session, '_Title_1_', True,
                                                                                      None, None, False, True,
                                                                                      below_datetime=original_datetime,
-                                                                                     ignore_with_tmdb_id=False),
+                                                                                     ignore_with_tmdb_id=True),
                                                                   unittest.mock.call(self.session, '_Title_2_', True,
                                                                                      None, None, False, True,
                                                                                      below_datetime=original_datetime,
-                                                                                     ignore_with_tmdb_id=False)])
+                                                                                     ignore_with_tmdb_id=True)])
 
         db_calls_mock.commit.assert_called_with(self.session)
 
