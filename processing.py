@@ -470,7 +470,8 @@ def process_alarms(session: sqlalchemy.orm.Session):
 
         db_shows += search_sessions_db(session, titles, a.is_movie, complete_title=True, only_new=True,
                                        show_season=a.show_season, show_episode=a.show_episode,
-                                       search_adult=search_adult, use_excluded_channels=True, user_id=user.id)
+                                       search_adult=search_adult, use_excluded_channels=True, user_id=user.id,
+                                       ignore_with_tmdb_id=True)
 
         if len(db_shows) > 0:
             process_emails.set_language(user.language)
