@@ -72,6 +72,18 @@ def get_channel_name(session: sqlalchemy.orm.Session, name: str) -> Optional[mod
         .first()
 
 
+def get_channel_list(session: sqlalchemy.orm.Session) -> List[models.Channel]:
+    """
+    Get the complete list of channels.
+
+    :param session: the db session.
+    :return: the channel.
+    """
+
+    return session.query(models.Channel) \
+        .all()
+
+
 def register_user(session, email: str, password_hash: Optional[str], language: str = None,
                   account_type: models.AccountType = models.AccountType.EMAIL, verified: bool = False) \
         -> Optional[models.User]:

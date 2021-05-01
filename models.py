@@ -89,6 +89,15 @@ class Channel(Base):
         return 'id: %d; acronym: %s; name: %s; adult: %r; search_epg: %r' \
                % (self.id, self.acronym, self.name, self.adult, self.search_epg)
 
+    def to_dict(self) -> dict:
+        """
+        Create a dictionary from the current object.
+
+        :return: the corresponding dictionary.
+        """
+
+        return {'id': self.id, 'name': self.name, 'adult': self.adult}
+
 
 @auxiliary.auto_repr
 class ShowSession(Base):

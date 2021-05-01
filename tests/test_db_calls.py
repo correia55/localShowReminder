@@ -1408,3 +1408,52 @@ class TestUserExcludedChannel(unittest.TestCase):
 
         self.assertEqual(user.id, actual_result[1].user_id)
         self.assertEqual(channel_3.id, actual_result[1].channel_id)
+
+
+class TestChannel(unittest.TestCase):
+    session: sqlalchemy.orm.Session
+
+    def setUp(self) -> None:
+        self.session = configuration.Session()
+
+    def tearDown(self) -> None:
+        self.session.query(models.Channel).delete()
+
+        self.session.commit()
+
+        self.session.close()
+
+    def test_get_channel_list_error(self) -> None:
+        """ Test the function get_channel_list without any entries. """
+
+        # The expected result
+        expected_result = []
+
+        # Call the function
+        actual_result = db_calls.get_channel_list(self.session)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_get_channel_list_ok(self) -> None:
+        """ Test the function get_channel_list with entries. """
+
+        # Prepare the DB
+        channel_1 = db_calls.register_channel(self.session, 'CH', 'Channel')
+        channel_3 = db_calls.register_channel(self.session, 'CH3', 'Channel 3')
+
+        # Call the function
+        actual_result = db_calls.get_channel_list(self.session)
+
+        # Verify the result
+        self.assertEqual(2, len(actual_result))
+
+        self.assertEqual('CH', actual_result[0].acronym)
+        self.assertEqual('Channel', actual_result[0].name)
+        self.assertEqual(False, actual_result[0].adult)
+        self.assertEqual(True, actual_result[0].search_epg)
+
+        self.assertEqual('CH3', actual_result[1].acronym)
+        self.assertEqual('Channel 3', actual_result[1].name)
+        self.assertEqual(False, actual_result[1].adult)
+        self.assertEqual(True, actual_result[1].search_epg)

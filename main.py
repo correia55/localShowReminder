@@ -613,6 +613,18 @@ class AccessEP(fr.Resource):
                 return flask.make_response('Invalid Token', 403)  # Should be 503
 
 
+class ChannelsEP(fr.Resource):
+    def __init__(self):
+        super(ChannelsEP, self).__init__()
+
+    def get(self):
+        """Get a list of all available channels."""
+
+        with session_scope() as session:
+            channel_list = db_calls.get_channel_list(session)
+            return flask.make_response(flask.jsonify(auxiliary.list_to_json(channel_list)), 200)
+
+
 class ShowsEP(fr.Resource):
     def __init__(self):
         super(ShowsEP, self).__init__()
@@ -1015,6 +1027,7 @@ api.add_resource(SendVerificationEmailEP, '/send-verification-email', endpoint='
 api.add_resource(AlarmsEP, '/alarms', endpoint='alarms')
 api.add_resource(RemindersEP, '/reminders', endpoint='reminders')
 api.add_resource(AccessEP, '/access', endpoint='access')
+api.add_resource(ChannelsEP, '/channels', endpoint='channels')
 api.add_resource(ShowsEP, '/shows', endpoint='shows')
 api.add_resource(LocalShowsEP, '/local-shows', endpoint='local-shows')
 api.add_resource(UsersEP, '/users', endpoint='users')
