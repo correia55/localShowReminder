@@ -292,6 +292,88 @@ class TestProcessing(unittest.TestCase):
 
         db_calls_mock.commit.assert_called_with(self.session)
 
+    @unittest.mock.patch('processing.db_calls')
+    def test_process_excluded_channel_list_ok_01(self, db_calls_mock) -> None:
+        """ Test the function process_excluded_channel_list without changes to the current list. """
+
+        # Prepare the mocks
+        db_calls_mock.get_user_excluded_channels.return_value = [models.UserExcludedChannel(1, 10)]
+
+        # Call the function
+        processing.process_excluded_channel_list(self.session, 1, [10])
+
+        # Verify the result
+        # Verify the calls to the mocks
+        db_calls_mock.get_user_excluded_channels.assert_called_with(self.session, 1)
+
+    @unittest.mock.patch('processing.db_calls')
+    def test_process_excluded_channel_list_ok_02(self, db_calls_mock) -> None:
+        """ Test the function process_excluded_channel_list with changes to the current list. """
+
+        # Prepare the mocks
+        excluded_channel = models.UserExcludedChannel(1, 10)
+        db_calls_mock.get_user_excluded_channels.return_value = [excluded_channel]
+
+        excluded_channel_2 = models.UserExcludedChannel(1, 15)
+        db_calls_mock.register_user_excluded_channel.return_value = [excluded_channel, excluded_channel_2]
+
+        # Call the function
+        processing.process_excluded_channel_list(self.session, 1, [10, 15])
+
+        # Verify the result
+        # Verify the calls to the mocks
+        db_calls_mock.get_user_excluded_channels.assert_called_with(self.session, 1)
+
+        self.session.delete.assert_called_with(excluded_channel)
+
+        db_calls_mock.register_user_excluded_channel.assert_has_calls(
+            [unittest.mock.call(self.session, 1, 10, should_commit=False),
+             unittest.mock.call(self.session, 1, 15, should_commit=False)])
+
+    @unittest.mock.patch('processing.db_calls')
+    def test_get_settings_error(self, db_calls_mock) -> None:
+        """ Test the function get_settings when the user is not found. """
+
+        # Prepare the mocks
+        db_calls_mock.get_user_id.return_value = None
+
+        # Call the function
+        processing.get_settings(self.session, 1)
+
+        # Verify the result
+        # Verify the calls to the mocks
+        db_calls_mock.get_user_id.assert_called_with(self.session, 1)
+
+    @unittest.mock.patch('processing.db_calls')
+    def test_get_settings_ok(self, db_calls_mock) -> None:
+        """ Test the function get_settings when the user is not found. """
+
+        # Expected results
+        expected_result = {'include_adult_channels': False, 'language': 'pt', 'excluded_channel_list': [10, 15]}
+
+        # Prepare the mocks
+        user = models.User('email', 'password', 'pt')
+        user.id = 1
+        user.show_adult = False
+
+        db_calls_mock.get_user_id.return_value = user
+
+        excluded_channel = models.UserExcludedChannel(1, 10)
+        excluded_channel_2 = models.UserExcludedChannel(1, 15)
+
+        db_calls_mock.get_user_excluded_channels.return_value = [excluded_channel, excluded_channel_2]
+
+        # Call the function
+        actual_result = processing.get_settings(self.session, 1)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+        # Verify the calls to the mocks
+        db_calls_mock.get_user_id.assert_called_with(self.session, 1)
+
+        db_calls_mock.get_user_excluded_channels.assert_called_with(self.session, 1)
+
 
 if __name__ == '__main__':
     unittest.main()

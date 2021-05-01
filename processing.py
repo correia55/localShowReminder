@@ -27,6 +27,7 @@ class ChangeType(Enum):
     INCLUDE_ADULT_CHANNELS = 'include_adult_channels'
     NEW_PASSWORD = 'new_password'
     LANGUAGE = 'language'
+    EXCLUDED_CHANNELS = 'excluded_channels'
 
 
 def get_hash(text: str) -> str:
@@ -796,7 +797,7 @@ def change_user_settings_token(session, change_token: str):
     return change_user_settings(session, payload, user_id)
 
 
-def change_user_settings(session, changes: Mapping, user_id: str):
+def change_user_settings(session, changes: Mapping, user_id: int):
     """
     Change the settings that are present in the dictionary.
 
@@ -834,6 +835,10 @@ def change_user_settings(session, changes: Mapping, user_id: str):
         something_changed = True
         user.language = changes[ChangeType.LANGUAGE.value]
 
+    if ChangeType.EXCLUDED_CHANNELS.value in changes:
+        something_changed = True
+        process_excluded_channel_list(session, user_id, changes[ChangeType.EXCLUDED_CHANNELS.value])
+
     if not something_changed:
         return False
 
@@ -845,6 +850,40 @@ def change_user_settings(session, changes: Mapping, user_id: str):
         # TODO: Send warning email
 
     return True
+
+
+def process_excluded_channel_list(session: sqlalchemy.orm.Session, user_id: int,
+                                  excluded_channel_list: List[int]) -> None:
+    """
+    Update the list of excluded channels of a user.
+
+    :param session: the DB session.
+    :param user_id: the id of the user.
+    :param excluded_channel_list: the list of excluded channels.
+    """
+
+    # Get the current list of excluded channels and turn it into a set
+    db_excluded_channel_list = db_calls.get_user_excluded_channels(session, user_id)
+    current_excluded_channel_list = set()
+
+    for excluded_channel in db_excluded_channel_list:
+        current_excluded_channel_list.add(excluded_channel.channel_id)
+
+    excluded_channel_list = set(excluded_channel_list)
+
+    # There's nothing to do if the current set and the new one are the same
+    if current_excluded_channel_list == excluded_channel_list:
+        return
+
+    # Otherwise, delete all of the previous entries
+    for old_excluded_channel in db_excluded_channel_list:
+        session.delete(old_excluded_channel)
+
+    # Otherwise, add all of the new entries
+    for excluded_channel in excluded_channel_list:
+        db_calls.register_user_excluded_channel(session, user_id, excluded_channel, should_commit=False)
+
+    db_calls.commit(session)
 
 
 def recover_password(session, recover_token: str, new_password: str):
@@ -877,10 +916,18 @@ def get_settings(session, user_id: int):
     """
 
     # Get user
-    user = session.query(models.User).filter(models.User.id == user_id).first()
+    user = db_calls.get_user_id(session, user_id)
 
     # Check if the user was found
     if user is None:
         return {}
 
-    return {'include_adult_channels': user.show_adult, 'language': user.language}
+    # Get excluded channel list
+    excluded_channel_list = db_calls.get_user_excluded_channels(session, user_id)
+    current_excluded_channel_list = []
+
+    for excluded_channel in excluded_channel_list:
+        current_excluded_channel_list.append(excluded_channel.channel_id)
+
+    return {'include_adult_channels': user.show_adult, 'language': user.language,
+            'excluded_channel_list': current_excluded_channel_list}

@@ -893,6 +893,7 @@ class UsersSettingsEP(fr.Resource):
         {
             'include_adult_channels': webargs.fields.Bool(),
             'language': webargs.fields.Str(),
+            'excluded_channel_list': webargs.fields.List(webargs.fields.Int())
         }
 
     @fp.use_args(update_args)
@@ -901,6 +902,7 @@ class UsersSettingsEP(fr.Resource):
 
         include_adult_channels = None
         language = None
+        excluded_channel_list = None
 
         for k, v in args.items():
             if v is None:
@@ -910,6 +912,8 @@ class UsersSettingsEP(fr.Resource):
                 include_adult_channels = v
             elif k == 'language':
                 language = v
+            elif k == 'excluded_channel_list':
+                excluded_channel_list = v
 
         with session_scope() as session:
             # Get the user id from the token
@@ -925,6 +929,10 @@ class UsersSettingsEP(fr.Resource):
             # Update language
             if language is not None and language in configuration.AVAILABLE_LANGUAGES:
                 changes[ChangeType.LANGUAGE.value] = language
+
+            # Update excluded channel list
+            if excluded_channel_list is not None:
+                changes[ChangeType.EXCLUDED_CHANNELS.value] = excluded_channel_list
 
             # If there are changes to be made
             if changes != {}:
