@@ -61,7 +61,11 @@ def set_tmdb_match(db_session: sqlalchemy.orm.Session, show_id: int, tmdb_id: in
     # Save the original information for the creation of the corrections
     original_title = show.original_title
     year = show.year
-    directors = show.director.split(',')
+
+    if show.director is not None:
+        directors = show.director.split(',')
+    else:
+        directors = None
 
     # Check if the tmdb_id is not already present in another entry
     original_show = db_calls.get_show_data_by_tmdb_id(db_session, tmdb_id)
