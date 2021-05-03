@@ -1222,7 +1222,7 @@ def register_channel_show_data_correction(session: sqlalchemy.orm.Session, chann
 
     if is_movie:
         if directors is not None:
-            channel_show_data.directors = ', '.join(directors)
+            channel_show_data.directors = ','.join(directors)
 
         if year is not None:
             channel_show_data.year = year

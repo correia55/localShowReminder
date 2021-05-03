@@ -61,7 +61,7 @@ def set_tmdb_match(db_session: sqlalchemy.orm.Session, show_id: int, tmdb_id: in
     # Save the original information for the creation of the corrections
     original_title = show.original_title
     year = show.year
-    directors = show.director
+    directors = show.director.split(',')
 
     # Check if the tmdb_id is not already present in another entry
     original_show = db_calls.get_show_data_by_tmdb_id(db_session, tmdb_id)
@@ -93,7 +93,7 @@ def set_tmdb_match(db_session: sqlalchemy.orm.Session, show_id: int, tmdb_id: in
         show_data = db_calls.search_show_data_by_original_title(db_session, original_title, show.is_movie,
                                                                 directors=directors, year=year, genre=show.genre)
 
-        # If it isn't: delete it
+        # If it is: add it
         if show_data is None or show_data.id != final_show.id:
             db_calls.register_channel_show_data_correction(db_session, show_sessions[0].channel_id, final_show.id,
                                                            show.is_movie, original_title, show.portuguese_title,
