@@ -6,7 +6,7 @@ cffi==1.12.3
 Click==7.0
 Flask==1.0.3
 Flask-Bcrypt==0.7.1
-Flask-Cors==3.0.8
+Flask-Cors==3.0.9
 Flask-HTTPAuth==3.3.0
 Flask-Limiter==1.0.1
 Flask-RESTful==0.3.7
