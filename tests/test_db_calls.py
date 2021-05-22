@@ -1457,3 +1457,200 @@ class TestChannel(unittest.TestCase):
         self.assertEqual('Channel 3', actual_result[1].name)
         self.assertEqual(False, actual_result[1].adult)
         self.assertEqual(True, actual_result[1].search_epg)
+
+
+class TestInsertIfMissingShowData(unittest.TestCase):
+    session: sqlalchemy.orm.Session
+
+    def setUp(self) -> None:
+        self.session = configuration.Session()
+
+    def tearDown(self) -> None:
+        self.session.query(models.ShowData).delete()
+
+        self.session.commit()
+
+        self.session.close()
+
+    def test_ok_01(self) -> None:
+        """ Test the function insert_if_missing_show_data. """
+
+        # Call the function
+        new_show, actual_result = db_calls.insert_if_missing_show_data(self.session, 'Título',
+                                                                       original_title='original title',
+                                                                       is_movie=False)
+
+        # Verify the result
+        self.assertTrue(new_show)
+        self.assertIsNotNone(actual_result)
+
+        self.assertEqual('Título', actual_result.portuguese_title)
+        self.assertEqual('original title', actual_result.original_title)
+        self.assertEqual(False, actual_result.is_movie)
+        self.assertEqual(None, actual_result.year)
+
+    def test_ok_02(self) -> None:
+        """ Test the function insert_if_missing_show_data with year and series not season 1. """
+
+        # Call the function
+        new_show, actual_result = db_calls.insert_if_missing_show_data(self.session, 'Título',
+                                                                       original_title='original title',
+                                                                       is_movie=False, year=2010)
+
+        # Verify the result
+        self.assertTrue(new_show)
+        self.assertIsNotNone(actual_result)
+
+        self.assertEqual('Título', actual_result.portuguese_title)
+        self.assertEqual('original title', actual_result.original_title)
+        self.assertEqual(False, actual_result.is_movie)
+        self.assertEqual(None, actual_result.year)
+
+    def test_ok_03(self) -> None:
+        """ Test the function insert_if_missing_show_data with year and series season 1. """
+
+        # Call the function
+        new_show, actual_result = db_calls.insert_if_missing_show_data(self.session, 'Título',
+                                                                       original_title='original title',
+                                                                       is_movie=False, year=2010, season=1)
+
+        # Verify the result
+        self.assertTrue(new_show)
+        self.assertIsNotNone(actual_result)
+
+        self.assertEqual('Título', actual_result.portuguese_title)
+        self.assertEqual('original title', actual_result.original_title)
+        self.assertEqual(False, actual_result.is_movie)
+        self.assertEqual(2010, actual_result.year)
+
+    def test_ok_04(self) -> None:
+        """ Test the function insert_if_missing_show_data with year and a movie. """
+
+        # Call the function
+        new_show, actual_result = db_calls.insert_if_missing_show_data(self.session, 'Título',
+                                                                       original_title='original title',
+                                                                       is_movie=True, year=2010, season=1)
+
+        # Verify the result
+        self.assertTrue(new_show)
+        self.assertIsNotNone(actual_result)
+
+        self.assertEqual('Título', actual_result.portuguese_title)
+        self.assertEqual('original title', actual_result.original_title)
+        self.assertEqual(True, actual_result.is_movie)
+        self.assertEqual(2010, actual_result.year)
+
+
+class TestSearchShowDataByOriginalTitle(unittest.TestCase):
+    session: sqlalchemy.orm.Session
+
+    def setUp(self) -> None:
+        self.session = configuration.Session()
+
+    def tearDown(self) -> None:
+        self.session.query(models.ShowData).delete()
+
+        self.session.commit()
+
+        self.session.close()
+
+    def test_error_01(self) -> None:
+        """ Test the function search_show_data_by_original_title without any entries. """
+
+        # The expected result
+        expected_result = []
+
+        # Call the function
+        actual_result = db_calls.get_channel_list(self.session)
+
+        # Verify the result
+        self.assertEqual(expected_result, actual_result)
+
+    def test_error_02(self) -> None:
+        """ Test the function search_show_data_by_original_title with different is_movie. """
+
+        # Prepare the DB
+        show_data = db_calls.register_show_data(self.session, 'Título', original_title='Original Title', is_movie=False)
+        self.assertIsNotNone(show_data)
+
+        # Call the function
+        actual_result = db_calls.search_show_data_by_original_title(self.session, 'Original Title', True, None, None,
+                                                                    None)
+
+        # Verify the result
+        self.assertIsNone(actual_result)
+
+    def test_error_03(self) -> None:
+        """ Test the function search_show_data_by_original_title with unmatched director. """
+
+        # Prepare the DB
+        show_data = db_calls.register_show_data(self.session, 'Título', original_title='Original Title', is_movie=True,
+                                                year=2010, director='Director 1,Director 2')
+        self.assertIsNotNone(show_data)
+
+        # Call the function
+        actual_result = db_calls.search_show_data_by_original_title(self.session, 'Original Title', True,
+                                                                    ['Director 3'], 2010, None)
+
+        # Verify the result
+        self.assertIsNone(actual_result)
+
+    def test_ok_01(self) -> None:
+        """ Test the function search_show_data_by_original_title with entries. """
+
+        # Prepare the DB
+        show_data = db_calls.register_show_data(self.session, 'Título', original_title='original title', is_movie=False)
+        self.assertIsNotNone(show_data)
+
+        # Call the function
+        actual_result = db_calls.search_show_data_by_original_title(self.session, 'Original Title', False, None, None,
+                                                                    None)
+
+        # Verify the result
+        self.assertIsNotNone(actual_result)
+
+        self.assertEqual('Título', actual_result.portuguese_title)
+        self.assertEqual('original title', actual_result.original_title)
+        self.assertEqual(False, actual_result.is_movie)
+
+    def test_ok_02(self) -> None:
+        """ Test the function search_show_data_by_original_title with entries. """
+
+        # Prepare the DB
+        show_data = db_calls.register_show_data(self.session, 'Título', original_title='Original Title', is_movie=False,
+                                                year=2010)
+        self.assertIsNotNone(show_data)
+
+        # Call the function
+        actual_result = db_calls.search_show_data_by_original_title(self.session, 'Original Title', False, None, 2010,
+                                                                    None)
+
+        # Verify the result
+        self.assertIsNotNone(actual_result)
+
+        self.assertEqual('Título', actual_result.portuguese_title)
+        self.assertEqual('Original Title', actual_result.original_title)
+        self.assertEqual(False, actual_result.is_movie)
+        self.assertEqual(2010, actual_result.year)
+
+    def test_ok_03(self) -> None:
+        """ Test the function search_show_data_by_original_title with unmatched director,
+        but it does not matter because it is not a movie. """
+
+        # Prepare the DB
+        show_data = db_calls.register_show_data(self.session, 'Título', original_title='Original Title', is_movie=False,
+                                                year=2010, director='Director 1,Director 2')
+        self.assertIsNotNone(show_data)
+
+        # Call the function
+        actual_result = db_calls.search_show_data_by_original_title(self.session, 'Original Title', False,
+                                                                    ['Director 3'], 2010, None)
+
+        # Verify the result
+        self.assertIsNotNone(actual_result)
+
+        self.assertEqual('Título', actual_result.portuguese_title)
+        self.assertEqual('Original Title', actual_result.original_title)
+        self.assertEqual(False, actual_result.is_movie)
+        self.assertEqual(2010, actual_result.year)
+        self.assertEqual('Director 1,Director 2', actual_result.director)

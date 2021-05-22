@@ -542,7 +542,159 @@ class TVCine(ChannelInsertion):
             return None
 
 
-channel_insertion_list = [Cinemundo, Odisseia, TVCine]
+class FoxLife(ChannelInsertion):
+    channels = ['FOX Life']
+
+    @staticmethod
+    def process_title(title: str, is_movie: bool) -> str:
+        """
+        Process the title, removing the season and year.
+
+        :param title: the title as is in the file.
+        :param is_movie: whether it is a movie or not.
+        :return: the title.
+        """
+
+        # Remove the season from the name
+        if not is_movie:
+            title = re.match('^(.+) [0-9]+$', title).group(1)
+
+        # From the last position of the parenthesis
+        search_result = auxiliary.search_chars(title, ['(', ')'])
+
+        for i in range(len(search_result[0]) - 1, -1, -1):
+            start_pos = search_result[0][i]
+            end_pos = search_result[1][i]
+
+            text = title[start_pos + 1:end_pos]
+
+            # Check if it has an year
+            if re.search(r'[0-9]{4}', text.strip()):
+                pass
+            else:
+                continue
+
+            # Remove the parenthesis and its context
+            title = title[:search_result[0][i]] + title[search_result[1][i] + 1:]
+
+        return title.strip()
+
+    @staticmethod
+    def add_file_data(db_session: sqlalchemy.orm.Session, filename: str) -> Optional[InsertionResult]:
+        """
+        Add the data, in the file, to the DB.
+
+        :param db_session: the DB session.
+        :param filename: the path to the file.
+        :return: the InsertionResult.
+        """
+
+        wb = openpyxl.load_workbook(filename)
+
+        insertion_result = InsertionResult()
+
+        first_event_datetime = None
+
+        # Skip row 1, with the headers
+        for row in wb.active.iter_rows(min_row=2, max_col=16):
+            # Skip the rows in which the year is not a number (header rows)
+            if not isinstance(row[9].value, int):
+                continue
+
+            # Get the data
+            date = datetime.datetime.strptime(row[0].value, '%d/%m/%Y')
+            time = datetime.datetime.strptime(row[1].value, '%H:%M')
+            localized_title = str(row[2].value)
+            original_title = str(row[3].value)
+
+            # Uncasted because they are optional
+            season = row[4].value
+            episode = row[5].value
+
+            # episode_title = row[7].value
+            synopsis = row[8].value
+            year = int(row[9].value)
+            cast = row[10].value
+            directors = row[11].value
+            creators = row[12].value
+
+            # Duration comes in the format hh:mm
+            duration = datetime.datetime.strptime(row[14].value, '%H:%M')
+            duration = duration.hour * 60 + duration.minute
+
+            age_classification = row[15].value
+
+            # Combine the date with the time
+            date_time = date.replace(hour=time.hour, minute=time.minute)
+
+            # Get the first event's datetime
+            if first_event_datetime is None:
+                first_event_datetime = date_time
+
+            # Check if it is a series
+            if re.match('^ *$', season):
+                season = None
+
+            is_movie = season is None
+
+            if is_movie:
+                episode = None
+            else:
+                season = int(season)
+                episode = int(episode)
+
+            # Process the title
+            original_title = FoxLife.process_title(original_title, is_movie)
+
+            # Process the directors
+            if directors is not None:
+                if re.match('^ *$', directors):
+                    directors = None
+                else:
+                    directors = directors.split(',')
+
+            # Process the creators
+            if creators is not None:
+                if re.match('^ *$', creators):
+                    creators = None
+                else:
+                    creators = creators.split(',')
+
+            # Genre is movie, series, documentary, news...
+            genre = 'Movie' if is_movie else 'Series'
+
+            channel_id = db_calls.get_channel_name(db_session, 'FOX Life').id
+
+            # Process file entry
+            insertion_result = process_file_entry(db_session, insertion_result, original_title, localized_title,
+                                                  is_movie, genre, date_time, channel_id, year, directors, None,
+                                                  synopsis, season, episode, cast=cast, duration=duration,
+                                                  age_classification=age_classification, creators=creators)
+
+            if insertion_result is None:
+                return None
+
+        if insertion_result.total_nb_sessions_in_file != 0:
+            db_calls.commit(db_session)
+
+            # Delete old sessions for the same time period
+            file_start_datetime = first_event_datetime - datetime.timedelta(minutes=5)
+            file_end_datetime = date_time + datetime.timedelta(minutes=5)
+
+            nb_deleted_sessions = delete_old_sessions(db_session, file_start_datetime, file_end_datetime,
+                                                      FoxLife.channels)
+
+            # Set the remaining information
+            insertion_result.nb_deleted_sessions = nb_deleted_sessions
+            insertion_result.start_datetime = file_start_datetime
+            insertion_result.end_datetime = file_end_datetime
+
+            return insertion_result
+        else:
+            return None
+
+
+channel_insertion_list = [Cinemundo, Odisseia, TVCine, FoxLife]
 
 
 def print_message(message: str, warning: bool, identification: str):
@@ -565,8 +717,8 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
                        synopsis: Optional[str], season: Optional[int], episode: Optional[int],
                        cast: Optional[str] = None, duration: Optional[int] = None, audio_languages: str = None,
                        countries: str = None, age_classification: Optional[str] = None,
-                       session_audio_language: Optional[str] = None, extended_cut: bool = False) \
-        -> Optional[InsertionResult]:
+                       session_audio_language: Optional[str] = None, extended_cut: bool = False,
+                       creators: List[str] = None) -> Optional[InsertionResult]:
     """
     Process an entry in the file, inserting all of the needed data.
 
@@ -591,6 +743,7 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
     :param age_classification: the age classification.
     :param session_audio_language: the audio language for the current session.
     :param extended_cut: whether or not this is the extended cut.
+    :param creators: the list of creators.
     :return: the updated insertion result, or None if there's a fatal error.
     """
 
@@ -599,7 +752,7 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
     # Search the ChannelShowDataCorrection
     channel_show_data = db_calls.search_channel_show_data_correction(db_session, channel_id, is_movie, original_title,
                                                                      localized_title, directors=directors, year=year,
-                                                                     subgenre=subgenre)
+                                                                     subgenre=subgenre, creators=creators)
 
     # If no match was found
     if channel_show_data is None:
@@ -610,7 +763,7 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
                                                                    subgenre=subgenre, audio_languages=audio_languages,
                                                                    countries=countries, directors=directors,
                                                                    age_classification=age_classification,
-                                                                   is_movie=is_movie, season=season)
+                                                                   is_movie=is_movie, season=season, creators=creators)
 
         # If it is a new show, search the TMDB
         if new_show:
@@ -635,7 +788,8 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
                         or (year is not None and show_data.year != year):
                     db_calls.register_channel_show_data_correction(db_session, channel_id, show_data.id, is_movie,
                                                                    original_title, localized_title,
-                                                                   directors=directors, year=year, subgenre=subgenre)
+                                                                   directors=directors, year=year, subgenre=subgenre,
+                                                                   creators=creators)
 
     # If it found a matching ChannelShowData
     else:
@@ -814,6 +968,18 @@ def search_tmdb_match(db_session: sqlalchemy.orm.Session, show_data: models.Show
 
                     if found_director:
                         break
+
+        # Otherwise search for the creator
+        if show_data.creators is not None and score < 25:
+            creators = show_data.creators.split(',')
+
+            show_details = tmdb_calls.get_show_using_id(db_session, t.id, t.is_movie)
+
+            for c in creators:
+                # Check the creator's name in a case insensitive manner
+                if c.casefold() in map(str.casefold, show_details.creators):
+                    score += 20
+                    break
 
         # Update the best match
         if score > best_score:

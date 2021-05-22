@@ -456,8 +456,8 @@ def get_show_session(session: sqlalchemy.orm.Session, show_id: int) -> Optional[
 
 
 def search_show_data_by_original_title(session: sqlalchemy.orm.Session, original_title: str, is_movie: bool,
-                                       directors: List[str] = None, year: int = None, genre: str = None) \
-        -> Optional[models.ShowData]:
+                                       directors: List[str] = None, year: int = None, genre: str = None,
+                                       creators: List[str] = None) -> Optional[models.ShowData]:
     """
     Search for the show data with the same original title and other parameters.
 
@@ -467,6 +467,7 @@ def search_show_data_by_original_title(session: sqlalchemy.orm.Session, original
     :param directors: the directors of the show.
     :param year: the year of the show.
     :param genre: the genre of the show.
+    :param creators: the creators of the show.
     :return: the show data with that data.
     """
 
@@ -480,6 +481,9 @@ def search_show_data_by_original_title(session: sqlalchemy.orm.Session, original
 
         if year is not None:
             query = query.filter(models.ShowData.year == year)
+
+    if creators is not None:
+        query = query.filter(sqlalchemy.or_(models.ShowData.creators.contains(c) for c in creators))
 
     if genre is not None:
         query = query.filter(models.ShowData.genre == genre)
@@ -536,7 +540,8 @@ def get_show_data_by_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: int) \
 def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, original_title: str = None,
                        duration: int = None, synopsis: str = None, year: int = None, genre: str = None,
                        director: str = None, cast: str = None, audio_languages: str = None, countries: str = None,
-                       age_classification: str = None, subgenre: Optional[str] = None, is_movie: Optional[bool] = None) \
+                       age_classification: str = None, subgenre: Optional[str] = None, is_movie: Optional[bool] = None,
+                       creators: str = None) \
         -> Optional[models.ShowData]:
     """
     Register an entry of ShowData.
@@ -555,6 +560,7 @@ def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, o
     :param age_classification: the age classification.
     :param subgenre: the subgenre of the show (Comedy, thriller, ...).
     :param is_movie: True if it is a movie, False if it is TV.
+    :param creators: the list of creators separated by comma.
     :return: the created show data.
     """
 
@@ -601,6 +607,9 @@ def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, o
     if cast is not None:
         show_data.cast = cast
 
+    if creators is not None:
+        show_data.creators = creators
+
     session.add(show_data)
 
     try:
@@ -643,7 +652,8 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, localized_title
                                 duration: int = None, synopsis: str = None, year: int = None, genre: str = None,
                                 directors: List[str] = None, cast: str = None, audio_languages: str = None,
                                 countries: str = None, age_classification: str = None, subgenre: Optional[str] = None,
-                                is_movie: Optional[bool] = None, season: Optional[int] = None) \
+                                is_movie: Optional[bool] = None, season: Optional[int] = None,
+                                creators: List[str] = None) \
         -> [bool, Optional[models.ShowData]]:
     """
     Check, and return, if there's a matching entry of ShowData and, if not add it.
@@ -663,13 +673,14 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, localized_title
     :param subgenre: the subgenre of the show (Comedy, thriller, ...).
     :param is_movie: True if it is a movie, False if it is TV.
     :param season: the season of the session from which the data comes from.
+    :param creators: the list of creators.
     :return: a boolean for whether it is a new show or not and the corresponding show data.
     """
 
     # Check if there's already an entry with this information
     if original_title is not None:
         show_data = search_show_data_by_original_title(session, original_title, is_movie, directors=directors,
-                                                       year=year, genre=genre)
+                                                       year=year, genre=genre, creators=creators)
     else:
         show_data = search_show_data_by_search_title_and_everything_else_empty(session, localized_title)
 
@@ -681,14 +692,18 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, localized_title
     else:
         director = None
 
-    if is_movie or season != 1:
+    if creators is not None:
+        creators = ', '.join(creators)
+
+    if not is_movie and season != 1:
         year = None
 
     # If not, then add it
     return True, register_show_data(session, localized_title, original_title=original_title, duration=duration,
                                     synopsis=synopsis, year=year, genre=genre, director=director,
                                     cast=cast, audio_languages=audio_languages, countries=countries,
-                                    age_classification=age_classification, subgenre=subgenre, is_movie=is_movie)
+                                    age_classification=age_classification, subgenre=subgenre, is_movie=is_movie,
+                                    creators=creators)
 
 
 def register_cache(session: sqlalchemy.orm.Session, key: str,
@@ -1201,8 +1216,8 @@ def search_existing_session(session: sqlalchemy.orm.Session, season: Optional[in
 
 def register_channel_show_data_correction(session: sqlalchemy.orm.Session, channel_id: int, show_id: int,
                                           is_movie: bool, original_title: str, localized_title: str, year: int = None,
-                                          directors: List[str] = None, subgenre: str = None) \
-        -> Optional[models.ChannelShowData]:
+                                          directors: List[str] = None, subgenre: str = None,
+                                          creators: List[str] = None) -> Optional[models.ChannelShowData]:
     """
     Register a ChannelShowData.
 
@@ -1215,6 +1230,7 @@ def register_channel_show_data_correction(session: sqlalchemy.orm.Session, chann
     :param year: the year of the show.
     :param directors: the directors of the show.
     :param subgenre: the subgenre.
+    :param creators: the list of creators.
     :return: a boolean for whether it is a new show or not and the corresponding show data.
     """
 
@@ -1226,6 +1242,9 @@ def register_channel_show_data_correction(session: sqlalchemy.orm.Session, chann
 
         if year is not None:
             channel_show_data.year = year
+
+    if creators is not None:
+        channel_show_data.creators = ','.join(creators)
 
     if subgenre is not None:
         channel_show_data.subgenre = subgenre
@@ -1242,7 +1261,7 @@ def register_channel_show_data_correction(session: sqlalchemy.orm.Session, chann
 
 def search_channel_show_data_correction(session: sqlalchemy.orm.Session, channel_id: int, is_movie: bool,
                                         original_title: str, localized_title: str, year: int = None,
-                                        directors: List[str] = None, subgenre: str = None) \
+                                        directors: List[str] = None, subgenre: str = None, creators: List[str] = None) \
         -> Optional[models.ChannelShowData]:
     """
     Check, and return, if there's a matching entry of a ChannelShowDataCorrection and, if not add it.
@@ -1256,6 +1275,7 @@ def search_channel_show_data_correction(session: sqlalchemy.orm.Session, channel
     :param year: the year of the show.
     :param directors: the directors of the show.
     :param subgenre: the subgenre of the show.
+    :param creators: the directors of the show.
     :return: the matching ChannelShowDataCorrection.
     """
 
@@ -1271,6 +1291,9 @@ def search_channel_show_data_correction(session: sqlalchemy.orm.Session, channel
 
         if year is not None:
             query = query.filter(models.ChannelShowData.year == year)
+
+    if creators is not None:
+        query = query.filter(models.ChannelShowData.creators == ', '.join(creators))
 
     if subgenre is not None:
         query = query.filter(models.ChannelShowData.subgenre == subgenre)

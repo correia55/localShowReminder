@@ -47,6 +47,7 @@ class ShowData(Base):
 
     # Only tv shows
     number_seasons = Column(Integer)
+    creators = Column(String(255))
 
     def __init__(self, search_title: str, portuguese_title: str):
         self.search_title = search_title
@@ -151,6 +152,7 @@ class ChannelShowData(Base):
     # Optional
     year = Column(Integer)
     directors = Column(String(255))
+    creators = Column(String(255))
     subgenre = Column(String(255))
 
     def __init__(self, channel_id: int, show_id: int, is_movie: bool, original_title: str, localized_title: str):

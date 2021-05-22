@@ -29,13 +29,15 @@ class TmdbShow(object):
     poster_path: Optional[str]
     origin_country: Optional[str]
     year: Optional[int]
+    creators: List[str]
 
     def __init__(self):
         self.poster_path = None
         self.year = None
         self.origin_country = None
-        self.adult = None
+        self.adult = False
         self.genres = []
+        self.creators = []
 
     def fill_from_dict(self, show_dict: dict, is_movie: bool = None):
         if is_movie is not None:
@@ -53,8 +55,8 @@ class TmdbShow(object):
             self.original_title = show_dict['original_name']
             self.title = show_dict['name']
 
-            if 'first_air_date' in show_dict and show_dict['first_air_date'] != '' and show_dict[
-                'first_air_date'] is not None:
+            if 'first_air_date' in show_dict and show_dict['first_air_date'] != '' \
+                    and show_dict['first_air_date'] is not None:
                 self.year = int(show_dict['first_air_date'][0:4])
 
             self.origin_country = show_dict['origin_country']
@@ -74,6 +76,10 @@ class TmdbShow(object):
 
         if 'poster_path' in show_dict and show_dict['poster_path']:
             self.poster_path = 'https://image.tmdb.org/t/p/w220_and_h330_face' + show_dict['poster_path']
+
+        if 'created_by' in show_dict:
+            for c in show_dict['created_by']:
+                self.creators.append(c['name'])
 
 
 class TmdbTranslation(object):
