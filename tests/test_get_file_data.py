@@ -425,7 +425,8 @@ class TestOdisseia(unittest.TestCase):
                                                                              'Attack and Defend',
                                                                              'Ataque e Defesa',
                                                                              directors=['Seaton McLean'],
-                                                                             year=2015, subgenre='Natureza')
+                                                                             year=2015, subgenre='Natureza',
+                                                                             creators=None)
 
         db_calls_mock.get_show_data_id.assert_called_with(self.session, 51474)
 
