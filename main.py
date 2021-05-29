@@ -14,7 +14,6 @@ import auxiliary
 import configuration
 import db_calls
 import external_authentication
-import models
 import processing
 import reminders
 from processing import ChangeType

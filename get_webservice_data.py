@@ -18,15 +18,15 @@ def update_channel_list(session: sqlalchemy.orm.Session):
     :param session: the db session.
     """
 
-    db_channels = session.query(models.Channel).all()
+    db_channels = db_calls.get_channel_list(session)
 
     # Delete channels without shows
     for channel in db_channels:
-        if session.query(models.ShowSession).filter(models.ShowSession.channel_id == channel.id).count() == 0:
+        if db_calls.count_channel_sessions(session, channel.id) == 0:
             print('Deleted channel without content: %s!' % channel.name)
             session.delete(channel)
 
-    session.commit()
+    db_calls.commit(session)
 
     with open(os.path.join(configuration.base_dir, 'data', 'channels.csv'), newline='') as csvfile:
         content = csv.reader(csvfile, delimiter=';')
@@ -40,13 +40,13 @@ def update_channel_list(session: sqlalchemy.orm.Session):
             channel_acronym = row[2]
             channel_search_epg = row[3] == 'True'
 
-            channels = session.query(models.Channel).filter(models.Channel.name == channel_name).all()
+            channel = db_calls.get_channel_name(session, channel_name)
 
             # If channel already exists
-            if len(channels) > 0:
-                channels[0].adult = channel_adult
-                channels[0].acronym = channel_acronym
-                channels[0].search_epg = channel_search_epg
+            if channel is not None:
+                channel[0].adult = channel_adult
+                channel[0].acronym = channel_acronym
+                channel[0].search_epg = channel_search_epg
 
             # If it is a new channel
             else:
@@ -108,8 +108,7 @@ class MEPG:
 
         for c in response_json['d']['channels']:
             channel_shows = c['programs']
-            channel_id = session.query(models.Channel).filter(
-                models.Channel.acronym == c['sigla']).first().id
+            channel_id = db_calls.get_channel_acronym(session, c['sigla']).id
 
             for s in channel_shows:
                 show_date = datetime.datetime.strptime(s['date'], '%d-%m-%Y').strftime('%Y-%m-%d')
@@ -177,11 +176,11 @@ class MEPG:
         :param session: the db session.
         """
 
-        # Get list of all channels from the db
-        db_channels = session.query(models.Channel).filter(models.Channel.search_epg.is_(True)).all()
+        # Get list of all channels from the db that should be requested to the EPG
+        db_channels = db_calls.get_epg_channel_list(session)
 
         # Get the date of the last update
-        db_last_update = session.query(models.LastUpdate).first()
+        db_last_update = db_calls.get_last_update(session)
 
         # If this is the first update set yesterday's date as the last update
         if db_last_update is None:

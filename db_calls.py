@@ -72,15 +72,42 @@ def get_channel_name(session: sqlalchemy.orm.Session, name: str) -> Optional[mod
         .first()
 
 
+def get_channel_acronym(session: sqlalchemy.orm.Session, acronym: str) -> Optional[models.Channel]:
+    """
+    Get the channel with a given acronym.
+
+    :param session: the db session.
+    :param acronym: the acronym of the channel.
+    :return: the channel.
+    """
+
+    return session.query(models.Channel) \
+        .filter(models.Channel.acronym == acronym) \
+        .first()
+
+
 def get_channel_list(session: sqlalchemy.orm.Session) -> List[models.Channel]:
     """
     Get the complete list of channels.
 
     :param session: the db session.
-    :return: the channel.
+    :return: the channel list.
     """
 
     return session.query(models.Channel) \
+        .all()
+
+
+def get_epg_channel_list(session: sqlalchemy.orm.Session) -> List[models.Channel]:
+    """
+    Get the complete list of channels that should be requested to the EPG.
+
+    :param session: the db session.
+    :return: the channel list.
+    """
+
+    return session.query(models.Channel) \
+        .filter(models.Channel.search_epg.is_(True)) \
         .all()
 
 
@@ -453,6 +480,18 @@ def get_show_session(session: sqlalchemy.orm.Session, show_id: int) -> Optional[
     return session.query(models.ShowSession) \
         .filter(models.ShowSession.id == show_id) \
         .first()
+
+
+def count_channel_sessions(session: sqlalchemy.orm.Session, channel_id: int):
+    """
+    Count the number of show sessions that a channel has.
+
+    :param session: the db session.
+    :param channel_id: the id of the show channel.
+    :return: the count the number of show sessions that a channel has.
+    """
+
+    return session.query(models.ShowSession).filter(models.ShowSession.channel_id == channel_id).count()
 
 
 def search_show_data_by_original_title(session: sqlalchemy.orm.Session, original_title: str, is_movie: bool,
