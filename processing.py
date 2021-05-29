@@ -48,13 +48,15 @@ def get_hash(text: str) -> str:
 
 
 def clear_show_list(session):
-    """Delete entries with more than 7 days old, from the DB."""
+    """Delete entries with more than x days old, from the DB."""
 
     today_start = datetime.datetime.now()
     today_start.replace(hour=0, minute=0, second=0)
 
     session.query(models.ShowSession).filter(
-        models.ShowSession.date_time < today_start - datetime.timedelta(7)).delete()
+        models.ShowSession.date_time < today_start - datetime.timedelta(configuration.show_sessions_validity_days)) \
+        .delete()
+
     session.commit()
 
 

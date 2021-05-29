@@ -2,6 +2,7 @@ import datetime
 import os
 import sys
 import unittest.mock
+from typing import Type
 
 import sqlalchemy.orm
 
@@ -27,6 +28,20 @@ if 'tests' in os.getcwd():
     base_path = ''
 else:
     base_path = 'tests/'
+
+
+# These classes allows us to set a fake date as the today date in datetime
+# Remark: they need to be set and then reset
+class NewDatetime(datetime.datetime):
+    @classmethod
+    def today(cls):
+        return datetime.datetime(2021, 3, 1, 15, 13, 34)
+
+
+class NewDate(datetime.date):
+    @classmethod
+    def today(cls):
+        return datetime.date(2021, 3, 1)
 
 
 class TestGetFileData(unittest.TestCase):
@@ -345,9 +360,18 @@ class TestTvCine(unittest.TestCase):
 
 class TestOdisseia(unittest.TestCase):
     session: sqlalchemy.orm.Session
+    date_backup: Type[datetime.date]
 
     def setUp(self) -> None:
         self.session = unittest.mock.MagicMock()
+        configuration_mock.show_sessions_validity_days = 7
+
+        # Save the datetime.date
+        self.date_backup = datetime.date
+
+    def tearDown(self) -> None:
+        # Reset the datetime class to work normally
+        datetime.date = self.date_backup
 
     def test_Odisseia_process_title_01(self) -> None:
         """ Test the function Odisseia.process_title with nothing in particular. """
@@ -374,10 +398,15 @@ class TestOdisseia(unittest.TestCase):
         self.assertEqual(expected_result, actual_result)
 
     def test_Odisseia_add_file_data(self) -> None:
-        """ Test the function Odisseia.add_file_data with a new session of a show with a matching channel correction.
+        """
+        Test the function Odisseia.add_file_data with a new session of a show with a matching channel correction.
+        An old event was added to show that nothing changes and it is ignored.
         """
 
         # Prepare the mocks
+        # Replace datetime class with a utility class with a fixed today datetime
+        datetime.date = NewDate
+
         # Prepare the call to get_channel_name
         channel_data = models.Channel('Acronym', 'Channel Name')
         channel_data.id = 8373

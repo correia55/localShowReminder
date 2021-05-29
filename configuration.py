@@ -72,6 +72,9 @@ shows_url = os.environ.get('SHOWS_URL', None)
 # Max channels per request
 max_channels_request = os.environ.get('MAX_CHANNELS_REQUEST', '90')
 
+# Number of days after the date in which the sessions are still kept
+show_sessions_validity_days = os.environ.get('SHOW_SESSIONS_VALIDITY_DAYS', 7)
+
 # endregion
 
 # region Data Gathering from file

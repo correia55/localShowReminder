@@ -119,6 +119,11 @@ class Cinemundo(ChannelInsertion):
             # Combine the date with the time
             date_time = date.replace(hour=time.hour, minute=time.minute)
 
+            # Ignore old sessions
+            if date_time < (datetime.datetime.combine(datetime.date.today(), datetime.time()) - 
+                            datetime.timedelta(days=configuration.show_sessions_validity_days)):
+                continue
+
             # Get the first event's datetime
             if first_event_datetime is None:
                 first_event_datetime = date_time
@@ -212,6 +217,11 @@ class Odisseia(ChannelInsertion):
             # Get the date and time
             begin_time = event.getAttribute('beginTime')
             date_time = datetime.datetime.strptime(begin_time, '%Y%m%d%H%M%S')
+
+            # Ignore old sessions
+            if date_time < (datetime.datetime.combine(datetime.date.today(), datetime.time()) -
+                            datetime.timedelta(days=configuration.show_sessions_validity_days)):
+                continue
 
             # Get the first event's datetime
             if first_event_datetime is None:
@@ -307,6 +317,10 @@ class Odisseia(ChannelInsertion):
 
             if insertion_result is None:
                 return None
+
+        # If there only invalid sessions
+        if first_event_datetime is None:
+            return None
 
         db_calls.commit(db_session)
 
@@ -449,6 +463,11 @@ class TVCine(ChannelInsertion):
 
             # Combine the date with the time
             date_time = date.replace(hour=time.hour, minute=time.minute)
+
+            # Ignore old sessions
+            if date_time < (datetime.datetime.combine(datetime.date.today(), datetime.time()) -
+                            datetime.timedelta(days=configuration.show_sessions_validity_days)):
+                continue
 
             # Get the first event's datetime
             if first_event_datetime is None:
@@ -626,6 +645,11 @@ class FoxLife(ChannelInsertion):
 
             # Combine the date with the time
             date_time = date.replace(hour=time.hour, minute=time.minute)
+
+            # Ignore old sessions
+            if date_time < (datetime.datetime.combine(datetime.date.today(), datetime.time()) -
+                            datetime.timedelta(days=configuration.show_sessions_validity_days)):
+                continue
 
             # Get the first event's datetime
             if first_event_datetime is None:
