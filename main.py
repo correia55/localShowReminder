@@ -662,7 +662,7 @@ class ShowsEP(fr.Resource):
                 token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
                 user_id = authentication.get_token_field(token.encode(), 'user')
 
-                user = session.query(models.User).filter(models.User.id == user_id).first()
+                user = db_calls.get_user_id(session, user_id)
                 search_adult = user.show_adult if user is not None else False
 
             more_results, shows = processing.search_show_information(session, search_text, is_movie, language,
@@ -720,7 +720,7 @@ class LocalShowsEP(fr.Resource):
                 token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
                 user_id = authentication.get_token_field(token.encode(), 'user')
 
-                user = session.query(models.User).filter(models.User.id == user_id).first()
+                user = db_calls.get_user_id(session, user_id)
                 search_adult = user.show_adult if user is not None else False
 
             # Check whether it is a request by id or by text
@@ -990,7 +990,7 @@ class UsersBASettingsEP(fr.Resource):
             token = flask.request.headers.environ['HTTP_AUTHORIZATION'][7:]
             user_id = authentication.get_token_field(token.encode(), 'user')
 
-            user = session.query(models.User).filter(models.User.id == user_id).first()
+            user = db_calls.get_user_id(session, user_id)
 
             # Check if the password is valid
             valid = verify_login_credentials(user.email, password)
