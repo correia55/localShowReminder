@@ -207,9 +207,7 @@ class LocalShowResult:
                 local_show_dict['episode'] = self.episode
 
             if self.date_time:
-                # Sets the timezone info (UTC) and formats it
-                date_time = self.date_time.replace(tzinfo=datetime.timezone.utc)
-                local_show_dict['date_time'] = date_time.strftime("%Y-%m-%dT%H:%M:%S")
+                local_show_dict['date_time'] = self.date_time.strftime("%Y-%m-%dT%H:%M:%S")
 
             if self.audio_language:
                 local_show_dict['audio_language'] = self.audio_language
