@@ -57,7 +57,7 @@ def clear_show_list(session):
         models.ShowSession.date_time < today_start - datetime.timedelta(configuration.show_sessions_validity_days)) \
         .delete()
 
-    session.commit()
+    db_calls.commit(session)
 
 
 def search_show_information(session: sqlalchemy.orm.Session, search_text: str, is_movie: bool, language: str,

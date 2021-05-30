@@ -25,7 +25,7 @@ if database_url is None:
     print('Unable to find database url!')
     exit(1)
 
-engine = create_engine(database_url, encoding='utf-8', pool_recycle=280)
+engine = create_engine(database_url, encoding='utf-8', pool_recycle=280, connect_args={"options": "-c timezone=utc"})
 Session = sessionmaker(bind=engine)
 
 MIGRATIONS_DIR = os.path.join(base_dir, 'migrations')

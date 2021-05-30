@@ -783,7 +783,7 @@ def get_cache(session: sqlalchemy.orm.Session, key: str) -> Optional[models.Cach
     if not cache_entry:
         return None
 
-    current_date = datetime.datetime.now()
+    current_date = datetime.datetime.utcnow()
 
     # Check if the entry is still valid
     if current_date > cache_entry.date_time + datetime.timedelta(days=configuration.cache_validity_days):
@@ -798,9 +798,7 @@ def get_cache(session: sqlalchemy.orm.Session, key: str) -> Optional[models.Cach
 def clear_cache(session: sqlalchemy.orm.Session) -> None:
     """Delete invalid cache entries."""
 
-    today = datetime.datetime.now().date()
-
-    session.query(models.Cache).filter(models.Cache.date_time < today -
+    session.query(models.Cache).filter(models.Cache.date_time < datetime.date.today() -
                                        datetime.timedelta(days=configuration.cache_validity_days)).delete()
     session.commit()
 
@@ -1020,7 +1018,7 @@ def search_show_sessions_data_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb
 
     if below_datetime is not None:
         query = query.filter(models.ShowSession.update_timestamp > below_datetime)
-        query = query.filter(models.ShowSession.date_time > datetime.datetime.now())
+        query = query.filter(models.ShowSession.date_time > datetime.datetime.utcnow())
 
     # Join channels
     query = query.join(models.Channel)
@@ -1077,7 +1075,7 @@ def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: s
 
     if below_datetime is not None:
         query = query.filter(models.ShowSession.update_timestamp > below_datetime)
-        query = query.filter(models.ShowSession.date_time > datetime.datetime.now())
+        query = query.filter(models.ShowSession.date_time > datetime.datetime.utcnow())
 
     # Ignore shows that have a TMDB match
     if ignore_with_tmdb_id:
@@ -1207,7 +1205,7 @@ def search_old_sessions(session: sqlalchemy.orm.Session, start_datetime: datetim
     :param channels: the set of channels.
     """
 
-    now = datetime.datetime.now() - datetime.timedelta(hours=1)
+    now = datetime.datetime.utcnow() - datetime.timedelta(hours=1)
 
     # Get the corresponding channel ids
     channels_ids = session.query(models.Channel.id) \

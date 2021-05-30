@@ -51,7 +51,8 @@ class Cinemundo(ChannelInsertion):
         - VP - for portuguese audio.
 
         :param title: the title as is in the file.
-        :return: a tuple with the clean title, whether or not it is a session with the portuguese voice and the season, when applicable.
+        :return: a tuple with the clean title, whether or not it is a session with the portuguese voice and the season,
+        when applicable.
         """
 
         # Replace all quotation marks for the same quotation mark
@@ -95,8 +96,11 @@ class Cinemundo(ChannelInsertion):
         wb = openpyxl.load_workbook(filename)
 
         first_event_datetime = None
+        date_time = None
 
         insertion_result = InsertionResult()
+
+        today_00_00 = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
 
         # Skip row 1, with the headers
         for row in wb.active.iter_rows(min_row=3, max_col=12):
@@ -119,9 +123,13 @@ class Cinemundo(ChannelInsertion):
             # Combine the date with the time
             date_time = date.replace(hour=time.hour, minute=time.minute)
 
+            # Add the Lisbon timezone info, then convert it to UTC
+            # and then remove the timezone info
+            date_time = auxiliary.convert_datetime_to_utc(auxiliary.get_datetime_with_tz_offset(date_time)) \
+                .replace(tzinfo=None)
+
             # Ignore old sessions
-            if date_time < (datetime.datetime.combine(datetime.date.today(), datetime.time()) - 
-                            datetime.timedelta(days=configuration.show_sessions_validity_days)):
+            if date_time < (today_00_00 - datetime.timedelta(days=configuration.show_sessions_validity_days)):
                 continue
 
             # Get the first event's datetime
@@ -208,8 +216,11 @@ class Odisseia(ChannelInsertion):
             return None
 
         first_event_datetime = None
+        date_time = None
 
         insertion_result = InsertionResult()
+
+        today_00_00 = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
 
         # Process each event
         for event in events:
@@ -218,9 +229,13 @@ class Odisseia(ChannelInsertion):
             begin_time = event.getAttribute('beginTime')
             date_time = datetime.datetime.strptime(begin_time, '%Y%m%d%H%M%S')
 
+            # Add the Lisbon timezone info, then convert it to UTC
+            # and then remove the timezone info
+            date_time = auxiliary.convert_datetime_to_utc(auxiliary.get_datetime_with_tz_offset(date_time)) \
+                .replace(tzinfo=None)
+
             # Ignore old sessions
-            if date_time < (datetime.datetime.combine(datetime.date.today(), datetime.time()) -
-                            datetime.timedelta(days=configuration.show_sessions_validity_days)):
+            if date_time < (today_00_00 - datetime.timedelta(days=configuration.show_sessions_validity_days)):
                 continue
 
             # Get the first event's datetime
@@ -433,6 +448,9 @@ class TVCine(ChannelInsertion):
         insertion_result = InsertionResult()
 
         first_event_datetime = None
+        date_time = None
+
+        today_00_00 = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
 
         # Skip row 1, with the headers
         for row in wb.active.iter_rows(min_row=2, max_col=15):
@@ -464,9 +482,13 @@ class TVCine(ChannelInsertion):
             # Combine the date with the time
             date_time = date.replace(hour=time.hour, minute=time.minute)
 
+            # Add the Lisbon timezone info, then convert it to UTC
+            # and then remove the timezone info
+            date_time = auxiliary.convert_datetime_to_utc(auxiliary.get_datetime_with_tz_offset(date_time)) \
+                .replace(tzinfo=None)
+
             # Ignore old sessions
-            if date_time < (datetime.datetime.combine(datetime.date.today(), datetime.time()) -
-                            datetime.timedelta(days=configuration.show_sessions_validity_days)):
+            if date_time < (today_00_00 - datetime.timedelta(days=configuration.show_sessions_validity_days)):
                 continue
 
             # Get the first event's datetime
@@ -613,6 +635,9 @@ class FoxLife(ChannelInsertion):
         insertion_result = InsertionResult()
 
         first_event_datetime = None
+        date_time = None
+
+        today_00_00 = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
 
         # Skip row 1, with the headers
         for row in wb.active.iter_rows(min_row=2, max_col=16):
@@ -646,9 +671,13 @@ class FoxLife(ChannelInsertion):
             # Combine the date with the time
             date_time = date.replace(hour=time.hour, minute=time.minute)
 
+            # Add the Lisbon timezone info, then convert it to UTC
+            # and then remove the timezone info
+            date_time = auxiliary.convert_datetime_to_utc(auxiliary.get_datetime_with_tz_offset(date_time)) \
+                .replace(tzinfo=None)
+
             # Ignore old sessions
-            if date_time < (datetime.datetime.combine(datetime.date.today(), datetime.time()) -
-                            datetime.timedelta(days=configuration.show_sessions_validity_days)):
+            if date_time < (today_00_00 - datetime.timedelta(days=configuration.show_sessions_validity_days)):
                 continue
 
             # Get the first event's datetime
@@ -864,8 +893,9 @@ def process_show_session(db_session: sqlalchemy.orm.Session, insertion_result: I
         if existing_show_session is not None:
             add_show = False
 
+            # Update its information
             existing_show_session.date_time = date_time
-            existing_show_session.update_timestamp = datetime.datetime.now()
+            existing_show_session.update_timestamp = datetime.datetime.utcnow()
         else:
             add_show = True
 

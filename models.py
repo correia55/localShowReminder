@@ -62,7 +62,8 @@ class ShowTitles(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     tmdb_id = Column(Integer, unique=True)
     titles = Column(String(1000), nullable=False)  # Titles separated by a vertical var (|)
-    insertion_datetime = Column(DateTime, default=datetime.datetime.now())
+    # TODO: DATE SHOULD BE ENOUGH
+    insertion_datetime = Column(DateTime, default=datetime.datetime.utcnow())
 
     def __init__(self, trakt_id: int, titles: str):
         self.tmdb_id = trakt_id
@@ -106,7 +107,7 @@ class ShowSession(Base):
 
     # Technical
     id = Column(Integer, primary_key=True, autoincrement=True)
-    update_timestamp = Column(DateTime, default=datetime.datetime.now())
+    update_timestamp = Column(DateTime, default=datetime.datetime.utcnow())
 
     # Foreign key
     show_id = Column(Integer, ForeignKey('ShowData.id'))
@@ -185,7 +186,7 @@ class StreamingServiceShow(Base):
 
     # Technical
     id = Column(Integer, primary_key=True, autoincrement=True)
-    update_timestamp = Column(DateTime, default=datetime.datetime.now())
+    update_timestamp = Column(DateTime, default=datetime.datetime.utcnow())
     prev_first_season_available = Column(Integer)  # Used to store the previous first season, needed for the alarms
     prev_last_season_available = Column(Integer)  # Used to store the previous last season, needed for the alarms
 
@@ -338,7 +339,7 @@ class Cache(Base):
 
     key = Column(String(200), primary_key=True)
     result = Column(String(100000))
-    date_time = Column(DateTime, default=datetime.datetime.now())
+    date_time = Column(DateTime, default=datetime.datetime.utcnow())
 
     def __init__(self, key: str, result: str):
         self.key = key

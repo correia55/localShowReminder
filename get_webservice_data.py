@@ -6,6 +6,7 @@ import re
 import requests
 import sqlalchemy.orm
 
+import auxiliary
 import configuration
 import db_calls
 import models
@@ -111,13 +112,20 @@ class MEPG:
             channel_id = db_calls.get_channel_acronym(session, c['sigla']).id
 
             for s in channel_shows:
-                show_date = datetime.datetime.strptime(s['date'], '%d-%m-%Y').strftime('%Y-%m-%d')
+                show_datetime = datetime.datetime.strptime(s['date'], '%d-%m-%Y')
+                show_time = datetime.datetime.strptime(s['timeIni'], '%H:%M')
+
+                # Combine the date and time
+                show_datetime = show_datetime.replace(hour=show_time.hour, minute=show_time.minute)
+
+                # Add the Lisbon timezone info, then convert it to UTC
+                # and then remove the timezone info
+                show_datetime = auxiliary.convert_datetime_to_utc(auxiliary.get_datetime_with_tz_offset(show_datetime)) \
+                    .replace(tzinfo=None)
 
                 # Skip if it's referent to a show from a different day
-                if show_date != last_update_date.strftime('%Y-%m-%d'):
+                if show_datetime.date() != last_update_date:
                     continue
-
-                show_datetime = '%s %s' % (show_date, s['timeIni'])
 
                 program_title = str(s['name'])
                 is_movie = None
@@ -155,9 +163,6 @@ class MEPG:
 
                 shows_added = True
 
-                # Parse the datetime
-                show_datetime = datetime.datetime.strptime(show_datetime, '%Y-%m-%d %H:%M')
-
                 db_calls.register_show_session(session, show_season, show_episode, show_datetime, channel_id,
                                                show_data.id, should_commit=False)
 
@@ -184,20 +189,21 @@ class MEPG:
 
         # If this is the first update set yesterday's date as the last update
         if db_last_update is None:
-            db_last_update = models.LastUpdate(datetime.date.today() - datetime.timedelta(1), datetime.datetime.now())
+            db_last_update = models.LastUpdate(datetime.date.today() - datetime.timedelta(days=1),
+                                               datetime.datetime.utcnow())
 
             session.add(db_last_update)
 
         # Make sure the variable's date is at least as recent as today
         # so that it does not make requests for older dates that are no longer relevant
         if db_last_update.epg_date < datetime.date.today():
-            db_last_update.epg_date = datetime.date.today() - datetime.timedelta(1)
+            db_last_update.epg_date = datetime.date.today() - datetime.timedelta(days=1)
 
         max_channels_request = int(configuration.max_channels_request)
 
         # For each day until six days from today
-        while db_last_update.epg_date < datetime.date.today() + datetime.timedelta(6):
-            db_last_update.epg_date += datetime.timedelta(1)
+        while db_last_update.epg_date < datetime.date.today() + datetime.timedelta(days=6):
+            db_last_update.epg_date += datetime.timedelta(days=1)
 
             # It is necessary to split the number of channels in a request in order for it to succeed
             current = []

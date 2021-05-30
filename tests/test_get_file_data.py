@@ -101,8 +101,8 @@ class TestGetFileData(unittest.TestCase):
         process_emails_mock.send_deleted_sessions_email.return_value = True
 
         # Call the function
-        start_datetime = datetime.datetime.now() - datetime.timedelta(days=2)
-        end_datetime = datetime.datetime.now()
+        start_datetime = datetime.datetime.utcnow() - datetime.timedelta(days=2)
+        end_datetime = datetime.datetime.utcnow()
         channels = ['Odisseia']
 
         actual_result = get_file_data.delete_old_sessions(self.session, start_datetime, end_datetime, channels)
@@ -451,8 +451,7 @@ class TestOdisseia(unittest.TestCase):
         db_calls_mock.get_channel_name.assert_called_with(self.session, 'Odisseia')
 
         db_calls_mock.search_channel_show_data_correction.assert_called_with(self.session, 8373, False,
-                                                                             'Attack and Defend',
-                                                                             'Ataque e Defesa',
+                                                                             'Attack and Defend', 'Ataque e Defesa',
                                                                              directors=['Seaton McLean'],
                                                                              year=2015, subgenre='Natureza',
                                                                              creators=None)
@@ -460,8 +459,7 @@ class TestOdisseia(unittest.TestCase):
         db_calls_mock.get_show_data_id.assert_called_with(self.session, 51474)
 
         db_calls_mock.search_existing_session.assert_called_with(self.session, 1, 5,
-                                                                 datetime.datetime(2021, 3, 19, 5, 15, 16),
-                                                                 8373, 51474)
+                                                                 datetime.datetime(2021, 3, 19, 5, 15, 16), 8373, 51474)
 
         db_calls_mock.register_show_session.assert_called_with(self.session, 1, 5,
                                                                datetime.datetime(2021, 3, 19, 5, 15, 16), 8373, 51474,
