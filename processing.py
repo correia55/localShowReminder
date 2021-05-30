@@ -50,8 +50,8 @@ def get_hash(text: str) -> str:
 def clear_show_list(session):
     """Delete entries with more than x days old, from the DB."""
 
-    today_start = datetime.datetime.now()
-    today_start.replace(hour=0, minute=0, second=0)
+    today_start = datetime.datetime.utcnow()
+    today_start.replace(hour=0, minute=0, second=0, microsecond=0)
 
     session.query(models.ShowSession).filter(
         models.ShowSession.date_time < today_start - datetime.timedelta(configuration.show_sessions_validity_days)) \
@@ -340,7 +340,7 @@ def get_show_titles(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: boo
     # Titles in the DB are still valid
     if show_titles is not None \
             and show_titles.insertion_datetime + datetime.timedelta(days=configuration.cache_validity_days) \
-            > datetime.datetime.now():
+            > datetime.datetime.utcnow():
         return show_titles.titles.split('|')
 
     # Collect all titles for a show
@@ -482,7 +482,7 @@ def process_alarms(session: sqlalchemy.orm.Session):
 
     # Update the datetime of the last processing of the alarms
     last_update = db_calls.get_last_update(session)
-    last_update.alarms_datetime = datetime.datetime.now()
+    last_update.alarms_datetime = datetime.datetime.utcnow()
     db_calls.commit(session)
 
 

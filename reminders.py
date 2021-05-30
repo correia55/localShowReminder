@@ -54,7 +54,7 @@ def register_reminder(session: sqlalchemy.orm.Session, show_session_id: int, ant
     anticipation_hours = int(anticipation_minutes / 60)
 
     # Check now is at least two hours before the anticipation hours
-    if datetime.datetime.now() + datetime.timedelta(hours=anticipation_hours + 2) > show_session.date_time:
+    if datetime.datetime.utcnow() + datetime.timedelta(hours=anticipation_hours + 2) > show_session.date_time:
         return None
 
     return db_calls.register_reminder(session, show_session_id, anticipation_minutes, user_id)
@@ -85,7 +85,7 @@ def update_reminder(session: sqlalchemy.orm.Session, reminder_id: int, anticipat
     # Check now is at least two hours before the anticipation hours
     anticipation_hours = int(anticipation_minutes / 60)
 
-    if datetime.datetime.now() + datetime.timedelta(hours=anticipation_hours + 2) > show_session.date_time:
+    if datetime.datetime.utcnow() + datetime.timedelta(hours=anticipation_hours + 2) > show_session.date_time:
         return False, 'Invalid anticipation time'
 
     if db_calls.update_reminder(session, reminder, anticipation_minutes):

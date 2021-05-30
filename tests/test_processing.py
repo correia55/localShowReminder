@@ -76,7 +76,7 @@ class TestProcessing(unittest.TestCase):
 
         # The db_calls.get_show_titles in get_show_titles
         show_titles = models.ShowTitles(123, 'Title 1|Title 2')
-        show_titles.insertion_datetime = datetime.datetime.now() - datetime.timedelta(hours=3)
+        show_titles.insertion_datetime = datetime.datetime.utcnow() - datetime.timedelta(hours=3)
 
         db_calls_mock.get_show_titles.return_value = show_titles
 
@@ -96,7 +96,7 @@ class TestProcessing(unittest.TestCase):
         show_data.tmdb_id = 123
 
         show_session = models.ShowSession(None, None, original_datetime + datetime.timedelta(days=2), 76, 27)
-        show_session.update_timestamp = datetime.datetime.now() + datetime.timedelta(hours=38)
+        show_session.update_timestamp = datetime.datetime.utcnow() + datetime.timedelta(hours=38)
 
         db_calls_mock.search_show_sessions_data_with_tmdb_id.return_value = [(show_session, channel, show_data)]
 
@@ -116,7 +116,7 @@ class TestProcessing(unittest.TestCase):
 
         # The db_calls.search_show_sessions_data in process_alarms -> search_sessions_db for 'Title 1'
         show_session_2 = models.ShowSession(None, None, original_datetime + datetime.timedelta(days=3), 76, 27)
-        show_session_2.update_timestamp = datetime.datetime.now() + datetime.timedelta(hours=38)
+        show_session_2.update_timestamp = datetime.datetime.utcnow() + datetime.timedelta(hours=38)
 
         db_calls_mock.search_show_sessions_data.side_effect = [[(show_session_2, channel, show_data)], []]
 
@@ -209,7 +209,7 @@ class TestProcessing(unittest.TestCase):
 
         # The db_calls.get_show_titles in get_show_titles
         show_titles = models.ShowTitles(123, 'Title 1|Title 2')
-        show_titles.insertion_datetime = datetime.datetime.now() - datetime.timedelta(hours=3)
+        show_titles.insertion_datetime = datetime.datetime.utcnow() - datetime.timedelta(hours=3)
 
         db_calls_mock.get_show_titles.return_value = show_titles
 
@@ -229,7 +229,7 @@ class TestProcessing(unittest.TestCase):
         show_data.tmdb_id = 123
 
         show_session = models.ShowSession(None, None, original_datetime + datetime.timedelta(days=2), 76, 27)
-        show_session.update_timestamp = datetime.datetime.now() + datetime.timedelta(hours=38)
+        show_session.update_timestamp = datetime.datetime.utcnow() + datetime.timedelta(hours=38)
 
         db_calls_mock.search_show_sessions_data_with_tmdb_id.return_value = [(show_session, channel, show_data)]
 
@@ -246,7 +246,7 @@ class TestProcessing(unittest.TestCase):
 
         # The db_calls.search_show_sessions_data in process_alarms -> search_sessions_db for 'Title 1'
         show_session_2 = models.ShowSession(None, None, original_datetime + datetime.timedelta(days=3), 76, 27)
-        show_session_2.update_timestamp = datetime.datetime.now() + datetime.timedelta(hours=38)
+        show_session_2.update_timestamp = datetime.datetime.utcnow() + datetime.timedelta(hours=38)
 
         db_calls_mock.search_show_sessions_data.side_effect = [[(show_session_2, channel, show_data)], []]
 
