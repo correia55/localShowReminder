@@ -8,6 +8,56 @@ import db_calls
 import get_file_data
 import models
 import tmdb_calls
+from file_parsers.cinemundo import Cinemundo
+from file_parsers.fox_life import FoxLife
+from file_parsers.fox_movies import FoxMovies
+from file_parsers.odisseia import Odisseia
+from file_parsers.tvcine import TVCine
+
+channel_insertion_list = [Cinemundo, Odisseia, TVCine, FoxLife, FoxMovies]
+
+
+def insert_file_data(db_session: sqlalchemy.orm.Session, channel_set: int, filename: str) -> ():
+    """
+    Select the function according to the channel set.
+
+    :param db_session: the DB session.
+    :param channel_set: the set of channels of the file.
+    :param filename: the name of the file.
+    """
+
+    print('Processing file...')
+
+    result = channel_insertion_list[channel_set].add_file_data(db_session, filename)
+
+    if result is not None:
+        print('complete!\n')
+        print('The file contained %d show sessions!' % result.total_nb_sessions_in_file)
+        print('Shows\' interval from %s to %s.\n' % (str(result.start_datetime), str(result.end_datetime)))
+
+        print('%4d show sessions updated!' % result.nb_updated_sessions)
+        print('%4d show sessions added!' % result.nb_added_sessions)
+        print('%4d show sessions deleted!' % result.nb_deleted_sessions)
+        print('%4d new shows!' % result.nb_new_shows)
+
+
+def insert_file_data_submenu(db_session: sqlalchemy.orm.Session):
+    """
+    Execute a data insertion.
+
+    :param db_session: the DB session.
+    """
+
+    question = 'Choose one channel set for the data being inserted:\n'
+
+    for i in range(len(channel_insertion_list)):
+        question += '%d - %s\n' % (i, channel_insertion_list[i].channels)
+
+    input_channel_set = int(input(question))
+
+    input_filename = input('What is the path to the file?\n')
+
+    insert_file_data(db_session, input_channel_set, input_filename)
 
 
 def update_searchable_titles_db(db_session: sqlalchemy.orm.Session):
@@ -21,24 +71,6 @@ def update_searchable_titles_db(db_session: sqlalchemy.orm.Session):
 
     for show in shows:
         show.search_title = auxiliary.make_searchable_title(show.portuguese_title)
-
-
-def update_show_data_with_tmdb(show_data: models.ShowData, tmdb_show: tmdb_calls.TmdbShow):
-    """
-    Update a show data with the data from TMDB.
-
-    :param show_data: the show data in the DB.
-    :param tmdb_show: the corresponding TMDB show.
-    """
-
-    show_data.tmdb_id = tmdb_show.id
-    show_data.year = tmdb_show.year
-    show_data.original_title = tmdb_show.original_title
-
-    # Delete information that is no longer useful
-    if not show_data.is_movie:
-        show_data.director = None
-        show_data.cast = None
 
 
 def set_tmdb_match(db_session: sqlalchemy.orm.Session, show_id: int, tmdb_id: int, is_movie: bool):
@@ -89,7 +121,7 @@ def set_tmdb_match(db_session: sqlalchemy.orm.Session, show_id: int, tmdb_id: in
         tmdb_show = tmdb_calls.get_show_using_id(db_session, tmdb_id, is_movie)
 
         # - update the show data with the correct data
-        update_show_data_with_tmdb(show, tmdb_show)
+        get_file_data.update_show_data_with_tmdb(show, tmdb_show)
 
     # If there are sessions
     if len(show_sessions) > 0:
@@ -104,7 +136,7 @@ def set_tmdb_match(db_session: sqlalchemy.orm.Session, show_id: int, tmdb_id: in
                                                            directors=directors, year=year, subgenre=show.subgenre)
 
 
-def set_tmdb_match_menu(db_session: sqlalchemy.orm.Session, call_count: int):
+def set_tmdb_match_submenu(db_session: sqlalchemy.orm.Session, call_count: int):
     """
     Print the menu for set_tmdb_match.
 
@@ -148,7 +180,7 @@ def set_tmdb_match_menu(db_session: sqlalchemy.orm.Session, call_count: int):
             db_session.rollback()
             raise
 
-        set_tmdb_match_menu(db_session, call_count + 1)
+        set_tmdb_match_submenu(db_session, call_count + 1)
 
 
 def search_tmdb_match(db_session: sqlalchemy.orm.Session):
@@ -216,10 +248,11 @@ def menu():
     """ Menu for choosing the utility function being run. """
 
     question = 'Choose one utility function:\n'
-    question += '0 - Update search title\n'
-    question += '1 - Set tmdb match\n'
-    question += '2 - Search tmdb match (for verification)\n'
-    question += '3 - Search DB match (for verification)\n'
+    question += '0 - Get data from file\n\n'
+    question += '1 - Update search title\n'
+    question += '2 - Set tmdb match\n'
+    question += '3 - Search tmdb match (for verification)\n'
+    question += '4 - Search DB match (for verification)\n'
 
     option = int(input(question))
 
@@ -227,12 +260,14 @@ def menu():
 
     try:
         if option == 0:
-            update_searchable_titles_db(session)
+            insert_file_data_submenu(session)
         elif option == 1:
-            set_tmdb_match_menu(session, 0)
+            update_searchable_titles_db(session)
         elif option == 2:
-            search_tmdb_match(session)
+            set_tmdb_match_submenu(session, 0)
         elif option == 3:
+            search_tmdb_match(session)
+        elif option == 4:
             search_db_match(session)
 
         session.commit()
