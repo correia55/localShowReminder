@@ -24,7 +24,7 @@ import file_parsers.odisseia
 
 # To ensure the tests find the data folder no matter where it runs
 if 'tests' in os.getcwd():
-    base_path = '../'
+    base_path = ''
 else:
     base_path = 'tests/'
 
