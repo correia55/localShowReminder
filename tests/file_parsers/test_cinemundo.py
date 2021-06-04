@@ -5,6 +5,10 @@ import unittest.mock
 configuration_mock = unittest.mock.MagicMock()
 sys.modules['configuration'] = configuration_mock
 
+# Configure a mock for the db_calls file
+db_calls_mock = unittest.mock.MagicMock()
+sys.modules['db_calls'] = db_calls_mock
+
 # Configure a mock for the process_emails file
 process_emails_mock = unittest.mock.MagicMock()
 sys.modules['process_emails'] = process_emails_mock
