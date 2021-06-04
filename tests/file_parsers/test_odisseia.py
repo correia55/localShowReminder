@@ -8,6 +8,7 @@ import sqlalchemy.orm
 
 import models
 
+# Configure a mock for the configuration file
 configuration_mock = unittest.mock.MagicMock()
 sys.modules['configuration'] = configuration_mock
 
@@ -19,8 +20,7 @@ sys.modules['db_calls'] = db_calls_mock
 process_emails_mock = unittest.mock.MagicMock()
 sys.modules['process_emails'] = process_emails_mock
 
-# Configure a mock for the configuration file
-from file_parsers.odisseia import Odisseia
+import file_parsers.odisseia
 
 # To ensure the tests find the data folder no matter where it runs
 if 'tests' in os.getcwd():
@@ -59,7 +59,7 @@ class TestOdisseia(unittest.TestCase):
         expected_result = 'Attack and Defend'
 
         # Call the function
-        actual_result = Odisseia.process_title('Attack and Defend')
+        actual_result = file_parsers.odisseia.Odisseia.process_title('Attack and Defend')
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -71,7 +71,7 @@ class TestOdisseia(unittest.TestCase):
         expected_result = 'History\'s Greatest Lies'
 
         # Call the function
-        actual_result = Odisseia.process_title('History´s Greatest Lies')
+        actual_result = file_parsers.odisseia.Odisseia.process_title('History´s Greatest Lies')
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -116,7 +116,7 @@ class TestOdisseia(unittest.TestCase):
         db_calls_mock.search_old_sessions.return_value = []
 
         # Call the function
-        actual_result = Odisseia.add_file_data(self.session, base_path + 'data/odisseia_example.xml')
+        actual_result = file_parsers.odisseia.Odisseia.add_file_data(self.session, base_path + 'data/odisseia_example.xml')
 
         # Verify the result
         self.assertEqual(datetime.datetime(2021, 3, 19, 5, 10, 16), actual_result.start_datetime)

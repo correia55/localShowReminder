@@ -3,6 +3,7 @@ import unittest.mock
 
 import sqlalchemy.orm
 
+# Configure a mock for the configuration file
 configuration_mock = unittest.mock.MagicMock()
 sys.modules['configuration'] = configuration_mock
 
@@ -10,8 +11,7 @@ sys.modules['configuration'] = configuration_mock
 process_emails_mock = unittest.mock.MagicMock()
 sys.modules['process_emails'] = process_emails_mock
 
-# Configure a mock for the configuration file
-from file_parsers.fox_life import FoxLife
+import file_parsers.fox_life
 
 
 class TestFoxLife(unittest.TestCase):
@@ -24,7 +24,7 @@ class TestFoxLife(unittest.TestCase):
         expected_result = 'Home By Spring'
 
         # Call the function
-        actual_result = FoxLife.process_title('Home By Spring', True)
+        actual_result = file_parsers.fox_life.FoxLife.process_title('Home By Spring', True)
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -36,7 +36,7 @@ class TestFoxLife(unittest.TestCase):
         expected_result = 'Private Practice'
 
         # Call the function
-        actual_result = FoxLife.process_title('Private Practice 1', False)
+        actual_result = file_parsers.fox_life.FoxLife.process_title('Private Practice 1', False)
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -48,7 +48,7 @@ class TestFoxLife(unittest.TestCase):
         expected_result = 'New Amsterdam'
 
         # Call the function
-        actual_result = FoxLife.process_title('New Amsterdam (2018) 3', False)
+        actual_result = file_parsers.fox_life.FoxLife.process_title('New Amsterdam (2018) 3', False)
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -60,7 +60,7 @@ class TestFoxLife(unittest.TestCase):
         expected_result = 'Titanic'
 
         # Call the function
-        actual_result = FoxLife.process_title('Titanic (re-release 2012)', True)
+        actual_result = file_parsers.fox_life.FoxLife.process_title('Titanic (re-release 2012)', True)
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
