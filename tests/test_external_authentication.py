@@ -1,15 +1,15 @@
-import sys
 import unittest.mock
+from types import ModuleType
 
-# Configure a mock for the configuration file
-configuration_mock = unittest.mock.MagicMock()
-sys.modules['configuration'] = configuration_mock
+import globalsub
+import google.oauth2
 
-# Configure a mock for the id_token file
-id_token_mock = unittest.mock.MagicMock()
-sys.modules['google.oauth2.id_token'] = id_token_mock
-
+import configuration
 import external_authentication
+
+# Prepare the variables for replacing google.oauth2
+id_token_backup: ModuleType
+id_token_mock = unittest.mock.MagicMock()
 
 
 def verify_oauth2_token_with_error(token, request, client_id):
@@ -20,12 +20,27 @@ class TestExternalAuthentication(unittest.TestCase):
     def setUp(self) -> None:
         """ Prepare the mocks for each test. """
 
-        configuration_mock.google_client_id = 'google client id'
+        configuration.google_client_id = 'google client id'
 
     def tearDown(self) -> None:
         """ Reset the mocks after each test. """
 
         id_token_mock.verify_oauth2_token.reset_mock(return_value=True, side_effect=True)
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        global id_token_backup, id_token_mock
+
+        # Save a reference to the module db_calls
+        id_token_backup = google.oauth2.id_token
+
+        # Replace all references to the module db_calls with a mock
+        globalsub.subs(google.oauth2.id_token, id_token_mock)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        # Replace back all references to the module db_calls to the module
+        globalsub.subs(id_token_mock, id_token_backup)
 
     def test_external_authentication_ok(self) -> None:
         """ Test the function external_authentication, with a success case. """

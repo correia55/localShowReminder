@@ -7,6 +7,7 @@ import configuration
 import db_calls
 import get_file_data
 import models
+import process_emails
 import tmdb_calls
 from file_parsers.cinemundo import Cinemundo
 from file_parsers.fox_life import FoxLife
@@ -279,4 +280,7 @@ def menu():
 
 
 if __name__ == '__main__':
+    configuration.initialize()
+    process_emails.initialize()
+
     menu()

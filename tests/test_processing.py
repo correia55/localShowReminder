@@ -1,26 +1,24 @@
 import datetime
-import sys
 import unittest.mock
+from types import ModuleType
 
+import globalsub
 import sqlalchemy.orm
 
+import configuration
+import db_calls
 import models
+import process_emails
+import processing
 import response_models
 
-# Configure a mock for the db_calls file
-configuration_mock = unittest.mock.MagicMock()
-sys.modules['configuration'] = configuration_mock
-
-# These are still needed to prevent the problems with the reading of the configuration
-# Configure a mock for the db_calls file
+# Prepare the variables for replacing db_calls
+db_calls_backup: ModuleType
 db_calls_mock = unittest.mock.MagicMock()
-sys.modules['db_calls'] = db_calls_mock
 
-# Configure a mock for the process_emails file
+# Prepare the variables for replacing process_emails
+process_emails_backup: ModuleType
 process_emails_mock = unittest.mock.MagicMock()
-sys.modules['process_emails'] = process_emails_mock
-
-import processing
 
 
 class TestProcessing(unittest.TestCase):
@@ -28,10 +26,27 @@ class TestProcessing(unittest.TestCase):
 
     def setUp(self) -> None:
         self.session = unittest.mock.MagicMock()
-        configuration_mock.cache_validity_days = 1
+        configuration.cache_validity_days = 1
 
-    @unittest.mock.patch('processing.db_calls')
-    def test_process_alarms_ok_01(self, db_calls_mock) -> None:
+    @classmethod
+    def setUpClass(cls) -> None:
+        global db_calls_backup, db_calls_mock, process_emails_backup, process_emails_mock
+
+        # Save a reference to the module db_calls and process_emails
+        db_calls_backup = db_calls
+        process_emails_backup = process_emails
+
+        # Replace all references to the module db_calls and process_emails with a mock
+        globalsub.subs(db_calls, db_calls_mock)
+        globalsub.subs(process_emails, process_emails_mock)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        # Replace back all references to the module db_calls and process_emails to the module
+        globalsub.subs(db_calls_mock, db_calls_backup)
+        globalsub.subs(process_emails_mock, process_emails_backup)
+
+    def test_process_alarms_ok_01(self) -> None:
         """ Test the function process_alarms without alarms. """
 
         # Prepare the mocks
@@ -57,9 +72,7 @@ class TestProcessing(unittest.TestCase):
 
         db_calls_mock.commit.assert_called_with(self.session)
 
-    @unittest.mock.patch('processing.db_calls')
-    @unittest.mock.patch('processing.process_emails')
-    def test_process_alarms_ok_02(self, process_emails_mock, db_calls_mock) -> None:
+    def test_process_alarms_ok_02(self) -> None:
         """ Test the function process_alarms with an alarm that gets two matches. """
 
         # 1 - Prepare the mocks
@@ -191,8 +204,7 @@ class TestProcessing(unittest.TestCase):
 
         db_calls_mock.commit.assert_called_with(self.session)
 
-    @unittest.mock.patch('processing.db_calls')
-    def test_process_alarms_ok_03(self, db_calls_mock) -> None:
+    def test_process_alarms_ok_03(self) -> None:
         """ Test the function process_alarms with an alarm that gets two matches, but both from an excluded channel. """
 
         # 1 - Prepare the mocks
@@ -292,8 +304,7 @@ class TestProcessing(unittest.TestCase):
 
         db_calls_mock.commit.assert_called_with(self.session)
 
-    @unittest.mock.patch('processing.db_calls')
-    def test_process_excluded_channel_list_ok_01(self, db_calls_mock) -> None:
+    def test_process_excluded_channel_list_ok_01(self) -> None:
         """ Test the function process_excluded_channel_list without changes to the current list. """
 
         # Prepare the mocks
@@ -306,8 +317,7 @@ class TestProcessing(unittest.TestCase):
         # Verify the calls to the mocks
         db_calls_mock.get_user_excluded_channels.assert_called_with(self.session, 1)
 
-    @unittest.mock.patch('processing.db_calls')
-    def test_process_excluded_channel_list_ok_02(self, db_calls_mock) -> None:
+    def test_process_excluded_channel_list_ok_02(self) -> None:
         """ Test the function process_excluded_channel_list with changes to the current list. """
 
         # Prepare the mocks
@@ -330,8 +340,7 @@ class TestProcessing(unittest.TestCase):
             [unittest.mock.call(self.session, 1, 10, should_commit=False),
              unittest.mock.call(self.session, 1, 15, should_commit=False)])
 
-    @unittest.mock.patch('processing.db_calls')
-    def test_get_settings_error(self, db_calls_mock) -> None:
+    def test_get_settings_error(self) -> None:
         """ Test the function get_settings when the user is not found. """
 
         # Prepare the mocks
@@ -344,8 +353,7 @@ class TestProcessing(unittest.TestCase):
         # Verify the calls to the mocks
         db_calls_mock.get_user_id.assert_called_with(self.session, 1)
 
-    @unittest.mock.patch('processing.db_calls')
-    def test_get_settings_ok(self, db_calls_mock) -> None:
+    def test_get_settings_ok(self) -> None:
         """ Test the function get_settings when the user is not found. """
 
         # Expected results
@@ -373,7 +381,3 @@ class TestProcessing(unittest.TestCase):
         db_calls_mock.get_user_id.assert_called_with(self.session, 1)
 
         db_calls_mock.get_user_excluded_channels.assert_called_with(self.session, 1)
-
-
-if __name__ == '__main__':
-    unittest.main()

@@ -1,40 +1,48 @@
 import datetime
-import sys
 import unittest.mock
+from types import ModuleType
 
+import globalsub
 import jwt
 
+import authentication
+import configuration
+import db_calls
 import models
 
-# Configure a mock for the configuration file
-configuration_mock = unittest.mock.MagicMock()
-sys.modules['configuration'] = configuration_mock
-
-# Configure a mock for the db_calls file
+# Prepare the variables for replacing db_calls
+db_calls_backup: ModuleType
 db_calls_mock = unittest.mock.MagicMock()
-sys.modules['db_calls'] = db_calls_mock
-
-import authentication
 
 
 class TestAuthentication(unittest.TestCase):
     def setUp(self) -> None:
-        """ Prepare the mocks for each test. """
-
-        configuration_mock.secret_key = 'secret key'
+        configuration.secret_key = 'secret key'
 
     def tearDown(self) -> None:
-        """ Reset the mocks after each test. """
-
         db_calls_mock.reset_mock()
-        configuration_mock.reset_mock()
 
-        configuration_mock.REFRESH_TOKEN_VALIDITY_DAYS = None
-        configuration_mock.ACCESS_TOKEN_VALIDITY_HOURS = None
-        configuration_mock.VERIFICATION_TOKEN_VALIDITY_DAYS = None
-        configuration_mock.DELETION_TOKEN_VALIDITY_DAYS = None
-        configuration_mock.CHANGE_EMAIL_TOKEN_VALIDITY_DAYS = None
-        configuration_mock.PASSWORD_RECOVERY_TOKEN_VALIDITY_DAYS = None
+        configuration.REFRESH_TOKEN_VALIDITY_DAYS = None
+        configuration.ACCESS_TOKEN_VALIDITY_HOURS = None
+        configuration.VERIFICATION_TOKEN_VALIDITY_DAYS = None
+        configuration.DELETION_TOKEN_VALIDITY_DAYS = None
+        configuration.CHANGE_EMAIL_TOKEN_VALIDITY_DAYS = None
+        configuration.PASSWORD_RECOVERY_TOKEN_VALIDITY_DAYS = None
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        global db_calls_backup, db_calls_mock
+
+        # Save a reference to the module db_calls
+        db_calls_backup = db_calls
+
+        # Replace all references to the module db_calls with a mock
+        globalsub.subs(db_calls, db_calls_mock)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        # Replace back all references to the module db_calls to the module
+        globalsub.subs(db_calls_mock, db_calls_backup)
 
     def test_get_token_payload_ok(self) -> None:
         """ Test the function that returns the payload of a token, with a success case. """
@@ -163,7 +171,7 @@ class TestAuthentication(unittest.TestCase):
         token_payload = {'key': 'value'}
         token = jwt.encode(token_payload, 'secret key', algorithm='HS256')
 
-        configuration_mock.REFRESH_TOKEN_VALIDITY_DAYS = 5
+        configuration.REFRESH_TOKEN_VALIDITY_DAYS = 5
         db_calls_mock.register_token.return_value = models.Token(token)
 
         # Call the function
@@ -191,7 +199,7 @@ class TestAuthentication(unittest.TestCase):
         expected_type = 'VERIFICATION'
 
         # Prepare the mocks
-        configuration_mock.VERIFICATION_TOKEN_VALIDITY_DAYS = 5
+        configuration.VERIFICATION_TOKEN_VALIDITY_DAYS = 5
 
         # Call the function
         actual_result = authentication.generate_token(1234, authentication.TokenType.VERIFICATION,
@@ -215,7 +223,7 @@ class TestAuthentication(unittest.TestCase):
         the token in the DB. """
 
         # Prepare the mocks
-        configuration_mock.REFRESH_TOKEN_VALIDITY_DAYS = 5
+        configuration.REFRESH_TOKEN_VALIDITY_DAYS = 5
         db_calls_mock.register_token.return_value = None
 
         # Call the function
@@ -239,8 +247,8 @@ class TestAuthentication(unittest.TestCase):
         """ Test the function that generates a token, with an error due to invalid secret key. """
 
         # Prepare the mocks
-        configuration_mock.CHANGE_EMAIL_TOKEN_VALIDITY_DAYS = 5
-        configuration_mock.secret_key = None
+        configuration.CHANGE_EMAIL_TOKEN_VALIDITY_DAYS = 5
+        configuration.secret_key = None
 
         # Call the function
         actual_result = authentication.generate_token(1, authentication.TokenType.CHANGE_EMAIL_NEW)
@@ -258,7 +266,7 @@ class TestAuthentication(unittest.TestCase):
         expected_type = 'DELETION'
 
         # Prepare the mocks
-        configuration_mock.DELETION_TOKEN_VALIDITY_DAYS = 5
+        configuration.DELETION_TOKEN_VALIDITY_DAYS = 5
 
         # Call the function
         actual_result = authentication.generate_change_token(123, authentication.TokenType.DELETION,
@@ -307,8 +315,8 @@ class TestAuthentication(unittest.TestCase):
         expected_type = 'ACCESS'
 
         # Prepare the mocks
-        configuration_mock.REFRESH_TOKEN_VALIDITY_DAYS = 5
-        configuration_mock.ACCESS_TOKEN_VALIDITY_HOURS = 10
+        configuration.REFRESH_TOKEN_VALIDITY_DAYS = 5
+        configuration.ACCESS_TOKEN_VALIDITY_HOURS = 10
 
         refresh_token = authentication.generate_token(123, authentication.TokenType.REFRESH, unittest.mock.MagicMock())
         db_calls_mock.register_token.return_value = models.Token(refresh_token)
@@ -332,7 +340,7 @@ class TestAuthentication(unittest.TestCase):
         """ Test the function that generates an access token, with an error due to an invalid REFRESH token. """
 
         # Prepare the mocks
-        configuration_mock.DELETION_TOKEN_VALIDITY_DAYS = 5
+        configuration.DELETION_TOKEN_VALIDITY_DAYS = 5
 
         # Call the function
         refresh_token = authentication.generate_token(123, authentication.TokenType.DELETION)
@@ -350,7 +358,7 @@ class TestAuthentication(unittest.TestCase):
         expected_result = True, 123
 
         # Prepare the mocks
-        configuration_mock.ACCESS_TOKEN_VALIDITY_HOURS = 5
+        configuration.ACCESS_TOKEN_VALIDITY_HOURS = 5
 
         # Call the function
         token = authentication.generate_token(123, authentication.TokenType.ACCESS)
@@ -368,7 +376,7 @@ class TestAuthentication(unittest.TestCase):
         expected_result = True, 123
 
         # Prepare the mocks
-        configuration_mock.REFRESH_TOKEN_VALIDITY_DAYS = 5
+        configuration.REFRESH_TOKEN_VALIDITY_DAYS = 5
 
         token = authentication.generate_token(123, authentication.TokenType.REFRESH, unittest.mock.MagicMock())
 
@@ -419,7 +427,7 @@ class TestAuthentication(unittest.TestCase):
         expected_result = False, None
 
         # Prepare the mocks
-        configuration_mock.ACCESS_TOKEN_VALIDITY_HOURS = 5
+        configuration.ACCESS_TOKEN_VALIDITY_HOURS = 5
 
         # Call the function
         token = authentication.generate_token(123, authentication.TokenType.ACCESS)
@@ -436,7 +444,7 @@ class TestAuthentication(unittest.TestCase):
         expected_result = False, None
 
         # Prepare the mocks
-        configuration_mock.REFRESH_TOKEN_VALIDITY_DAYS = 5
+        configuration.REFRESH_TOKEN_VALIDITY_DAYS = 5
         db_calls_mock.get_token.return_value = None
 
         # Call the function

@@ -1,6 +1,7 @@
 import sqlalchemy.orm
 
 import configuration
+import process_emails
 import reminders
 
 
@@ -16,6 +17,9 @@ def hourly_tasks(db_session: sqlalchemy.orm.Session):
 
 
 if __name__ == '__main__':
+    configuration.initialize()
+    process_emails.initialize()
+
     session = configuration.Session()
 
     try:

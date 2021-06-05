@@ -15,6 +15,8 @@ if os.environ.get('DATABASE_URL', None) is None or 'Test' not in os.environ.get(
 import configuration
 import db_calls
 
+configuration.initialize()
+
 
 class TestDBCalls(unittest.TestCase):
     session: sqlalchemy.orm.Session

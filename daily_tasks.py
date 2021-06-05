@@ -3,6 +3,7 @@ import sqlalchemy.orm
 import configuration
 import db_calls
 import get_webservice_data
+import process_emails
 import processing
 
 
@@ -37,6 +38,9 @@ def daily_tasks(db_session: sqlalchemy.orm.Session):
 
 
 if __name__ == '__main__':
+    configuration.initialize()
+    process_emails.initialize()
+
     session = configuration.Session()
 
     try:

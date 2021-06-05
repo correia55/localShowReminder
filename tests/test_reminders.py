@@ -1,24 +1,23 @@
 import datetime
-import sys
 import unittest.mock
+from types import ModuleType
 
+import globalsub
 import sqlalchemy.orm
 
-# Configure a mock for the configuration file
-configuration_mock = unittest.mock.MagicMock()
-sys.modules['configuration'] = configuration_mock
-
-# Configure a mock for the db_calls file
-db_calls_mock = unittest.mock.MagicMock()
-sys.modules['db_calls'] = db_calls_mock
-
-# Configure a mock for the process_emails file
-process_emails_mock = unittest.mock.MagicMock()
-sys.modules['process_emails'] = process_emails_mock
-
-import reminders
+import db_calls
 import models
+import process_emails
+import reminders
 import response_models
+
+# Prepare the variables for replacing db_calls
+db_calls_backup: ModuleType
+db_calls_mock = unittest.mock.MagicMock()
+
+# Prepare the variables for replacing process_emails
+process_emails_backup: ModuleType
+process_emails_mock = unittest.mock.MagicMock()
 
 
 class TestReminders(unittest.TestCase):
@@ -26,6 +25,24 @@ class TestReminders(unittest.TestCase):
 
     def setUp(self) -> None:
         self.session = unittest.mock.MagicMock()
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        global db_calls_backup, db_calls_mock, process_emails_backup, process_emails_mock
+
+        # Save a reference to the module db_calls and process_emails
+        db_calls_backup = db_calls
+        process_emails_backup = process_emails
+
+        # Replace all references to the module db_calls and process_emails with a mock
+        globalsub.subs(db_calls, db_calls_mock)
+        globalsub.subs(process_emails, process_emails_mock)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        # Replace back all references to the module db_calls and process_emails to the module
+        globalsub.subs(db_calls_mock, db_calls_backup)
+        globalsub.subs(process_emails_mock, process_emails_backup)
 
     def test_get_reminders_error_01(self) -> None:
         """ Test the function that obtains the list of reminders of a user, without a user. """
@@ -378,7 +395,3 @@ class TestReminders(unittest.TestCase):
 
         # Given that it can't compare the object sent in the email
         self.assertEqual(3, process_emails_mock.send_reminders_email.call_count)
-
-
-if __name__ == '__main__':
-    unittest.main()

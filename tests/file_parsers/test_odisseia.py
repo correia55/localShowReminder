@@ -1,30 +1,24 @@
 import datetime
 import os
-import sys
 import unittest.mock
+from types import ModuleType
 from typing import Type
 
+import globalsub
 import sqlalchemy.orm
 
+import configuration
+import db_calls
+import file_parsers.odisseia
 import models
 
-# Configure a mock for the configuration file
-configuration_mock = unittest.mock.MagicMock()
-sys.modules['configuration'] = configuration_mock
-
-# Configure a mock for the db_calls file
+# Prepare the variables for replacing db_calls
+db_calls_backup: ModuleType
 db_calls_mock = unittest.mock.MagicMock()
-sys.modules['db_calls'] = db_calls_mock
-
-# Configure a mock for the process_emails file
-process_emails_mock = unittest.mock.MagicMock()
-sys.modules['process_emails'] = process_emails_mock
-
-import file_parsers.odisseia
 
 # To ensure the tests find the data folder no matter where it runs
 if 'tests' in os.getcwd():
-    base_path = ''
+    base_path = '../'
 else:
     base_path = 'tests/'
 
@@ -39,18 +33,36 @@ class NewDatetime(datetime.datetime):
 
 class TestOdisseia(unittest.TestCase):
     session: sqlalchemy.orm.Session
+
     datetime_backup: Type[datetime.datetime]
 
     def setUp(self) -> None:
         self.session = unittest.mock.MagicMock()
-        configuration_mock.show_sessions_validity_days = 7
+        configuration.show_sessions_validity_days = 7
 
         # Save the datetime.date
         self.datetime_backup = datetime.datetime
 
     def tearDown(self) -> None:
+        db_calls_mock.reset_mock()
+
         # Reset the datetime class to work normally
         datetime.date = self.datetime_backup
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        global db_calls_backup, db_calls_mock
+
+        # Save a reference to the module db_calls
+        db_calls_backup = db_calls
+
+        # Replace all references to the module db_calls with a mock
+        globalsub.subs(db_calls, db_calls_mock)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        # Replace back all references to the module db_calls to the module
+        globalsub.subs(db_calls_mock, db_calls_backup)
 
     def test_Odisseia_process_title_01(self) -> None:
         """ Test the function Odisseia.process_title with nothing in particular. """
@@ -83,7 +95,7 @@ class TestOdisseia(unittest.TestCase):
         """
 
         # Prepare the mocks
-        # Replace datetime class with a utility class with a fixed today datetime
+        # Replace datetime class with a utility class with a fixed datetime
         datetime.datetime = NewDatetime
 
         # Prepare the call to get_channel_name
@@ -116,7 +128,8 @@ class TestOdisseia(unittest.TestCase):
         db_calls_mock.search_old_sessions.return_value = []
 
         # Call the function
-        actual_result = file_parsers.odisseia.Odisseia.add_file_data(self.session, base_path + 'data/odisseia_example.xml')
+        actual_result = file_parsers.odisseia.Odisseia.add_file_data(self.session,
+                                                                     base_path + 'data/odisseia_example.xml')
 
         # Verify the result
         self.assertEqual(datetime.datetime(2021, 3, 19, 5, 10, 16), actual_result.start_datetime)

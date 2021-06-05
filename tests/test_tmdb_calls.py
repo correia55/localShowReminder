@@ -1,12 +1,7 @@
 import os
-import sys
 import unittest.mock
 
 import sqlalchemy.orm
-
-# Configure a mock for the configuration file
-configuration_mock = unittest.mock.MagicMock()
-sys.modules['configuration'] = configuration_mock
 
 import tmdb_calls
 
@@ -76,7 +71,3 @@ class TestTmdbCalls(unittest.TestCase):
 
         external_request_mock.Request.assert_called_with('https://api.themoviedb.org/3/tv/74806?api_key=tmdb_key')
         external_request_mock.urlopen.assert_called_with('the request')
-
-
-if __name__ == '__main__':
-    unittest.main()

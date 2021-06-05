@@ -14,6 +14,7 @@ import auxiliary
 import configuration
 import db_calls
 import external_authentication
+import process_emails
 import processing
 import reminders
 from processing import ChangeType
@@ -24,6 +25,9 @@ class FlaskApp(flask.Flask):
     def __init__(self, *args, **kwargs):
         super(FlaskApp, self).__init__(*args, **kwargs)
 
+
+configuration.initialize()
+process_emails.initialize()
 
 basic_auth = fh.HTTPBasicAuth()
 token_auth = fh.HTTPTokenAuth()

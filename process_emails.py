@@ -3,7 +3,7 @@ import gettext
 import os
 import re
 import smtplib
-from typing import List
+from typing import List, Any
 
 import dns.resolver as dnsr
 import jinja2
@@ -11,18 +11,30 @@ import jinja2
 import configuration
 import response_models
 
-LOCALES_DIR = os.path.join(configuration.base_dir, 'locales')
+env: jinja2.Environment
 
-pt = gettext.translation('main', localedir=LOCALES_DIR, languages=['pt'])
-en = gettext.translation('main', localedir=LOCALES_DIR, languages=['en'])
+current: Any
+pt: Any
+en: Any
 
-EMAIL_TEMPLATES_DIR = os.path.join(configuration.base_dir, 'email_templates')
 
-extensions = ['jinja2.ext.i18n']
-env = jinja2.Environment(loader=jinja2.FileSystemLoader(EMAIL_TEMPLATES_DIR), extensions=extensions)
+def initialize():
+    """ Initialize this module, preparing all of the variables. """
 
-current = pt
-env.install_gettext_callables(gettext=current.gettext, ngettext=current.ngettext, newstyle=True)
+    global env, current, pt, en
+
+    LOCALES_DIR = os.path.join(configuration.base_dir, 'locales')
+
+    pt = gettext.translation('main', localedir=LOCALES_DIR, languages=['pt'])
+    en = gettext.translation('main', localedir=LOCALES_DIR, languages=['en'])
+
+    EMAIL_TEMPLATES_DIR = os.path.join(configuration.base_dir, 'email_templates')
+
+    extensions = ['jinja2.ext.i18n']
+    env = jinja2.Environment(loader=jinja2.FileSystemLoader(EMAIL_TEMPLATES_DIR), extensions=extensions)
+
+    current = pt
+    env.install_gettext_callables(gettext=current.gettext, ngettext=current.ngettext, newstyle=True)
 
 
 def valid_configuration():
