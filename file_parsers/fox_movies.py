@@ -62,18 +62,11 @@ class FoxMovies(get_file_data.ChannelInsertion):
 
         today_00_00 = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
 
-        counter = 0
-
         # Skip row 1, with the headers
         for row in wb.active.iter_rows(min_row=2, max_col=38):
             # Skip the rows in which the year is not a number (header rows)
             if not isinstance(row[20].value, int):
                 continue
-
-            counter += 1
-
-            if counter > 5:
-                break
 
             # Get the data
             date = datetime.datetime.strptime(row[0].value, '%d/%m/%Y')
