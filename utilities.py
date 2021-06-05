@@ -279,8 +279,12 @@ def menu():
         session.close()
 
 
-if __name__ == '__main__':
+def main():
     configuration.initialize()
     process_emails.initialize()
 
     menu()
+
+
+if __name__ == '__main__':
+    main()

@@ -37,7 +37,7 @@ def daily_tasks(db_session: sqlalchemy.orm.Session):
     print('Alarms processed!')
 
 
-if __name__ == '__main__':
+def main():
     configuration.initialize()
     process_emails.initialize()
 
@@ -51,3 +51,7 @@ if __name__ == '__main__':
         raise
     finally:
         session.close()
+
+
+if __name__ == '__main__':
+    main()

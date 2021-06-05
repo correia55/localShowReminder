@@ -16,7 +16,7 @@ def hourly_tasks(db_session: sqlalchemy.orm.Session):
     print('Reminders processed!')
 
 
-if __name__ == '__main__':
+def main():
     configuration.initialize()
     process_emails.initialize()
 
@@ -30,3 +30,7 @@ if __name__ == '__main__':
         raise
     finally:
         session.close()
+
+
+if __name__ == '__main__':
+    main()
