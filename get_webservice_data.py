@@ -45,9 +45,9 @@ def update_channel_list(session: sqlalchemy.orm.Session):
 
             # If channel already exists
             if channel is not None:
-                channel[0].adult = channel_adult
-                channel[0].acronym = channel_acronym
-                channel[0].search_epg = channel_search_epg
+                channel.adult = channel_adult
+                channel.acronym = channel_acronym
+                channel.search_epg = channel_search_epg
 
             # If it is a new channel
             else:
