@@ -11,8 +11,8 @@ import db_calls
 import get_file_data
 
 
-class FoxLife(get_file_data.ChannelInsertion):
-    channels = ['FOX Life']
+class Fox(get_file_data.ChannelInsertion):
+    channels = ['FOX', 'FOX Life']
 
     @staticmethod
     def process_title(title: str, is_movie: bool) -> str:
@@ -64,6 +64,8 @@ class FoxLife(get_file_data.ChannelInsertion):
 
         first_event_datetime = None
         date_time = None
+        channel_name = None
+        channel_id = None
 
         today_00_00 = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
 
@@ -71,6 +73,10 @@ class FoxLife(get_file_data.ChannelInsertion):
         for row in wb.active.iter_rows(min_row=2, max_col=16):
             # Skip the rows in which the year is not a number (header rows)
             if not isinstance(row[9].value, int):
+                if channel_name is None:
+                    channel_name = str(row[1].value)
+                    channel_id = db_calls.get_channel_name(db_session, channel_name).id
+
                 continue
 
             # Get the data
@@ -125,7 +131,7 @@ class FoxLife(get_file_data.ChannelInsertion):
                 episode = int(episode)
 
             # Process the title
-            original_title = FoxLife.process_title(original_title, is_movie)
+            original_title = Fox.process_title(original_title, is_movie)
 
             # Process the directors
             if directors is not None:
@@ -143,8 +149,6 @@ class FoxLife(get_file_data.ChannelInsertion):
 
             # Genre is movie, series, documentary, news...
             genre = 'Movie' if is_movie else 'Series'
-
-            channel_id = db_calls.get_channel_name(db_session, 'FOX Life').id
 
             # Process file entry
             insertion_result = get_file_data.process_file_entry(db_session, insertion_result, original_title,
@@ -166,7 +170,7 @@ class FoxLife(get_file_data.ChannelInsertion):
             file_end_datetime = date_time + datetime.timedelta(minutes=5)
 
             nb_deleted_sessions = get_file_data.delete_old_sessions(db_session, file_start_datetime, file_end_datetime,
-                                                                    FoxLife.channels)
+                                                                    [channel_name])
 
             # Set the remaining information
             insertion_result.nb_deleted_sessions = nb_deleted_sessions
