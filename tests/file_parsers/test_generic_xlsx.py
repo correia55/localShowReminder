@@ -39,7 +39,7 @@ class TestGenericXlsx(unittest.TestCase):
     def setUp(self) -> None:
         self.session = unittest.mock.MagicMock()
         configuration.show_sessions_validity_days = 7
-        configuration.base_dir = '../../'
+        configuration.base_dir = base_path + '../'
 
         # Save the datetime.date
         self.datetime_backup = datetime.datetime
