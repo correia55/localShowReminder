@@ -276,7 +276,12 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                 season = None
                 episode = None
             else:
-                season = int(row[fields['season'].position].value)
+                try:
+                    season = int(row[fields['season'].position].value)
+                except ValueError:
+                    # There are entries with a season 2.5, which will be converted to 2
+                    season = int(float(row[fields['season'].position].value))
+
                 episode = int(row[fields['episode'].position].value)
 
                 if season == 0:
