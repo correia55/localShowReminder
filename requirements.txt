@@ -30,3 +30,4 @@ openpyxl==3.0.5
 google-auth==1.26.1
 requests==2.25.1
 globalsub==1.0.4
+xlrd==2.0.1
