@@ -12,24 +12,26 @@ import tmdb_calls
 from file_parsers.cinemundo import Cinemundo
 from file_parsers.fox import Fox
 from file_parsers.fox_movies import FoxMovies
+from file_parsers.generic_xlsx import GenericXlsx
 from file_parsers.odisseia import Odisseia
 from file_parsers.tvcine import TVCine
 
-channel_insertion_list = [Cinemundo, Odisseia, TVCine, Fox, FoxMovies]
+channel_insertion_list = [Cinemundo, Odisseia, TVCine, Fox, FoxMovies, GenericXlsx]
 
 
-def insert_file_data(db_session: sqlalchemy.orm.Session, channel_set: int, filename: str) -> ():
+def insert_file_data(db_session: sqlalchemy.orm.Session, channel_set: int, filename: str, channel_name: str) -> ():
     """
     Select the function according to the channel set.
 
     :param db_session: the DB session.
     :param channel_set: the set of channels of the file.
     :param filename: the name of the file.
+    :param filename: the name of the channel.
     """
 
     print('Processing file...')
 
-    result = channel_insertion_list[channel_set].add_file_data(db_session, filename)
+    result = channel_insertion_list[channel_set].add_file_data(db_session, filename, channel_name)
 
     if result is not None:
         print('complete!\n')
@@ -56,9 +58,20 @@ def insert_file_data_submenu(db_session: sqlalchemy.orm.Session):
 
     input_channel_set = int(input(question))
 
+    if len(channel_insertion_list[input_channel_set].channels) > 1 \
+            and channel_insertion_list[input_channel_set] != TVCine:
+        question = 'Choose one channel for the data being inserted:\n'
+
+        for i in range(len(channel_insertion_list[input_channel_set].channels)):
+            question += '%d - %s\n' % (i, channel_insertion_list[input_channel_set].channels[i])
+
+        channel_name = channel_insertion_list[input_channel_set].channels[int(input(question))]
+    else:
+        channel_name = channel_insertion_list[input_channel_set].channels[0]
+
     input_filename = input('What is the path to the file?\n')
 
-    insert_file_data(db_session, input_channel_set, input_filename)
+    insert_file_data(db_session, input_channel_set, input_filename, channel_name)
 
 
 def update_searchable_titles_db(db_session: sqlalchemy.orm.Session):

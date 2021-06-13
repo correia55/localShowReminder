@@ -10,10 +10,10 @@ import sqlalchemy.orm
 import configuration
 import db_calls
 import file_parsers.fox
-# Prepare the variables for replacing db_calls
 import models
 import tmdb_calls
 
+# Prepare the variables for replacing db_calls
 db_calls_backup: ModuleType
 db_calls_mock = unittest.mock.MagicMock()
 
@@ -32,7 +32,7 @@ class NewDatetime(datetime.datetime):
         return datetime.datetime(2021, 3, 1, 15, 13, 34)
 
 
-class TestFoxLife(unittest.TestCase):
+class TestFox(unittest.TestCase):
     session: sqlalchemy.orm.Session
 
     datetime_backup: Type[datetime.datetime]
@@ -136,7 +136,9 @@ class TestFoxLife(unittest.TestCase):
         show_data = models.ShowData('_Odd_Mom_Out_', 'Odd Mom Out')
         show_data.id = 7503
         show_data.original_title = 'Odd Mom Out'
-        show_data.synopsis = 'Jill e Andy estão impressionados com o amadurecimento de Hazel quando a visitam num campo de retiro, onde as vítimas do esquema Ponzi de Ernie Krevitt tentam lidar com a sua nova realidade financeira.'
+        show_data.synopsis = 'Jill e Andy estão impressionados com o amadurecimento de Hazel quando a visitam num ' \
+                             'campo de retiro, onde as vítimas do esquema Ponzi de Ernie Krevitt tentam lidar com a ' \
+                             'sua nova realidade financeira.'
         show_data.creators = 'Jill Kargman'
         show_data.genre = 'Series'
         show_data.is_movie = False
@@ -145,7 +147,10 @@ class TestFoxLife(unittest.TestCase):
         show_data_2.id = 7912
         show_data_2.original_title = 'Home By Spring'
         show_data_2.year = 2018
-        show_data_2.synopsis = 'Uma organizadora de eventos ambiciosa tem uma oportunidade única e vai no lugar da sua chefe e volta à sua terra natal numa zona rural. Com a ajuda da sua família e do homem que deixou para trás, ela cria o retiro perfeito de primavera, mas irá descobrir que aquilo de que precisa estava muito mais próximo do que imaginava?'
+        show_data_2.synopsis = 'Uma organizadora de eventos ambiciosa tem uma oportunidade única e vai no lugar da ' \
+                               'sua chefe e volta à sua terra natal numa zona rural. Com a ajuda da sua família e do ' \
+                               'homem que deixou para trás, ela cria o retiro perfeito de primavera, mas irá ' \
+                               'descobrir que aquilo de que precisa estava muito mais próximo do que imaginava?'
         show_data_2.cast = 'Poppy Drayton,Steven R. McQueen'
         show_data_2.director = 'Dwight H. Little'
         show_data_2.genre = 'Movie'
@@ -184,7 +189,8 @@ class TestFoxLife(unittest.TestCase):
         db_calls_mock.register_show_session.side_effect = [show_session, show_session_2]
 
         # Call the function
-        actual_result = file_parsers.fox.Fox.add_file_data(self.session, base_path + 'data/fox_life_example.xlsx')
+        actual_result = file_parsers.fox.Fox.add_file_data(self.session, base_path + 'data/fox_life_example.xlsx',
+                                                           'FOX Life')
 
         # Verify the result
         self.assertEqual(datetime.datetime(2021, 6, 1, 4, 55, 0), actual_result.start_datetime)
@@ -206,13 +212,19 @@ class TestFoxLife(unittest.TestCase):
         db_calls_mock.insert_if_missing_show_data.assert_has_calls(
             [unittest.mock.call(self.session, 'Odd Mom Out', cast='Andy Buckley,Jill Kargman',
                                 original_title='Odd Mom Out', duration=10,
-                                synopsis='Jill e Andy estão impressionados com o amadurecimento de Hazel quando a visitam num campo de retiro, onde as vítimas do esquema Ponzi de Ernie Krevitt tentam lidar com a sua nova realidade financeira.',
+                                synopsis='Jill e Andy estão impressionados com o amadurecimento de Hazel quando a '
+                                         'visitam num campo de retiro, onde as vítimas do esquema Ponzi de Ernie '
+                                         'Krevitt tentam lidar com a sua nova realidade financeira.',
                                 year=2017, genre='Series', subgenre=None, audio_languages=None, countries=None,
                                 directors=None, age_classification='12+', is_movie=False, season=3,
                                 creators=['Jill Kargman']),
              unittest.mock.call(self.session, 'Home By Spring', cast='Poppy Drayton,Steven R. McQueen',
                                 original_title='Home By Spring', duration=87,
-                                synopsis='Uma organizadora de eventos ambiciosa tem uma oportunidade única e vai no lugar da sua chefe e volta à sua terra natal numa zona rural. Com a ajuda da sua família e do homem que deixou para trás, ela cria o retiro perfeito de primavera, mas irá descobrir que aquilo de que precisa estava muito mais próximo do que imaginava?',
+                                synopsis='Uma organizadora de eventos ambiciosa tem uma oportunidade única e vai no '
+                                         'lugar da sua chefe e volta à sua terra natal numa zona rural. Com a ajuda '
+                                         'da sua família e do homem que deixou para trás, ela cria o retiro perfeito '
+                                         'de primavera, mas irá descobrir que aquilo de que precisa estava muito mais '
+                                         'próximo do que imaginava?',
                                 year=2018, genre='Movie', subgenre=None, audio_languages=None, countries=None,
                                 directors=['Dwight H. Little'], age_classification='12+', is_movie=True, season=None,
                                 creators=None)])
@@ -256,7 +268,11 @@ class TestFoxLife(unittest.TestCase):
         show_data = models.ShowData('_MacGyver_', 'MacGyver')
         show_data.id = 7503
         show_data.original_title = 'MacGyver'
-        show_data.synopsis = 'Quando estavam em missão em busca de uma pista sobre o Codex, Mac e a equipa descobrem que Murdoc hackeou os seus comunicadores e tem gravado as suas interações há meses. Agora, Mac e a equipa têm de deter Murdoc, que está a trabalhar com Andrews, num momento em que eles planeiam matar milhares de pessoas e revelar os segredos mais bem guardados de todos os membros da Phoenix.'
+        show_data.synopsis = 'Quando estavam em missão em busca de uma pista sobre o Codex, Mac e a equipa descobrem ' \
+                             'que Murdoc hackeou os seus comunicadores e tem gravado as suas interações há meses. ' \
+                             'Agora, Mac e a equipa têm de deter Murdoc, que está a trabalhar com Andrews, num ' \
+                             'momento em que eles planeiam matar milhares de pessoas e revelar os segredos mais ' \
+                             'bem guardados de todos os membros da Phoenix.'
         show_data.cast = 'Lucas Till'
         show_data.genre = 'Series'
         show_data.is_movie = False
@@ -265,7 +281,10 @@ class TestFoxLife(unittest.TestCase):
         show_data_2.id = 7912
         show_data_2.original_title = 'Safe'
         show_data_2.year = 2012
-        show_data_2.synopsis = 'Mei, uma menina cuja memória contém um código numérico de valor inestimável, vê-se perseguida pelas Tríades, pela máfia russa e pelos polícias corruptos de Nova Iorque. Em seu auxílio está um ex-lutador cuja vida foi destruída pelos gangsters que andam atrás de Mei.'
+        show_data_2.synopsis = 'Mei, uma menina cuja memória contém um código numérico de valor inestimável, vê-se ' \
+                               'perseguida pelas Tríades, pela máfia russa e pelos polícias corruptos de Nova ' \
+                               'Iorque. Em seu auxílio está um ex-lutador cuja vida foi destruída pelos gangsters ' \
+                               'que andam atrás de Mei.'
         show_data_2.cast = 'Catherine Chan,Chris Sarandon,Jason Statham'
         show_data_2.director = 'Boaz Yakin'
         show_data_2.genre = 'Movie'
@@ -298,7 +317,7 @@ class TestFoxLife(unittest.TestCase):
         db_calls_mock.register_show_session.side_effect = [show_session, show_session_2]
 
         # Call the function
-        actual_result = file_parsers.fox.Fox.add_file_data(self.session, base_path + 'data/fox_example.xlsx')
+        actual_result = file_parsers.fox.Fox.add_file_data(self.session, base_path + 'data/fox_example.xlsx', 'FOX')
 
         # Verify the result
         self.assertEqual(datetime.datetime(2021, 6, 1, 21, 10, 0), actual_result.start_datetime)
@@ -320,13 +339,21 @@ class TestFoxLife(unittest.TestCase):
         db_calls_mock.insert_if_missing_show_data.assert_has_calls(
             [unittest.mock.call(self.session, 'MacGyver', cast='Lucas Till',
                                 original_title='MacGyver', duration=48,
-                                synopsis='Quando estavam em missão em busca de uma pista sobre o Codex, Mac e a equipa descobrem que Murdoc hackeou os seus comunicadores e tem gravado as suas interações há meses. Agora, Mac e a equipa têm de deter Murdoc, que está a trabalhar com Andrews, num momento em que eles planeiam matar milhares de pessoas e revelar os segredos mais bem guardados de todos os membros da Phoenix.',
+                                synopsis='Quando estavam em missão em busca de uma pista sobre o Codex, Mac e a '
+                                         'equipa descobrem que Murdoc hackeou os seus comunicadores e tem gravado '
+                                         'as suas interações há meses. Agora, Mac e a equipa têm de deter Murdoc, '
+                                         'que está a trabalhar com Andrews, num momento em que eles planeiam matar '
+                                         'milhares de pessoas e revelar os segredos mais bem guardados de todos os '
+                                         'membros da Phoenix.',
                                 year=2020, genre='Series', subgenre=None, audio_languages=None, countries=None,
                                 directors=None, age_classification='12+', is_movie=False, season=5,
                                 creators=None),
              unittest.mock.call(self.session, 'Safe - O Intocável', cast='Catherine Chan,Chris Sarandon,Jason Statham',
                                 original_title='Safe', duration=99,
-                                synopsis='Mei, uma menina cuja memória contém um código numérico de valor inestimável, vê-se perseguida pelas Tríades, pela máfia russa e pelos polícias corruptos de Nova Iorque. Em seu auxílio está um ex-lutador cuja vida foi destruída pelos gangsters que andam atrás de Mei.',
+                                synopsis='Mei, uma menina cuja memória contém um código numérico de valor '
+                                         'inestimável, vê-se perseguida pelas Tríades, pela máfia russa e pelos '
+                                         'polícias corruptos de Nova Iorque. Em seu auxílio está um ex-lutador cuja '
+                                         'vida foi destruída pelos gangsters que andam atrás de Mei.',
                                 year=2012, genre='Movie', subgenre=None, audio_languages=None, countries=None,
                                 directors=['Boaz Yakin'], age_classification='18+', is_movie=True, season=None,
                                 creators=None)])

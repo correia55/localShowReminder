@@ -129,7 +129,8 @@ class TestOdisseia(unittest.TestCase):
 
         # Call the function
         actual_result = file_parsers.odisseia.Odisseia.add_file_data(self.session,
-                                                                     base_path + 'data/odisseia_example.xml')
+                                                                     base_path + 'data/odisseia_example.xml',
+                                                                     'Odisseia')
 
         # Verify the result
         self.assertEqual(datetime.datetime(2021, 3, 19, 5, 10, 16), actual_result.start_datetime)

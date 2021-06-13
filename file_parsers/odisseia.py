@@ -22,12 +22,14 @@ class Odisseia(get_file_data.ChannelInsertion):
         return re.sub('[´`]', '\'', title)
 
     @staticmethod
-    def add_file_data(db_session: sqlalchemy.orm.Session, filename: str) -> Optional[get_file_data.InsertionResult]:
+    def add_file_data(db_session: sqlalchemy.orm.Session, filename: str, channel_name: str) \
+            -> Optional[get_file_data.InsertionResult]:
         """
         Add the data, in the file, to the DB.
 
         :param db_session: the DB session.
         :param filename: the path to the file.
+        :param channel_name: the name of the channel.
         :return: the InsertionResult.
         """
 
