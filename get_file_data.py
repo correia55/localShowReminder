@@ -150,9 +150,6 @@ def process_show_session(db_session: sqlalchemy.orm.Session, insertion_result: I
         print_message('insertion of Show Data', False, str(date_time))
         return None
 
-    if show_data.is_movie and show_data.director is None:
-        print_message('director not provided', True, str(date_time))
-
     insertion_result.total_nb_sessions_in_file += 1
 
     # If it is a new show
