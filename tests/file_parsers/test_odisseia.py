@@ -47,7 +47,7 @@ class TestOdisseia(unittest.TestCase):
         db_calls_mock.reset_mock()
 
         # Reset the datetime class to work normally
-        datetime.date = self.datetime_backup
+        datetime.datetime = self.datetime_backup
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -131,6 +131,9 @@ class TestOdisseia(unittest.TestCase):
         actual_result = file_parsers.odisseia.Odisseia.add_file_data(self.session,
                                                                      base_path + 'data/odisseia_example.xml',
                                                                      'Odisseia')
+
+        # Get back the datetime.datetime
+        datetime.datetime = self.datetime_backup
 
         # Verify the result
         self.assertEqual(datetime.datetime(2021, 3, 19, 5, 10, 16), actual_result.start_datetime)

@@ -191,10 +191,10 @@ class GenericXlsx(get_file_data.ChannelInsertion):
             else:
                 if file_format == '.xls':
                     date = xlrd.xldate_as_datetime(row[fields['date'].position].value, book.datemode)
+                    time = xlrd.xldate_as_datetime(row[fields['time'].position].value, book.datemode)
                 else:
                     date = datetime.datetime.strptime(row[fields['date'].position].value, fields['date'].field_format)
-
-                time = datetime.datetime.strptime(row[fields['time'].position].value, fields['time'].field_format)
+                    time = datetime.datetime.strptime(row[fields['time'].position].value, fields['time'].field_format)
 
                 # Combine the date with the time
                 date_time = date.replace(hour=time.hour, minute=time.minute)
@@ -212,7 +212,7 @@ class GenericXlsx(get_file_data.ChannelInsertion):
             localized_title = str(row[fields['localized_title'].position].value)
 
             if 'synopsis' in fields:
-                synopsis = str(row[fields['synopsis'].position].value)
+                synopsis = str(row[fields['synopsis'].position].value).strip()
             else:
                 synopsis = None
 
@@ -246,25 +246,29 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                 creators = None
 
             if 'countries' in fields:
-                countries = row[fields['countries'].position].value
+                countries = row[fields['countries'].position].value.strip()
             else:
                 countries = None
 
             # Duration
             if 'duration' in fields:
-                duration = datetime.datetime.strptime(row[fields['duration'].position].value,
-                                                      fields['duration'].field_format)
+                if file_format == '.xls':
+                    duration = xlrd.xldate_as_datetime(row[fields['duration'].position].value, book.datemode)
+                else:
+                    duration = datetime.datetime.strptime(row[fields['duration'].position].value,
+                                                          fields['duration'].field_format)
+
                 duration = duration.hour * 60 + duration.minute
             else:
                 duration = None
 
             if 'age_classification' in fields:
-                age_classification = row[fields['age_classification'].position].value
+                age_classification = row[fields['age_classification'].position].value.strip()
             else:
                 age_classification = None
 
             if 'subgenre' in fields:
-                subgenre = row[fields['subgenre'].position].value
+                subgenre = row[fields['subgenre'].position].value.strip()
             else:
                 subgenre = None
 

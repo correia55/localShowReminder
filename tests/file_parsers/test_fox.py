@@ -48,7 +48,7 @@ class TestFox(unittest.TestCase):
         db_calls_mock.reset_mock()
 
         # Reset the datetime class to work normally
-        datetime.date = self.datetime_backup
+        datetime.datetime = self.datetime_backup
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -192,6 +192,9 @@ class TestFox(unittest.TestCase):
         actual_result = file_parsers.fox.Fox.add_file_data(self.session, base_path + 'data/fox_life_example.xlsx',
                                                            'FOX Life')
 
+        # Get back the datetime.datetime
+        datetime.datetime = self.datetime_backup
+
         # Verify the result
         self.assertEqual(datetime.datetime(2021, 6, 1, 4, 55, 0), actual_result.start_datetime)
         self.assertEqual(datetime.datetime(2021, 6, 1, 7, 24, 0), actual_result.end_datetime)
@@ -318,6 +321,9 @@ class TestFox(unittest.TestCase):
 
         # Call the function
         actual_result = file_parsers.fox.Fox.add_file_data(self.session, base_path + 'data/fox_example.xlsx', 'FOX')
+
+        # Get back the datetime.datetime
+        datetime.datetime = self.datetime_backup
 
         # Verify the result
         self.assertEqual(datetime.datetime(2021, 6, 1, 21, 10, 0), actual_result.start_datetime)

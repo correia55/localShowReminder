@@ -48,7 +48,7 @@ class TestGenericXlsx(unittest.TestCase):
         db_calls_mock.reset_mock()
 
         # Reset the datetime class to work normally
-        datetime.date = self.datetime_backup
+        datetime.datetime = self.datetime_backup
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -154,9 +154,12 @@ class TestGenericXlsx(unittest.TestCase):
                                                                             base_path + 'data/nat_geo_wild_example.xls',
                                                                             'Nat Geo Wild')
 
+        # Get back the datetime.datetime
+        datetime.datetime = self.datetime_backup
+
         # Verify the result
         self.assertEqual(datetime.datetime(2021, 7, 1, 4, 55, 0), actual_result.start_datetime)
-        self.assertEqual(datetime.datetime(2021, 7, 1, 5, 55, 0), actual_result.end_datetime)
+        self.assertEqual(datetime.datetime(2021, 7, 2, 0, 23, 0), actual_result.end_datetime)
         self.assertEqual(2, actual_result.total_nb_sessions_in_file)
         self.assertEqual(0, actual_result.nb_updated_sessions)
         self.assertEqual(2, actual_result.nb_added_sessions)
@@ -188,7 +191,7 @@ class TestGenericXlsx(unittest.TestCase):
                                          'in India, that\'s been forced out of his home territory by another male, and '
                                          'has to struggle for survival. The film promises to address the issue of '
                                          'habitat destruction and interaction of tigers and humans caused by the '
-                                         'shrinking habitat.\n', year=2015, genre='Movie', subgenre='Natural History',
+                                         'shrinking habitat.', year=2015, genre='Movie', subgenre='Natural History',
                                 audio_languages=None, countries='South Africa',
                                 directors=None, age_classification='12+', is_movie=True, season=None,
                                 creators=None)])
@@ -201,7 +204,7 @@ class TestGenericXlsx(unittest.TestCase):
         db_calls_mock.register_show_session.assert_has_calls(
             [unittest.mock.call(self.session, 4, 7, datetime.datetime(2021, 7, 1, 5), 8373, 7503, audio_language=None,
                                 extended_cut=False, should_commit=False),
-             unittest.mock.call(self.session, None, None, datetime.datetime(2021, 7, 1, 5, 50), 8373, 7912,
+             unittest.mock.call(self.session, None, None, datetime.datetime(2021, 7, 2, 0, 18), 8373, 7912,
                                 audio_language=None, extended_cut=False, should_commit=False)])
 
     @unittest.mock.patch('get_file_data.tmdb_calls')
@@ -264,6 +267,9 @@ class TestGenericXlsx(unittest.TestCase):
                                                                             base_path + 'data/national_geographic_example.xlsx',
                                                                             'National Geographic')
 
+        # Get back the datetime.datetime
+        datetime.datetime = self.datetime_backup
+
         # Verify the result
         self.assertEqual(datetime.datetime(2021, 7, 1, 4, 55, 0), actual_result.start_datetime)
         self.assertEqual(datetime.datetime(2021, 7, 17, 23, 53, 0), actual_result.end_datetime)
@@ -288,7 +294,7 @@ class TestGenericXlsx(unittest.TestCase):
                                 synopsis='O explorador da National Geographic, Albert Lin, viaja até Petra, na '
                                          'Jordânia, para descobrir as origens da famosa cidade. É lá que descobre que '
                                          'esta foi construída pelos Nabateus e procura vestígios das suas cidades e '
-                                         'templos.\n\n', year=2019, genre='Series',
+                                         'templos.', year=2019, genre='Series',
                                 subgenre=None, audio_languages=None, countries=None,
                                 directors=None, age_classification='12+', is_movie=False, season=1,
                                 creators=None),
@@ -300,7 +306,7 @@ class TestGenericXlsx(unittest.TestCase):
                                          'categoria que a Heroína. Esta planta é considerada das substâmncias mais '
                                          'complexas por parte dos cientistas, e o alcance que tem é mundial. Misturada '
                                          'com a cultura, economia, sistema judicial e medicina, esta planta é sinónimo '
-                                         'de perigo e promessa.\n\n', year=2008, genre='Movie', subgenre=None,
+                                         'de perigo e promessa.', year=2008, genre='Movie', subgenre=None,
                                 audio_languages=None, countries=None,
                                 directors=None, age_classification='16+', is_movie=True, season=None,
                                 creators=None)])
