@@ -263,7 +263,7 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                 duration = None
 
             if 'age_classification' in fields:
-                age_classification = row[fields['age_classification'].position].value.strip()
+                age_classification = str(row[fields['age_classification'].position].value).strip()
             else:
                 age_classification = None
 
