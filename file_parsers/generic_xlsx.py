@@ -24,8 +24,9 @@ class GenericField:
 
 
 class GenericXlsx(get_file_data.ChannelInsertion):
-    channels = ['Nat Geo Wild', 'National Geographic']
-    channels_file = {'Nat Geo Wild': 'nat_geo_wild.csv', 'National Geographic': 'national_geographic.csv'}
+    channels = ['Nat Geo Wild', 'National Geographic', 'FOX', 'FOX Life']
+    channels_file = {'Nat Geo Wild': 'nat_geo_wild.csv', 'National Geographic': 'national_geographic.csv',
+                     'FOX': 'fox.csv', 'FOX Life': 'fox.csv'}
 
     @staticmethod
     def process_configuration(channel_name: str) -> Optional[Dict[str, GenericField]]:
@@ -71,12 +72,12 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                   % channel_name)
             fields['localized_title'] = fields['original_title']
 
-        if 'synopsis' not in fields:
-            print('%s does not have a definition for \'synopsis\'!' % channel_name)
+        if 'localized_synopsis' not in fields:
+            print('%s does not have a definition for \'localized_synopsis\'!' % channel_name)
 
             if 'synopsis_english' in fields:
                 print('The \'synopsis_english\' will be used.')
-                fields['synopsis'] = fields['synopsis_english']
+                fields['localized_synopsis'] = fields['synopsis_english']
 
         if 'subgenre' not in fields:
             print('%s does not have a definition for \'subgenre\'!' % channel_name)
@@ -98,7 +99,7 @@ class GenericXlsx(get_file_data.ChannelInsertion):
         """
 
         if 'season_at_the_end' in title_format:
-            series = re.search(r'(.*) [0-9]+', title.strip())
+            series = re.search(r'^(.*) [0-9]+$', title.strip())
 
             if series is not None:
                 title = series.group(1)
@@ -179,6 +180,9 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                 continue
 
             # Skip the rows in which the year is not a number (header rows)
+            if row[fields['year'].position].value is None:
+                continue
+
             try:
                 year = int(row[fields['year'].position].value)
             except ValueError:
@@ -211,8 +215,8 @@ class GenericXlsx(get_file_data.ChannelInsertion):
             original_title = str(row[fields['original_title'].position].value)
             localized_title = str(row[fields['localized_title'].position].value)
 
-            if 'synopsis' in fields:
-                synopsis = str(row[fields['synopsis'].position].value).strip()
+            if 'localized_synopsis' in fields:
+                synopsis = str(row[fields['localized_synopsis'].position].value).strip()
             else:
                 synopsis = None
 
@@ -283,8 +287,11 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                 try:
                     season = int(row[fields['season'].position].value)
                 except ValueError:
-                    # There are entries with a season 2.5, which will be converted to 2
-                    season = int(float(row[fields['season'].position].value))
+                    try:
+                        # There are entries with a season 2.5, which will be converted to 2
+                        season = int(float(row[fields['season'].position].value))
+                    except ValueError:
+                        season = None
 
                 episode = int(row[fields['episode'].position].value)
 

@@ -10,13 +10,12 @@ import models
 import process_emails
 import tmdb_calls
 from file_parsers.cinemundo import Cinemundo
-from file_parsers.fox import Fox
 from file_parsers.fox_movies import FoxMovies
 from file_parsers.generic_xlsx import GenericXlsx
 from file_parsers.odisseia import Odisseia
 from file_parsers.tvcine import TVCine
 
-channel_insertion_list = [Cinemundo, Odisseia, TVCine, Fox, FoxMovies, GenericXlsx]
+channel_insertion_list = [Cinemundo, Odisseia, TVCine, FoxMovies, GenericXlsx]
 
 
 def insert_file_data(db_session: sqlalchemy.orm.Session, channel_set: int, filename: str, channel_name: str) -> ():

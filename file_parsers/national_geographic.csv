@@ -9,7 +9,7 @@ original_episode_title;5;str
 episode;6;int
 season;7;int
 age_classification;8;str
-synopsis;9;str
+localized_synopsis;9;str
 year;10;int
 video_format;11;str
 high_definition;12;str

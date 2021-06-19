@@ -9,7 +9,7 @@ import sqlalchemy.orm
 
 import configuration
 import db_calls
-import file_parsers.fox
+import file_parsers.generic_xlsx
 import models
 import tmdb_calls
 
@@ -40,6 +40,7 @@ class TestFox(unittest.TestCase):
     def setUp(self) -> None:
         self.session = unittest.mock.MagicMock()
         configuration.show_sessions_validity_days = 7
+        configuration.base_dir = base_path + '../'
 
         # Save the datetime.date
         self.datetime_backup = datetime.datetime
@@ -72,7 +73,8 @@ class TestFox(unittest.TestCase):
         expected_result = 'Home By Spring'
 
         # Call the function
-        actual_result = file_parsers.fox.Fox.process_title('Home By Spring', True)
+        actual_result = file_parsers.generic_xlsx.GenericXlsx.process_title('Home By Spring',
+                                                                            'has_year_season_at_the_end')
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -84,7 +86,8 @@ class TestFox(unittest.TestCase):
         expected_result = 'Private Practice'
 
         # Call the function
-        actual_result = file_parsers.fox.Fox.process_title('Private Practice 1', False)
+        actual_result = file_parsers.generic_xlsx.GenericXlsx.process_title('Private Practice 1',
+                                                                            'has_year_season_at_the_end')
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -96,7 +99,8 @@ class TestFox(unittest.TestCase):
         expected_result = 'New Amsterdam'
 
         # Call the function
-        actual_result = file_parsers.fox.Fox.process_title('New Amsterdam (2018) 3', False)
+        actual_result = file_parsers.generic_xlsx.GenericXlsx.process_title('New Amsterdam (2018) 3',
+                                                                            'has_year_season_at_the_end')
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -108,7 +112,8 @@ class TestFox(unittest.TestCase):
         expected_result = 'Titanic'
 
         # Call the function
-        actual_result = file_parsers.fox.Fox.process_title('Titanic (re-release 2012)', True)
+        actual_result = file_parsers.generic_xlsx.GenericXlsx.process_title('Titanic (re-release 2012)',
+                                                                            'has_year_season_at_the_end')
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -189,8 +194,9 @@ class TestFox(unittest.TestCase):
         db_calls_mock.register_show_session.side_effect = [show_session, show_session_2]
 
         # Call the function
-        actual_result = file_parsers.fox.Fox.add_file_data(self.session, base_path + 'data/fox_life_example.xlsx',
-                                                           'FOX Life')
+        actual_result = file_parsers.generic_xlsx.GenericXlsx.add_file_data(self.session,
+                                                                            base_path + 'data/fox_life_example.xlsx',
+                                                                            'FOX Life')
 
         # Get back the datetime.datetime
         datetime.datetime = self.datetime_backup
@@ -320,7 +326,8 @@ class TestFox(unittest.TestCase):
         db_calls_mock.register_show_session.side_effect = [show_session, show_session_2]
 
         # Call the function
-        actual_result = file_parsers.fox.Fox.add_file_data(self.session, base_path + 'data/fox_example.xlsx', 'FOX')
+        actual_result = file_parsers.generic_xlsx.GenericXlsx.add_file_data(self.session,
+                                                                            base_path + 'data/fox_example.xlsx', 'FOX')
 
         # Get back the datetime.datetime
         datetime.datetime = self.datetime_backup
