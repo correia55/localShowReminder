@@ -91,7 +91,7 @@ class TestGenericXlsx(unittest.TestCase):
         self.assertEqual(expected_result, actual_result)
 
     @unittest.mock.patch('get_file_data.tmdb_calls')
-    def test_add_file_data_01(self, tmdb_calls_mock) -> None:
+    def test_add_file_data_nat_geo_wild(self, tmdb_calls_mock) -> None:
         """ Test the function GenericXlsx.add_file_data with a sample from a Nat Geo Wild file. """
 
         # Prepare the mocks
@@ -208,7 +208,7 @@ class TestGenericXlsx(unittest.TestCase):
                                 audio_language=None, extended_cut=False, should_commit=False)])
 
     @unittest.mock.patch('get_file_data.tmdb_calls')
-    def test_add_file_data_02(self, tmdb_calls_mock) -> None:
+    def test_add_file_data_national_geographic(self, tmdb_calls_mock) -> None:
         """ Test the function GenericXlsx.add_file_data with a sample from a National Geographic file. """
 
         # Prepare the mocks
@@ -320,4 +320,115 @@ class TestGenericXlsx(unittest.TestCase):
             [unittest.mock.call(self.session, 1, 4, datetime.datetime(2021, 7, 1, 5), 8373, 7503, audio_language=None,
                                 extended_cut=False, should_commit=False),
              unittest.mock.call(self.session, None, None, datetime.datetime(2021, 7, 17, 23, 48), 8373, 7912,
+                                audio_language=None, extended_cut=False, should_commit=False)])
+
+    @unittest.mock.patch('get_file_data.tmdb_calls')
+    def test_add_file_data_fox_crime(self, tmdb_calls_mock) -> None:
+        """ Test the function GenericXlsx.add_file_data with a sample from a FOX Crime file. """
+
+        # Prepare the mocks
+        # Replace datetime class with a utility class with a fixed datetime
+        datetime.datetime = NewDatetime
+
+        # Prepare the call to get_channel_name
+        channel_data = models.Channel('FOXCR', 'FOX Crime')
+        channel_data.id = 8373
+
+        db_calls_mock.get_channel_name.return_value = channel_data
+
+        # Treatment of the entries
+        # ----------------------------
+        # Prepare the calls to search_channel_show_data
+        db_calls_mock.search_channel_show_data_correction.side_effect = [None, None]
+
+        # Prepare the calls to search_channel_show_data
+        show_data = models.ShowData('_Lie_To_Me_', 'Lie To Me')
+        show_data.id = 7503
+        show_data.original_title = 'Lie To Me'
+        show_data.synopsis = 'Um adolescente perturbado crê que foi raptado em bebé e recorre ao Lightman Group para ' \
+                             'o ajudar a desvendar os segredos do seu passado; Eli investiga a origem de uma ' \
+                             'debandada letal que ocorreu numa grande superfície comercial, no dia após o Dia de ' \
+                             'Ação de Graças.'
+        show_data.genre = 'Series'
+        show_data.is_movie = False
+        show_data.age_classification = '12+'
+
+        show_data_2 = models.ShowData('_Crime_Disse_Ela_', 'Crime, Disse Ela')
+        show_data_2.id = 7912
+        show_data_2.original_title = 'Murder She Wrote'
+        show_data_2.synopsis = 'Será que um florista de Beverly Hills foi morto porque estava a fornecer mais do ' \
+                               'que flores a editores de revistas de mexericos?'
+        show_data_2.genre = 'Series'
+        show_data_2.is_movie = False
+        show_data_2.age_classification = '12+'
+
+        db_calls_mock.insert_if_missing_show_data.side_effect = [(True, show_data), (True, show_data_2)]
+
+        # Prepare the calls to search_shows_by_text
+        tmdb_calls_mock.search_shows_by_text.side_effect = [(0, []), (0, []), (0, [])]
+
+        # Prepare the calls to register_show_session
+        show_session = models.ShowSession(1, 4, datetime.datetime(2021, 7, 1, 5), 8373, 7503)
+        show_session_2 = models.ShowSession(None, None, datetime.datetime(2021, 7, 1, 5, 34), 8373, 7912)
+
+        db_calls_mock.register_show_session.side_effect = [show_session, show_session_2]
+
+        # Call the function
+        actual_result = file_parsers.generic_xlsx.GenericXlsx.add_file_data(self.session,
+                                                                            base_path + 'data/fox_crime_example.xlsx',
+                                                                            'FOX Crime')
+
+        # Get back the datetime.datetime
+        datetime.datetime = self.datetime_backup
+
+        # Verify the result
+        self.assertEqual(datetime.datetime(2021, 7, 1, 4, 55, 0), actual_result.start_datetime)
+        self.assertEqual(datetime.datetime(2021, 7, 1, 5, 39, 0), actual_result.end_datetime)
+        self.assertEqual(2, actual_result.total_nb_sessions_in_file)
+        self.assertEqual(0, actual_result.nb_updated_sessions)
+        self.assertEqual(2, actual_result.nb_added_sessions)
+        self.assertEqual(0, actual_result.nb_deleted_sessions)
+
+        # Verify the calls to the mocks
+        db_calls_mock.get_channel_name.assert_called_with(self.session, 'FOX Crime')
+
+        db_calls_mock.search_channel_show_data_correction.assert_has_calls(
+            [unittest.mock.call(self.session, 8373, False, 'Lie To Me',
+                                'Lie To Me', directors=None, year=2009,
+                                subgenre=None, creators=None),
+             unittest.mock.call(self.session, 8373, False, 'Murder She Wrote', 'Crime, Disse Ela',
+                                directors=None, year=1993, subgenre=None,
+                                creators=['Peter S. Fischer', 'Richard Levinson', 'William Link'])])
+
+        db_calls_mock.insert_if_missing_show_data.assert_has_calls(
+            [unittest.mock.call(self.session, 'Lie To Me', cast='Bill Zasadil,Erica Grace,Gordon Greene,Hannah Cox,J. '
+                                                                'Downing,Jackie Debatin,Jim Hanna,John Bishop,Kelli '
+                                                                'Williams,Laurel Weber,Lisa Waltz,Mark Ankeny,Nick '
+                                                                'Searcy,Randy Lowell,Shashawnee Hall,Tim Roth,Whitney '
+                                                                'Powell',
+                                original_title='Lie To Me', duration=None,
+                                synopsis='Um adolescente perturbado crê que foi raptado em bebé e recorre ao Lightman '
+                                         'Group para o ajudar a desvendar os segredos do seu passado; Eli investiga '
+                                         'a origem de uma debandada letal que ocorreu numa grande superfície '
+                                         'comercial, no dia após o Dia de Ação de Graças.', year=2009, genre='Series',
+                                subgenre=None, audio_languages=None, countries=None,
+                                directors=None, age_classification='12+', is_movie=False, season=2,
+                                creators=None),
+             unittest.mock.call(self.session, 'Crime, Disse Ela', cast='Angela Lansbury,Ron Masak,William Windom',
+                                original_title='Murder She Wrote', duration=None,
+                                synopsis='Será que um florista de Beverly Hills foi morto porque estava a fornecer '
+                                         'mais do que flores a editores de revistas de mexericos?', year=1993,
+                                genre='Series', subgenre=None,
+                                audio_languages=None, countries=None,
+                                directors=None, age_classification='12+', is_movie=False, season=9,
+                                creators=['Peter S. Fischer', 'Richard Levinson', 'William Link'])])
+
+        tmdb_calls_mock.search_shows_by_text.assert_has_calls(
+            [unittest.mock.call(self.session, 'Lie To Me', is_movie=False, year=None),
+             unittest.mock.call(self.session, 'Murder She Wrote', is_movie=False, year=None)])
+
+        db_calls_mock.register_show_session.assert_has_calls(
+            [unittest.mock.call(self.session, 2, 7, datetime.datetime(2021, 7, 1, 5), 8373, 7503, audio_language=None,
+                                extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, 9, 15, datetime.datetime(2021, 7, 1, 5, 34), 8373, 7912,
                                 audio_language=None, extended_cut=False, should_commit=False)])
