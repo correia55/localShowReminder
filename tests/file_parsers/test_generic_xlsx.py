@@ -323,6 +323,115 @@ class TestGenericXlsx(unittest.TestCase):
                                 audio_language=None, extended_cut=False, should_commit=False)])
 
     @unittest.mock.patch('get_file_data.tmdb_calls')
+    def test_add_file_data_fox_comedy(self, tmdb_calls_mock) -> None:
+        """ Test the function GenericXlsx.add_file_data with a sample from a FOX Comedy file. """
+
+        # Prepare the mocks
+        # Replace datetime class with a utility class with a fixed datetime
+        datetime.datetime = NewDatetime
+
+        # Prepare the call to get_channel_name
+        channel_data = models.Channel('FOXCOM', 'FOX Comedy')
+        channel_data.id = 8373
+
+        db_calls_mock.get_channel_name.return_value = channel_data
+
+        # Treatment of the entries
+        # ----------------------------
+        # Prepare the calls to search_channel_show_data
+        db_calls_mock.search_channel_show_data_correction.side_effect = [None, None]
+
+        # Prepare the calls to search_channel_show_data
+        show_data = models.ShowData('_Black-ish_', 'Black-ish')
+        show_data.id = 7503
+        show_data.original_title = 'Black-ish'
+        show_data.synopsis = 'Dre e Bow querem inscrever Kyra na escola Valley Glen Prep, mas ficam furiosos quando ' \
+                             'a escola os trata como um caso de caridade. Entretanto, Junior quer ir trabalhar como ' \
+                             'assistente de Josh na Stevens & Lido.'
+        show_data.genre = 'Series'
+        show_data.is_movie = False
+        show_data.age_classification = '12+'
+
+        show_data_2 = models.ShowData('_Doidos_à_Solta_de_Novo_', 'Doidos à Solta, de Novo')
+        show_data_2.id = 7912
+        show_data_2.original_title = 'Dumb and Dumber To'
+        show_data_2.year = 2014
+        show_data_2.synopsis = 'Vinte anos após a sua primeira aventura, Lloyd e Harry embarcam numa viagem para ' \
+                               'encontrar a filha de Harry que havia sido dada para adoção.'
+        show_data_2.genre = 'Movie'
+        show_data_2.is_movie = True
+        show_data_2.age_classification = '12+'
+
+        db_calls_mock.insert_if_missing_show_data.side_effect = [(True, show_data), (True, show_data_2)]
+
+        # Prepare the calls to search_shows_by_text
+        tmdb_calls_mock.search_shows_by_text.side_effect = [(0, []), (0, []), (0, [])]
+
+        # Prepare the calls to register_show_session
+        show_session = models.ShowSession(1, 4, datetime.datetime(2021, 6, 1, 5, 6), 8373, 7503)
+        show_session_2 = models.ShowSession(None, None, datetime.datetime(2021, 6, 27, 20, 8), 8373, 7912)
+
+        db_calls_mock.register_show_session.side_effect = [show_session, show_session_2]
+
+        # Call the function
+        actual_result = file_parsers.generic_xlsx.GenericXlsx.add_file_data(self.session,
+                                                                            base_path + 'data/fox_comedy_example.xlsx',
+                                                                            'FOX Comedy')
+
+        # Get back the datetime.datetime
+        datetime.datetime = self.datetime_backup
+
+        # Verify the result
+        self.assertEqual(datetime.datetime(2021, 6, 1, 5, 1, 0), actual_result.start_datetime)
+        self.assertEqual(datetime.datetime(2021, 6, 27, 20, 13, 0), actual_result.end_datetime)
+        self.assertEqual(2, actual_result.total_nb_sessions_in_file)
+        self.assertEqual(0, actual_result.nb_updated_sessions)
+        self.assertEqual(2, actual_result.nb_added_sessions)
+        self.assertEqual(0, actual_result.nb_deleted_sessions)
+
+        # Verify the calls to the mocks
+        db_calls_mock.get_channel_name.assert_called_with(self.session, 'FOX Comedy')
+
+        db_calls_mock.search_channel_show_data_correction.assert_has_calls(
+            [unittest.mock.call(self.session, 8373, False, 'Black-ish', 'Black-ish', directors=None, year=2017,
+                                subgenre=None, creators=['Kenya Barris']),
+             unittest.mock.call(self.session, 8373, True, 'Dumb and Dumber To', 'Doidos à Solta, de Novo',
+                                directors=['Bobby Farrelly', 'Peter Farrelly'], year=2014, subgenre=None,
+                                creators=None)])
+
+        db_calls_mock.insert_if_missing_show_data.assert_has_calls(
+            [unittest.mock.call(self.session, 'Black-ish', cast='Anthony Anderson,Marcus Scribner,Tracee Ellis Ross',
+                                original_title='Black-ish', duration=22,
+                                synopsis='Dre e Bow querem inscrever Kyra na escola Valley Glen Prep, mas ficam '
+                                         'furiosos quando a escola os trata como um caso de caridade. Entretanto, '
+                                         'Junior quer ir trabalhar como assistente de Josh na Stevens & Lido.',
+                                year=2017, genre='Series',
+                                subgenre=None, audio_languages=None, countries=None,
+                                directors=None, age_classification='12+', is_movie=False, season=5,
+                                creators=['Kenya Barris']),
+             unittest.mock.call(self.session, 'Doidos à Solta, de Novo', cast='Jeff Daniels,Jim Carrey,Rob Riggle',
+                                original_title='Dumb and Dumber To', duration=111,
+                                synopsis='Vinte anos após a sua primeira aventura, Lloyd e Harry embarcam numa viagem '
+                                         'para encontrar a filha de Harry que havia sido dada para adoção.', year=2014,
+                                genre='Movie', subgenre=None,
+                                audio_languages=None, countries=None,
+                                directors=['Bobby Farrelly', 'Peter Farrelly'], age_classification='12+', is_movie=True,
+                                season=None,
+                                creators=None)])
+
+        tmdb_calls_mock.search_shows_by_text.assert_has_calls(
+            [unittest.mock.call(self.session, 'Black-ish', is_movie=False, year=None),
+             unittest.mock.call(self.session, 'Dumb and Dumber To', is_movie=True, year=2014),
+             unittest.mock.call(self.session, 'Dumb and Dumber To', is_movie=True, year=None)])
+
+        db_calls_mock.register_show_session.assert_has_calls(
+            [unittest.mock.call(self.session, 5, 15, datetime.datetime(2021, 6, 1, 5, 6), 8373, 7503,
+                                audio_language=None,
+                                extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, None, None, datetime.datetime(2021, 6, 27, 20, 8), 8373, 7912,
+                                audio_language=None, extended_cut=False, should_commit=False)])
+
+    @unittest.mock.patch('get_file_data.tmdb_calls')
     def test_add_file_data_fox_crime(self, tmdb_calls_mock) -> None:
         """ Test the function GenericXlsx.add_file_data with a sample from a FOX Crime file. """
 

@@ -25,7 +25,7 @@ class GenericField:
 
 class GenericXlsx(get_file_data.ChannelInsertion):
     channels_file = {'Nat Geo Wild': 'nat_geo_wild.csv', 'National Geographic': 'national_geographic.csv',
-                     'FOX': 'fox.csv', 'FOX Life': 'fox.csv', 'FOX Crime': 'fox_crime.csv'}
+                     'FOX': 'fox.csv', 'FOX Life': 'fox.csv', 'FOX Comedy': 'fox.csv', 'FOX Crime': 'fox_crime.csv'}
     channels = list(channels_file.keys())
 
     @staticmethod

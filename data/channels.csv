@@ -16,7 +16,7 @@ TVCine Action;False;TVCA;False
 Hollywood;False;HOLLW;True
 AXN;False;AXN;True
 FOX;False;FOX;False
-FOX Crime;False;FOXCR;True
+FOX Crime;False;FOXCR;False
 Eurochannel;False;EURCH;False
 Discovery Channel;False;DISCV;True
 Odisseia;False;ODISS;False
@@ -47,7 +47,7 @@ Cinemundo;False;CINE;False
 TV Record;False;TVREC;True
 AMC;False;AMC;True
 RTP 3;False;RTP3;True
-FOX Comedy;False;FOXCOM;True
+FOX Comedy;False;FOXCOM;False
 SIC Caras;False;SICC;True
 CANAL 180;False;C180;True
 Cartoon Network Premium;False;CNPREM;True
