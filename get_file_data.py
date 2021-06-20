@@ -337,7 +337,11 @@ def update_show_data_with_tmdb(show_data: models.ShowData, tmdb_show: tmdb_calls
     show_data.tmdb_id = tmdb_show.id
     show_data.year = tmdb_show.year
     show_data.original_title = tmdb_show.original_title
-    show_data.creators = tmdb_show.creators
+
+    if tmdb_show.creators is not None and len(tmdb_show.creators) > 0:
+        show_data.creators = ','.join(tmdb_show.creators)
+    else:
+        show_data.creators = None
 
     # Delete information that is no longer useful
     if not show_data.is_movie:
