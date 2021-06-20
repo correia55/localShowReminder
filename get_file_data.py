@@ -98,6 +98,8 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
             if tmdb_show:
                 tmdb_show_data = db_calls.get_show_data_tmdb_id(db_session, tmdb_show.id)
 
+                correction_needed = is_correction_needed(show_data, tmdb_show)
+
                 # If an entry with that TMDB id already exists, delete the new one
                 if tmdb_show_data is not None:
                     db_session.delete(show_data)
@@ -108,8 +110,7 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
                     update_show_data_with_tmdb(show_data, tmdb_show)
 
                 # If there are differences between the data from the TMDB and the one in the file
-                if show_data.original_title.casefold() != original_title.casefold() \
-                        or (year is not None and show_data.year != year):
+                if correction_needed:
                     db_calls.register_channel_show_data_correction(db_session, channel_id, show_data.id, is_movie,
                                                                    original_title, localized_title,
                                                                    directors=directors, year=year, subgenre=subgenre,
@@ -336,11 +337,47 @@ def update_show_data_with_tmdb(show_data: models.ShowData, tmdb_show: tmdb_calls
     show_data.tmdb_id = tmdb_show.id
     show_data.year = tmdb_show.year
     show_data.original_title = tmdb_show.original_title
+    show_data.creators = tmdb_show.creators
 
     # Delete information that is no longer useful
     if not show_data.is_movie:
         show_data.director = None
         show_data.cast = None
+
+
+def is_correction_needed(show_data: models.ShowData, tmdb_show: tmdb_calls.TmdbShow):
+    """
+    Compare the data in the DB with the one from TMDB to check if a correction is needed.
+
+    :param show_data: the show data in the DB.
+    :param tmdb_show: the corresponding TMDB show.
+    """
+
+    # If the title is different
+    if show_data.original_title.casefold() != tmdb_show.original_title.casefold():
+        return True
+
+    # If the creators are not a match
+    if tmdb_show.creators is None and show_data.creators is not None:
+        return True
+
+    if show_data.creators is not None:
+        is_match = False
+
+        for c in show_data.creators:
+            if c in tmdb_show.creators:
+                is_match = True
+                break
+
+        if not is_match:
+            return True
+
+    if show_data.is_movie:
+        # If the year is not a match
+        if tmdb_show.year != show_data.year:
+            return True
+
+    return False
 
 
 def print_message(message: str, warning: bool, identification: str):

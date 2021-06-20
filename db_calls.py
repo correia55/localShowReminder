@@ -638,6 +638,9 @@ def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, o
         if synopsis is not None:
             show_data.synopsis = synopsis
 
+    if creators is not None:
+        show_data.creators = creators
+
     # Even though the cast and director are only fixed for movies
     # we store them temporarily for searching the TMDB
     if director is not None:
@@ -645,9 +648,6 @@ def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, o
 
     if cast is not None:
         show_data.cast = cast
-
-    if creators is not None:
-        show_data.creators = creators
 
     session.add(show_data)
 
@@ -727,12 +727,12 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, localized_title
         return False, show_data
 
     if directors is not None:
-        director = ', '.join(directors)
+        director = ','.join(directors)
     else:
         director = None
 
     if creators is not None:
-        creators = ', '.join(creators)
+        creators = ','.join(creators)
 
     if not is_movie and season != 1:
         year = None
@@ -1257,6 +1257,7 @@ def register_channel_show_data_correction(session: sqlalchemy.orm.Session, chann
                                           creators: List[str] = None) -> Optional[models.ChannelShowData]:
     """
     Register a ChannelShowData.
+    Ignores the directors and year if the show is not a movie.
 
     :param session: the db session.
     :param channel_id: the id of the channel.
@@ -1324,13 +1325,13 @@ def search_channel_show_data_correction(session: sqlalchemy.orm.Session, channel
 
     if is_movie:
         if directors is not None:
-            query = query.filter(models.ChannelShowData.directors == ', '.join(directors))
+            query = query.filter(models.ChannelShowData.directors == ','.join(directors))
 
         if year is not None:
             query = query.filter(models.ChannelShowData.year == year)
 
     if creators is not None:
-        query = query.filter(models.ChannelShowData.creators == ', '.join(creators))
+        query = query.filter(models.ChannelShowData.creators == ','.join(creators))
 
     if subgenre is not None:
         query = query.filter(models.ChannelShowData.subgenre == subgenre)

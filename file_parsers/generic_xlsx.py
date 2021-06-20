@@ -198,8 +198,13 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                     date = xlrd.xldate_as_datetime(row[fields['date'].position].value, book.datemode)
                     time = xlrd.xldate_as_datetime(row[fields['time'].position].value, book.datemode)
                 else:
-                    date = datetime.datetime.strptime(row[fields['date'].position].value, fields['date'].field_format)
-                    time = datetime.datetime.strptime(row[fields['time'].position].value, fields['time'].field_format)
+                    try:
+                        date = datetime.datetime.strptime(row[fields['date'].position].value,
+                                                          fields['date'].field_format)
+                        time = datetime.datetime.strptime(row[fields['time'].position].value,
+                                                          fields['time'].field_format)
+                    except TypeError:
+                        continue
 
                 # Combine the date with the time
                 date_time = date.replace(hour=time.hour, minute=time.minute)
