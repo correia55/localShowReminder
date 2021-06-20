@@ -139,6 +139,10 @@ class TVCine(get_file_data.ChannelInsertion):
             localized_title = str(row[13].value)
             # episode_title = row[14].value
 
+            # If the show is not yet defined
+            if 'Programa a Designar' in original_title:
+                continue
+
             # Combine the date with the time
             date_time = date.replace(hour=time.hour, minute=time.minute)
 
@@ -202,7 +206,7 @@ class TVCine(get_file_data.ChannelInsertion):
                 directors = directors.split(',')
 
             # Genre is movie, series, documentary, news...
-            if 'Document' not in genre:
+            if genre is None or 'Document' not in genre:
                 subgenre = genre  # Subgenre is in portuguese
                 genre = 'Movie' if is_movie else 'Series'
             else:
