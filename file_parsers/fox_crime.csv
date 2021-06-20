@@ -3,7 +3,7 @@ _file_format;-1;.xlsx
 date;0;%d/%m/%Y
 time;1;%H:%M
 cat_time;2;%H:%M
-original_title;3;season_at_the_end
+original_title;3;has_year_season_at_the_end
 localized_title;4;str
 age_classification;5;str
 censorship_codes;6;

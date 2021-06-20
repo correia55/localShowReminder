@@ -541,3 +541,127 @@ class TestGenericXlsx(unittest.TestCase):
                                 extended_cut=False, should_commit=False),
              unittest.mock.call(self.session, 9, 15, datetime.datetime(2021, 7, 1, 5, 34), 8373, 7912,
                                 audio_language=None, extended_cut=False, should_commit=False)])
+
+    @unittest.mock.patch('get_file_data.tmdb_calls')
+    def test_add_file_data_mundo_fox(self, tmdb_calls_mock) -> None:
+        """ Test the function GenericXlsx.add_file_data with a sample from a Mundo FOX file. """
+
+        # Prepare the mocks
+        # Replace datetime class with a utility class with a fixed datetime
+        datetime.datetime = NewDatetime
+
+        # Prepare the call to get_channel_name
+        channel_data = models.Channel('MUNDOFOX', 'Mundo FOX')
+        channel_data.id = 8373
+
+        db_calls_mock.get_channel_name.return_value = channel_data
+
+        # Treatment of the entries
+        # ----------------------------
+        # Prepare the calls to search_channel_show_data
+        db_calls_mock.search_channel_show_data_correction.side_effect = [None, None]
+
+        # Prepare the calls to search_channel_show_data
+        show_data = models.ShowData('_Lei_&_Ordem_Unidade_Especial_', 'Lei & Ordem: Unidade Especial')
+        show_data.id = 7503
+        show_data.original_title = 'Law & Order: Special Victims Unit'
+        show_data.synopsis = 'Uma investigação leva Benson ao limite quando um suspeito alega que a genética o ' \
+                             'compele a cometer crimes de violação.'
+        show_data.genre = 'Series'
+        show_data.is_movie = False
+        show_data.age_classification = '12+'
+
+        show_data_2 = models.ShowData('_Robin_Hood_', 'Robin Hood')
+        show_data_2.id = 7912
+        show_data_2.original_title = 'Robin Hood'
+        show_data_2.year = 2010
+        show_data_2.synopsis = 'Inglaterra, século XIII. Robin Longstride (Russell Crowe) toda a sua vida prestou ' \
+                               'serviço leal ao rei Ricardo I, de cognome Coração de Leão, mas hoje, após a morte do ' \
+                               'grande soberano, o país atravessa uma grave crise nas mãos do Príncipe João (Oscar ' \
+                               'Isaac) transformando Nottingham numa cidade saqueada não apenas pelos governantes ' \
+                               'mas também pelo próprio xerife local (Matthew Macfadyen). Ao encontrar o amor em ' \
+                               'Lady Marion (Cate Blanchett), na esperança de merecer a sua mão e salvar a população ' \
+                               'de toda a iniquidade, ele vai criar um grupo de mercenários justiceiros, cujas ' \
+                               'capacidades guerreiras só se poderão comparar à sua alegria de viver. Assim nascerá ' \
+                               'a lenda de Robin Hood, o grande herói fora-da-lei que, roubando aos ricos para dar ' \
+                               'aos pobres, devolveu a glória e a liberdade ao país que o viu nascer.'
+        show_data_2.genre = 'Movie'
+        show_data_2.is_movie = True
+        show_data_2.age_classification = '12+'
+
+        db_calls_mock.insert_if_missing_show_data.side_effect = [(True, show_data), (True, show_data_2)]
+
+        # Prepare the calls to search_shows_by_text
+        tmdb_calls_mock.search_shows_by_text.side_effect = [(0, []), (0, []), (0, [])]
+
+        # Prepare the calls to register_show_session
+        show_session = models.ShowSession(1, 4, datetime.datetime(2021, 7, 1, 5, 33), 8373, 7503)
+        show_session_2 = models.ShowSession(None, None, datetime.datetime(2021, 7, 5, 8, 52), 8373, 7912)
+
+        db_calls_mock.register_show_session.side_effect = [show_session, show_session_2]
+
+        # Call the function
+        actual_result = file_parsers.generic_xlsx.GenericXlsx.add_file_data(self.session,
+                                                                            base_path + 'data/mundo_fox_example.xlsx',
+                                                                            'Mundo FOX')
+
+        # Get back the datetime.datetime
+        datetime.datetime = self.datetime_backup
+
+        # Verify the result
+        self.assertEqual(datetime.datetime(2021, 7, 1, 5, 28, 0), actual_result.start_datetime)
+        self.assertEqual(datetime.datetime(2021, 7, 5, 8, 57, 0), actual_result.end_datetime)
+        self.assertEqual(2, actual_result.total_nb_sessions_in_file)
+        self.assertEqual(0, actual_result.nb_updated_sessions)
+        self.assertEqual(2, actual_result.nb_added_sessions)
+        self.assertEqual(0, actual_result.nb_deleted_sessions)
+
+        # Verify the calls to the mocks
+        db_calls_mock.get_channel_name.assert_called_with(self.session, 'Mundo FOX')
+
+        db_calls_mock.search_channel_show_data_correction.assert_has_calls(
+            [unittest.mock.call(self.session, 8373, False, 'Law & Order: Special Victims Unit',
+                                'Lei & Ordem: Unidade Especial', directors=None, year=2016,
+                                subgenre=None, creators=['Dick Wolf']),
+             unittest.mock.call(self.session, 8373, True, 'Robin Hood', 'Robin Hood',
+                                directors=['Ridley Scott'], year=2010, subgenre=None,
+                                creators=None)])
+
+        db_calls_mock.insert_if_missing_show_data.assert_has_calls(
+            [unittest.mock.call(self.session, 'Lei & Ordem: Unidade Especial',
+                                cast='Christopher Meloni,Ice-T,Mariska Hargitay',
+                                original_title='Law & Order: Special Victims Unit', duration=None,
+                                synopsis='Uma investigação leva Benson ao limite quando um suspeito alega que a '
+                                         'genética o compele a cometer crimes de violação.',
+                                year=2016, genre='Series', subgenre=None, audio_languages=None, countries=None,
+                                directors=None, age_classification='12+', is_movie=False, season=18,
+                                creators=['Dick Wolf']),
+             unittest.mock.call(self.session, 'Robin Hood', cast='Cate Blanchett,Russell Crowe',
+                                original_title='Robin Hood', duration=None,
+                                synopsis='Inglaterra, século XIII. Robin Longstride (Russell Crowe) toda a sua vida '
+                                         'prestou serviço leal ao rei Ricardo I, de cognome Coração de Leão, mas hoje, '
+                                         'após a morte do grande soberano, o país atravessa uma grave crise nas mãos '
+                                         'do Príncipe João (Oscar Isaac) transformando Nottingham numa cidade saqueada '
+                                         'não apenas pelos governantes mas também pelo próprio xerife local (Matthew '
+                                         'Macfadyen). Ao encontrar o amor em Lady Marion (Cate Blanchett), na '
+                                         'esperança de merecer a sua mão e salvar a população de toda a iniquidade, '
+                                         'ele vai criar um grupo de mercenários justiceiros, cujas capacidades '
+                                         'guerreiras só se poderão comparar à sua alegria de viver. Assim nascerá a '
+                                         'lenda de Robin Hood, o grande herói fora-da-lei que, roubando aos ricos para '
+                                         'dar aos pobres, devolveu a glória e a liberdade ao país que o viu nascer.',
+                                year=2010,
+                                genre='Movie', subgenre=None, audio_languages=None, countries=None,
+                                directors=['Ridley Scott'], age_classification='12+', is_movie=True,
+                                season=None, creators=None)])
+
+        tmdb_calls_mock.search_shows_by_text.assert_has_calls(
+            [unittest.mock.call(self.session, 'Law & Order: Special Victims Unit', is_movie=False, year=None),
+             unittest.mock.call(self.session, 'Robin Hood', is_movie=True, year=2010),
+             unittest.mock.call(self.session, 'Robin Hood', is_movie=True, year=None)])
+
+        db_calls_mock.register_show_session.assert_has_calls(
+            [unittest.mock.call(self.session, 18, 14, datetime.datetime(2021, 7, 1, 5, 33), 8373, 7503,
+                                audio_language=None,
+                                extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, None, None, datetime.datetime(2021, 7, 5, 8, 52), 8373, 7912,
+                                audio_language=None, extended_cut=False, should_commit=False)])
