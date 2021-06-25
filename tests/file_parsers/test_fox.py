@@ -66,58 +66,6 @@ class TestFox(unittest.TestCase):
         # Replace back all references to the module db_calls to the module
         globalsub.subs(db_calls_mock, db_calls_backup)
 
-    def test_process_title_01(self) -> None:
-        """ Test the function Fox.process_title with a simple movie. """
-
-        # The expected result
-        expected_result = 'Home By Spring'
-
-        # Call the function
-        actual_result = file_parsers.generic_xlsx.GenericXlsx.process_title('Home By Spring',
-                                                                            'has_year_season_at_the_end')
-
-        # Verify the result
-        self.assertEqual(expected_result, actual_result)
-
-    def test_process_title_02(self) -> None:
-        """ Test the function Fox.process_title with a simple series. """
-
-        # The expected result
-        expected_result = 'Private Practice'
-
-        # Call the function
-        actual_result = file_parsers.generic_xlsx.GenericXlsx.process_title('Private Practice 1',
-                                                                            'has_year_season_at_the_end')
-
-        # Verify the result
-        self.assertEqual(expected_result, actual_result)
-
-    def test_process_title_03(self) -> None:
-        """ Test the function Fox.process_title with year in the title of the series. """
-
-        # The expected result
-        expected_result = 'New Amsterdam'
-
-        # Call the function
-        actual_result = file_parsers.generic_xlsx.GenericXlsx.process_title('New Amsterdam (2018) 3',
-                                                                            'has_year_season_at_the_end')
-
-        # Verify the result
-        self.assertEqual(expected_result, actual_result)
-
-    def test_process_title_04(self) -> None:
-        """ Test the function Fox.process_title with re-release in the title of a movie. """
-
-        # The expected result
-        expected_result = 'Titanic'
-
-        # Call the function
-        actual_result = file_parsers.generic_xlsx.GenericXlsx.process_title('Titanic (re-release 2012)',
-                                                                            'has_year_season_at_the_end')
-
-        # Verify the result
-        self.assertEqual(expected_result, actual_result)
-
     @unittest.mock.patch('get_file_data.tmdb_calls')
     def test_add_file_data_01(self, tmdb_calls_mock) -> None:
         """ Test the function Fox.add_file_data with a sample from a FOX Life file. """

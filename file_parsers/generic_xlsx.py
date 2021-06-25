@@ -90,16 +90,17 @@ class GenericXlsx(get_file_data.ChannelInsertion):
         return fields
 
     @staticmethod
-    def process_title(title: str, title_format: str) -> str:
+    def process_title(title: str, title_format: str, is_movie: bool) -> str:
         """
         Process the title, removing the year.
 
         :param title: the title as is in the file.
         :param title_format: the format of the title.
+        :param is_movie: whether or not this entry is a movie.
         :return: the title.
         """
 
-        if 'season_at_the_end' in title_format:
+        if 'season_at_the_end' in title_format and not is_movie:
             series = re.search(r'^(.*) [0-9]+$', title.strip())
 
             if series is not None:
@@ -316,8 +317,9 @@ class GenericXlsx(get_file_data.ChannelInsertion):
             genre = 'Movie' if is_movie else 'Series'
 
             # Process the title
-            original_title = GenericXlsx.process_title(original_title, fields['original_title'].field_format)
-            localized_title = GenericXlsx.process_title(localized_title, fields['localized_title'].field_format)
+            original_title = GenericXlsx.process_title(original_title, fields['original_title'].field_format, is_movie)
+            localized_title = GenericXlsx.process_title(localized_title, fields['localized_title'].field_format,
+                                                        is_movie)
 
             channel_id = db_calls.get_channel_name(db_session, channel_name).id
 
