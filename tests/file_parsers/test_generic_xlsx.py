@@ -613,7 +613,7 @@ class TestGenericXlsx(unittest.TestCase):
 
     @unittest.mock.patch('get_file_data.tmdb_calls')
     def test_add_file_data_fox_life(self, tmdb_calls_mock) -> None:
-        """ Test the function Fox.add_file_data with a sample from a FOX Life file. """
+        """ Test the function GenericXlsx.add_file_data with a sample from a FOX Life file. """
 
         # Prepare the mocks
         # Replace datetime class with a utility class with a fixed datetime
@@ -749,7 +749,7 @@ class TestGenericXlsx(unittest.TestCase):
 
     @unittest.mock.patch('get_file_data.tmdb_calls')
     def test_add_file_data_fox(self, tmdb_calls_mock) -> None:
-        """ Test the function Fox.add_file_data with a sample from a FOX file. """
+        """ Test the function GenericXlsx.add_file_data with a sample from a FOX file. """
 
         # Prepare the mocks
         # Replace datetime class with a utility class with a fixed datetime
@@ -1011,4 +1011,133 @@ class TestGenericXlsx(unittest.TestCase):
                                 audio_language=None,
                                 extended_cut=False, should_commit=False),
              unittest.mock.call(self.session, None, None, datetime.datetime(2021, 7, 1, 8, 10), 8373, 7912,
+                                audio_language=None, extended_cut=False, should_commit=False)])
+
+    @unittest.mock.patch('get_file_data.tmdb_calls')
+    def test_add_file_data_disney_junior(self, tmdb_calls_mock) -> None:
+        """ Test the function GenericXlsx.add_file_data with a sample from a Disney Junior file. """
+
+        # Prepare the mocks
+        # Replace datetime class with a utility class with a fixed datetime
+        datetime.datetime = NewDatetime
+
+        # Prepare the call to get_channel_name
+        channel_data = models.Channel('DISNYJ', 'Disney Junior')
+        channel_data.id = 8373
+
+        db_calls_mock.get_channel_name.return_value = channel_data
+
+        # Treatment of the entries
+        # ----------------------------
+        # Prepare the calls to search_channel_show_data
+        db_calls_mock.search_channel_show_data_correction.side_effect = [None, None]
+
+        # Prepare the calls to search_channel_show_data
+        show_data = models.ShowData('_GIGANTOSAURUS_', 'GIGANTOSAURUS')
+        show_data.id = 7503
+        show_data.original_title = 'GIGANTOSAURUS'
+        show_data.synopsis = 'Quatro pequenos dinossauros vivem grandes aventuras no mundo pré-histórico onde o ' \
+                             'mistério mais entusiasmante é o Gigantosaurus, o maior e mais feroz dinossauro já visto!'
+        show_data.creators = 'Olivier Lelardoux'
+        show_data.genre = 'Series'
+        show_data.is_movie = False
+
+        show_data_2 = models.ShowData('_BLUEY_', 'BLUEY')
+        show_data_2.id = 7912
+        show_data_2.original_title = 'BLUEY'
+        show_data_2.synopsis = 'Bluey está de volta com a irmã, Bingo, transformando a vida quotidiana em diversão ' \
+                               'sem fim!'
+        show_data_2.genre = 'Series'
+        show_data_2.is_movie = False
+
+        db_calls_mock.insert_if_missing_show_data.side_effect = [(True, show_data), (True, show_data_2)]
+
+        # Prepare the calls to search_shows_by_text
+        tmdb_show = tmdb_calls.TmdbShow()
+        tmdb_show.year = 2018
+        tmdb_show.is_movie = False
+        tmdb_show.id = 1
+        tmdb_show.original_title = 'GIGANTOSAURUS'
+
+        tmdb_show_2 = tmdb_calls.TmdbShow()
+        tmdb_show_2.year = 2019
+        tmdb_show_2.is_movie = False
+        tmdb_show_2.id = 112
+        tmdb_show_2.original_title = 'BLUEY'
+
+        tmdb_calls_mock.search_shows_by_text.side_effect = [(1, [tmdb_show]), (1, [tmdb_show_2])]
+
+        # Prepare the calls to get_show_using_id
+        show_details = tmdb_calls.TmdbShow()
+        show_details.creators = ['Other Person', 'Olivier Lelardoux']
+
+        show_details_2 = tmdb_calls.TmdbShow()
+        show_details_2.creators = ['Some Person', 'Someone Else']
+
+        tmdb_calls_mock.get_show_using_id.side_effect = [show_details, show_details_2]
+
+        # Prepare the calls to get_show_data_tmdb_id
+        db_calls_mock.get_show_data_tmdb_id.side_effect = [None, None]
+
+        # Prepare the calls to register_show_session
+        show_session = models.ShowSession(3, 1, datetime.datetime(2021, 6, 30, 22, 50), 8373, 7503)
+        show_session_2 = models.ShowSession(None, None, datetime.datetime(2021, 7, 1, 7, 5), 8373, 7912)
+
+        db_calls_mock.register_show_session.side_effect = [show_session, show_session_2]
+
+        # Call the function
+        actual_result = file_parsers.generic_xlsx.GenericXlsx.add_file_data(self.session,
+                                                                            base_path + 'data/disney_junior_example.xls',
+                                                                            'Disney Junior')
+
+        # Get back the datetime.datetime
+        datetime.datetime = self.datetime_backup
+
+        # Verify the result
+        self.assertEqual(datetime.datetime(2021, 6, 30, 22, 45, 0), actual_result.start_datetime)
+        self.assertEqual(datetime.datetime(2021, 7, 1, 7, 10), actual_result.end_datetime)
+        self.assertEqual(2, actual_result.total_nb_sessions_in_file)
+        self.assertEqual(0, actual_result.nb_updated_sessions)
+        self.assertEqual(2, actual_result.nb_added_sessions)
+        self.assertEqual(0, actual_result.nb_deleted_sessions)
+
+        # Verify the calls to the mocks
+        db_calls_mock.get_channel_name.assert_called_with(self.session, 'Disney Junior')
+
+        db_calls_mock.search_channel_show_data_correction.assert_has_calls(
+            [unittest.mock.call(self.session, 8373, False, 'GIGANTOSAURUS', 'GIGANTOSAURUS',
+                                directors=['Olivier Lelardoux'], year=2018, subgenre=None, creators=None),
+             unittest.mock.call(self.session, 8373, False, 'BLUEY', 'BLUEY', directors=None, year=2020,
+                                subgenre=None, creators=None)])
+
+        db_calls_mock.insert_if_missing_show_data.assert_has_calls(
+            [unittest.mock.call(self.session, 'GIGANTOSAURUS', cast=None, original_title='GIGANTOSAURUS', duration=25,
+                                synopsis='Quatro pequenos dinossauros vivem grandes aventuras no mundo pré-histórico '
+                                         'onde o mistério mais entusiasmante é o Gigantosaurus, o maior e mais feroz '
+                                         'dinossauro já visto!',
+                                year=2018, genre='Series', subgenre=None, audio_languages=None, countries='França',
+                                directors=['Olivier Lelardoux'], age_classification='T', is_movie=False, season=1,
+                                creators=None),
+             unittest.mock.call(self.session, 'BLUEY', cast=None, original_title='BLUEY', duration=10,
+                                synopsis='Bluey está de volta com a irmã, Bingo, transformando a vida quotidiana em '
+                                         'diversão sem fim!',
+                                year=2020, genre='Series', subgenre=None, audio_languages=None, countries='Austrália',
+                                directors=None, age_classification='T', is_movie=False, season=2,
+                                creators=None)])
+
+        tmdb_calls_mock.search_shows_by_text.assert_has_calls(
+            [unittest.mock.call(self.session, 'GIGANTOSAURUS', is_movie=False, year=None),
+             unittest.mock.call(self.session, 'BLUEY', is_movie=False, year=None)])
+
+        tmdb_calls_mock.get_show_using_id.assert_called_with(self.session, 1, False)
+
+        db_calls_mock.get_show_data_tmdb_id.assert_has_calls(
+            [unittest.mock.call(self.session, 1),
+             unittest.mock.call(self.session, 112)])
+
+        db_calls_mock.register_show_session.assert_has_calls(
+            [unittest.mock.call(self.session, 1, 25, datetime.datetime(2021, 6, 30, 22, 50), 8373, 7503,
+                                audio_language=None,
+                                extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, 2, 76, datetime.datetime(2021, 7, 1, 7, 5), 8373, 7912,
                                 audio_language=None, extended_cut=False, should_commit=False)])

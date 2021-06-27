@@ -26,7 +26,7 @@ class GenericField:
 class GenericXlsx(get_file_data.ChannelInsertion):
     channels_file = {'Nat Geo Wild': 'nat_geo_wild.csv', 'National Geographic': 'national_geographic.csv',
                      'FOX': 'fox.csv', 'FOX Life': 'fox.csv', 'FOX Comedy': 'fox.csv', 'FOX Crime': 'fox_crime.csv',
-                     'FOX Movies': 'fox_movies.csv'}
+                     'FOX Movies': 'fox_movies.csv', 'Disney Junior': 'disney_junior.csv'}
     channels = list(channels_file.keys())
 
     @staticmethod
@@ -100,11 +100,17 @@ class GenericXlsx(get_file_data.ChannelInsertion):
         :return: the title.
         """
 
-        if 'season_at_the_end' in title_format and not is_movie:
-            series = re.search(r'^(.*) [0-9]+$', title.strip())
+        if not is_movie:
+            if 'S_season_at_the_end' in title_format:
+                series = re.search(r'S[0-9]+', title.strip())
 
-            if series is not None:
-                title = series.group(1)
+                if series is not None:
+                    title = title[:series.span(0)[0]]
+            elif 'season_at_the_end' in title_format:
+                series = re.search(r'^(.*) [0-9]+$', title.strip())
+
+                if series is not None:
+                    title = series.group(1)
 
         if 'has_year' in title_format:
             # From the last position of the parenthesis
@@ -233,7 +239,10 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                 synopsis = None
 
             if 'cast' in fields:
-                cast = row[fields['cast'].position].value
+                cast = row[fields['cast'].position].value.strip()
+
+                if len(cast) == 0:
+                    cast = None
             else:
                 cast = None
 
@@ -246,6 +255,11 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                         directors = None
                     else:
                         directors = directors.split(',')
+
+                # If the name of the directors is actually a placeholder
+                if '_ignore_directors' in fields:
+                    if directors[0].strip() == fields['_ignore_directors'].field_format:
+                        directors = None
             else:
                 directors = None
 
@@ -268,13 +282,16 @@ class GenericXlsx(get_file_data.ChannelInsertion):
 
             # Duration
             if 'duration' in fields:
-                if file_format == '.xls':
-                    duration = xlrd.xldate_as_datetime(row[fields['duration'].position].value, book.datemode)
+                if fields['duration'].field_format == 'seconds':
+                    duration = int(int(row[fields['duration'].position].value) / 60)
                 else:
-                    duration = datetime.datetime.strptime(row[fields['duration'].position].value,
-                                                          fields['duration'].field_format)
+                    if file_format == '.xls':
+                        duration = xlrd.xldate_as_datetime(row[fields['duration'].position].value, book.datemode)
+                    else:
+                        duration = datetime.datetime.strptime(row[fields['duration'].position].value,
+                                                              fields['duration'].field_format)
 
-                duration = duration.hour * 60 + duration.minute
+                    duration = duration.hour * 60 + duration.minute
             else:
                 duration = None
 
@@ -305,7 +322,15 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                     except ValueError:
                         season = None
 
-                episode = int(row[fields['episode'].position].value)
+                episode = None
+
+                if fields['episode'].field_format == 'int':
+                    episode = int(row[fields['episode'].position].value)
+                elif 'title_with_Ep.' in fields['episode'].field_format:
+                    series = re.search(r'Ep\. [1-9]+', row[fields['episode'].position].value.strip())
+
+                    if series is not None:
+                        episode = int(series.group(0)[4:])
 
                 if season == 0:
                     season = None
