@@ -878,3 +878,137 @@ class TestGenericXlsx(unittest.TestCase):
                                 extended_cut=False, should_commit=False),
              unittest.mock.call(self.session, None, None, datetime.datetime(2021, 6, 1, 22, 4), 8373, 7912,
                                 audio_language=None, extended_cut=False, should_commit=False)])
+
+    @unittest.mock.patch('get_file_data.tmdb_calls')
+    def test_add_file_data_fox_movies(self, tmdb_calls_mock) -> None:
+        """ Test the function GenericXlsx.add_file_data with a sample from a FOX Movies file. """
+
+        # Prepare the mocks
+        # Replace datetime class with a utility class with a fixed datetime
+        datetime.datetime = NewDatetime
+
+        # Prepare the call to get_channel_name
+        channel_data = models.Channel('FOXM', 'FOX Movies')
+        channel_data.id = 8373
+
+        db_calls_mock.get_channel_name.return_value = channel_data
+
+        # Treatment of the entries
+        # ----------------------------
+        # Prepare the calls to search_channel_show_data
+        db_calls_mock.search_channel_show_data_correction.side_effect = [None, None]
+
+        # Prepare the calls to search_channel_show_data
+        show_data = models.ShowData('_O_Exterminador_Implacável_2_O_Dia_do_Julgamento_',
+                                    'O Exterminador Implacável 2 - O Dia do Julgamento')
+        show_data.id = 7503
+        show_data.original_title = 'Terminator 2: Judgement Day'
+        show_data.year = 1991
+        show_data.synopsis = 'Passaram-se quase dez anos desde que a provação de Sarah teve inicío e o seu filho ' \
+                             'John, o futuro líder da resistência, é agora um jovem e saudável rapaz. Porém, o ' \
+                             'pesadelo recomeça quando um novo e letal exterminador é enviado do futuro. As suas ' \
+                             'ordens: atacar John Connor enquanto este é ainda uma criança. Contudo, Sarah e John ' \
+                             'não terão de enfrentar sozinhos este terrível exterminador. A resistência humana ' \
+                             'envia igualmente um exterminador  do futuro e as suas ordens são proteger John Connor ' \
+                             'a todo o custo – começou a batalha pelo amanhã...'
+        show_data.genre = 'Movie'
+        show_data.is_movie = True
+        show_data.age_classification = '12+'
+        show_data.director = 'James Cameron'
+
+        show_data_2 = models.ShowData('_Heat_Cidade_Sob_Pressão_', 'Heat - Cidade Sob Pressão')
+        show_data_2.id = 7912
+        show_data_2.original_title = 'Heat'
+        show_data_2.year = 1995
+        show_data_2.synopsis = 'Um grupo de ladrões liderados pelo criminoso experiente Neal McCauley (Robert de ' \
+                               'Niro) executa com sucesso uma série de assaltos a bancos, cofres e carros blindados. ' \
+                               'Acontece que um desses roubos corre mal e o segurança de um carro blindado é ' \
+                               'atingido a tiro e morre. O detective do Departamento de Polícia de Los Angeles Vince ' \
+                               'Hanna (Al Pacino) está determinado a apanhar os ladrões. No meio deste jogo do gato ' \
+                               'e do rato entre criminosos e polícia, Neil quebra a sua própria regra e apaixona-se, ' \
+                               'perdendo a vantagem que sempre lhe permitiu soltar-se das amarras e fugir.'
+        show_data_2.genre = 'Movie'
+        show_data_2.is_movie = True
+        show_data_2.age_classification = '13+'
+        show_data_2.director = 'Michael Mann'
+
+        db_calls_mock.insert_if_missing_show_data.side_effect = [(True, show_data), (True, show_data_2)]
+
+        # Prepare the calls to search_shows_by_text
+        tmdb_calls_mock.search_shows_by_text.side_effect = [(0, []), (0, []), (0, []), (0, [])]
+
+        # Prepare the calls to register_show_session
+        show_session = models.ShowSession(1, 4, datetime.datetime(2021, 7, 1, 5, 33), 8373, 7503)
+        show_session_2 = models.ShowSession(None, None, datetime.datetime(2021, 7, 5, 8, 52), 8373, 7912)
+
+        db_calls_mock.register_show_session.side_effect = [show_session, show_session_2]
+
+        # Call the function
+        actual_result = file_parsers.generic_xlsx.GenericXlsx.add_file_data(self.session,
+                                                                            base_path + 'data/fox_movies_example.xlsx',
+                                                                            'FOX Movies')
+
+        # Get back the datetime.datetime
+        datetime.datetime = self.datetime_backup
+
+        # Verify the result
+        self.assertEqual(datetime.datetime(2021, 7, 1, 5, 55, 0), actual_result.start_datetime)
+        self.assertEqual(datetime.datetime(2021, 7, 1, 8, 15, 0), actual_result.end_datetime)
+        self.assertEqual(2, actual_result.total_nb_sessions_in_file)
+        self.assertEqual(0, actual_result.nb_updated_sessions)
+        self.assertEqual(2, actual_result.nb_added_sessions)
+        self.assertEqual(0, actual_result.nb_deleted_sessions)
+
+        # Verify the calls to the mocks
+        db_calls_mock.get_channel_name.assert_called_with(self.session, 'FOX Movies')
+
+        db_calls_mock.search_channel_show_data_correction.assert_has_calls(
+            [unittest.mock.call(self.session, 8373, True, 'Terminator 2: Judgement Day',
+                                'O Exterminador Implacável 2 - O Dia do Julgamento', directors=['James Cameron'],
+                                year=1991, subgenre=None, creators=None),
+             unittest.mock.call(self.session, 8373, True, 'Heat', 'Heat - Cidade Sob Pressão',
+                                directors=['Michael Mann'], year=1995, subgenre=None,
+                                creators=None)])
+
+        db_calls_mock.insert_if_missing_show_data.assert_has_calls(
+            [unittest.mock.call(self.session, 'O Exterminador Implacável 2 - O Dia do Julgamento',
+                                cast='Arnold Schwarzenegger,Edward Furlong,Linda Hamilton',
+                                original_title='Terminator 2: Judgement Day', duration=130,
+                                synopsis='Passaram-se quase dez anos desde que a provação de Sarah teve inicío e o '
+                                         'seu filho John, o futuro líder da resistência, é agora um jovem e saudável '
+                                         'rapaz. Porém, o pesadelo recomeça quando um novo e letal exterminador é '
+                                         'enviado do futuro. As suas ordens: atacar John Connor enquanto este é ainda '
+                                         'uma criança. Contudo, Sarah e John não terão de enfrentar sozinhos este '
+                                         'terrível exterminador. A resistência humana envia igualmente um exterminador '
+                                         ' do futuro e as suas ordens são proteger John Connor a todo o custo – '
+                                         'começou a batalha pelo amanhã...',
+                                year=1991, genre='Movie', subgenre=None, audio_languages=None, countries=None,
+                                directors=['James Cameron'], age_classification='12+', is_movie=True, season=None,
+                                creators=None),
+             unittest.mock.call(self.session, 'Heat - Cidade Sob Pressão', cast='Al Pacino,Robert De Niro,Val Kilmer',
+                                original_title='Heat', duration=170,
+                                synopsis='Um grupo de ladrões liderados pelo criminoso experiente Neal McCauley ('
+                                         'Robert de Niro) executa com sucesso uma série de assaltos a bancos, cofres '
+                                         'e carros blindados. Acontece que um desses roubos corre mal e o segurança de '
+                                         'um carro blindado é atingido a tiro e morre. O detective do Departamento de '
+                                         'Polícia de Los Angeles Vince Hanna (Al Pacino) está determinado a apanhar os '
+                                         'ladrões. No meio deste jogo do gato e do rato entre criminosos e polícia, '
+                                         'Neil quebra a sua própria regra e apaixona-se, perdendo a vantagem que '
+                                         'sempre lhe permitiu soltar-se das amarras e fugir.',
+                                year=1995,
+                                genre='Movie', subgenre=None, audio_languages=None, countries=None,
+                                directors=['Michael Mann'], age_classification='13+', is_movie=True,
+                                season=None, creators=None)])
+
+        tmdb_calls_mock.search_shows_by_text.assert_has_calls(
+            [unittest.mock.call(self.session, 'Terminator 2: Judgement Day', is_movie=True, year=1991),
+             unittest.mock.call(self.session, 'Terminator 2: Judgement Day', is_movie=True, year=None),
+             unittest.mock.call(self.session, 'Heat', is_movie=True, year=1995),
+             unittest.mock.call(self.session, 'Heat', is_movie=True, year=None)])
+
+        db_calls_mock.register_show_session.assert_has_calls(
+            [unittest.mock.call(self.session, None, None, datetime.datetime(2021, 7, 1, 6), 8373, 7503,
+                                audio_language=None,
+                                extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, None, None, datetime.datetime(2021, 7, 1, 8, 10), 8373, 7912,
+                                audio_language=None, extended_cut=False, should_commit=False)])

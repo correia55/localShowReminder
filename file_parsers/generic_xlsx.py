@@ -25,7 +25,8 @@ class GenericField:
 
 class GenericXlsx(get_file_data.ChannelInsertion):
     channels_file = {'Nat Geo Wild': 'nat_geo_wild.csv', 'National Geographic': 'national_geographic.csv',
-                     'FOX': 'fox.csv', 'FOX Life': 'fox.csv', 'FOX Comedy': 'fox.csv', 'FOX Crime': 'fox_crime.csv'}
+                     'FOX': 'fox.csv', 'FOX Life': 'fox.csv', 'FOX Comedy': 'fox.csv', 'FOX Crime': 'fox_crime.csv',
+                     'FOX Movies': 'fox_movies.csv'}
     channels = list(channels_file.keys())
 
     @staticmethod
@@ -220,6 +221,11 @@ class GenericXlsx(get_file_data.ChannelInsertion):
 
             original_title = str(row[fields['original_title'].position].value)
             localized_title = str(row[fields['localized_title'].position].value)
+
+            # If it is a placeholder show or temporary program
+            if '_temporary_program' in fields:
+                if str(fields['_temporary_program'].field_format) in original_title:
+                    continue
 
             if 'localized_synopsis' in fields:
                 synopsis = str(row[fields['localized_synopsis'].position].value).strip()
