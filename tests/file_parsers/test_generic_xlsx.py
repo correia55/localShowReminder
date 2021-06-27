@@ -1141,3 +1141,113 @@ class TestGenericXlsx(unittest.TestCase):
                                 extended_cut=False, should_commit=False),
              unittest.mock.call(self.session, 2, 76, datetime.datetime(2021, 7, 1, 7, 5), 8373, 7912,
                                 audio_language=None, extended_cut=False, should_commit=False)])
+
+    @unittest.mock.patch('get_file_data.tmdb_calls')
+    def test_add_file_data_disney_channel(self, tmdb_calls_mock) -> None:
+        """ Test the function GenericXlsx.add_file_data with a sample from a Disney Channel file. """
+
+        # Prepare the mocks
+        # Replace datetime class with a utility class with a fixed datetime
+        datetime.datetime = NewDatetime
+
+        # Prepare the call to get_channel_name
+        channel_data = models.Channel('DISNY', 'Disney Channel')
+        channel_data.id = 8373
+
+        db_calls_mock.get_channel_name.return_value = channel_data
+
+        # Treatment of the entries
+        # ----------------------------
+        # Prepare the calls to search_channel_show_data
+        db_calls_mock.search_channel_show_data_correction.side_effect = [None, None]
+
+        # Prepare the calls to search_channel_show_data
+        show_data = models.ShowData('_CLUBE_HOUDINI_', 'CLUBE HOUDINI')
+        show_data.id = 7503
+        show_data.original_title = 'CLUB HOUDINI'
+        show_data.synopsis = 'Martina, Andrés e Mateo vão até à casa de Houdini para ver se já voltou da sua viagem ' \
+                             'a Nova Iorque. Ao chegar, encontram por acaso um filme antigo e dirigem-se até ao ' \
+                             'velho cinema para ver o filme.'
+        show_data.genre = 'Series'
+        show_data.is_movie = False
+        show_data.age_classification = 'T'
+
+        show_data_2 = models.ShowData('_MAGIA_AO_CONTRÁRIO_', 'MAGIA AO CONTRÁRIO')
+        show_data_2.id = 7912
+        show_data_2.original_title = 'UPSIDE-DOWN MAGIC'
+        show_data_2.year = 2020
+        show_data_2.synopsis = 'Nory e a sua melhor amiga, Reina, entram na Academia Sábia de Estudos Mágicos, onde ' \
+                               'a magia excêntrica de Nory a faz entrar na turma dos que têm Magia ao Contrário ' \
+                               'também conhecida como MAC.'
+        show_data_2.genre = 'Movie'
+        show_data_2.is_movie = True
+        show_data_2.age_classification = 'T'
+
+        db_calls_mock.insert_if_missing_show_data.side_effect = [(True, show_data), (True, show_data_2)]
+
+        # Prepare the calls to search_shows_by_text
+        tmdb_calls_mock.search_shows_by_text.side_effect = [(0, []), (0, []), (0, [])]
+
+        # Prepare the calls to register_show_session
+        show_session = models.ShowSession(1, 4, datetime.datetime(2021, 6, 30, 23, 15), 8373, 7503)
+        show_session_2 = models.ShowSession(None, None, datetime.datetime(2021, 7, 4, 9, 50), 8373, 7912)
+
+        db_calls_mock.register_show_session.side_effect = [show_session, show_session_2]
+
+        # Call the function
+        actual_result = file_parsers.generic_xlsx.GenericXlsx.add_file_data(self.session,
+                                                                            base_path + 'data/disney_channel_example.xls',
+                                                                            'Disney Channel')
+
+        # Get back the datetime.datetime
+        datetime.datetime = self.datetime_backup
+
+        # Verify the result
+        self.assertEqual(datetime.datetime(2021, 6, 30, 23, 10), actual_result.start_datetime)
+        self.assertEqual(datetime.datetime(2021, 7, 4, 9, 55), actual_result.end_datetime)
+        self.assertEqual(2, actual_result.total_nb_sessions_in_file)
+        self.assertEqual(0, actual_result.nb_updated_sessions)
+        self.assertEqual(2, actual_result.nb_added_sessions)
+        self.assertEqual(0, actual_result.nb_deleted_sessions)
+
+        # Verify the calls to the mocks
+        db_calls_mock.get_channel_name.assert_called_with(self.session, 'Disney Channel')
+
+        db_calls_mock.search_channel_show_data_correction.assert_has_calls(
+            [unittest.mock.call(self.session, 8373, False, 'CLUB HOUDINI', 'CLUBE HOUDINI', directors=None, year=2019,
+                                subgenre=None, creators=None),
+             unittest.mock.call(self.session, 8373, True, 'UPSIDE-DOWN MAGIC', 'MAGIA AO CONTRÁRIO',
+                                directors=['Joe Nussbaum'], year=2020, subgenre=None, creators=None)])
+
+        db_calls_mock.insert_if_missing_show_data.assert_has_calls(
+            [unittest.mock.call(self.session, 'CLUBE HOUDINI', cast=None, original_title='CLUB HOUDINI', duration=15,
+                                synopsis='Martina, Andrés e Mateo vão até à casa de Houdini para ver se já voltou da '
+                                         'sua viagem a Nova Iorque. Ao chegar, encontram por acaso um filme antigo e '
+                                         'dirigem-se até ao velho cinema para ver o filme.',
+                                year=2019, genre='Series',
+                                subgenre=None, audio_languages=None, countries='Espanha',
+                                directors=None, age_classification='T', is_movie=False, season=3,
+                                creators=None),
+             unittest.mock.call(self.session, 'MAGIA AO CONTRÁRIO',
+                                cast='Izabela Rose, Kyle Howard, Siena Agudong, Elie Samouhi',
+                                original_title='UPSIDE-DOWN MAGIC', duration=115,
+                                synopsis='Nory e a sua melhor amiga, Reina, entram na Academia Sábia de Estudos '
+                                         'Mágicos, onde a magia excêntrica de Nory a faz entrar na turma dos que têm '
+                                         'Magia ao Contrário também conhecida como MAC.', year=2020,
+                                genre='Movie', subgenre=None,
+                                audio_languages=None, countries='EUA',
+                                directors=['Joe Nussbaum'], age_classification='T', is_movie=True,
+                                season=None,
+                                creators=None)])
+
+        tmdb_calls_mock.search_shows_by_text.assert_has_calls(
+            [unittest.mock.call(self.session, 'CLUB HOUDINI', is_movie=False, year=None),
+             unittest.mock.call(self.session, 'UPSIDE-DOWN MAGIC', is_movie=True, year=2020),
+             unittest.mock.call(self.session, 'UPSIDE-DOWN MAGIC', is_movie=True, year=None)])
+
+        db_calls_mock.register_show_session.assert_has_calls(
+            [unittest.mock.call(self.session, 3, 310, datetime.datetime(2021, 6, 30, 23, 15), 8373, 7503,
+                                audio_language=None,
+                                extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, None, None, datetime.datetime(2021, 7, 4, 9, 50), 8373, 7912,
+                                audio_language=None, extended_cut=False, should_commit=False)])

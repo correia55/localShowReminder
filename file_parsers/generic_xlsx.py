@@ -26,7 +26,8 @@ class GenericField:
 class GenericXlsx(get_file_data.ChannelInsertion):
     channels_file = {'Nat Geo Wild': 'nat_geo_wild.csv', 'National Geographic': 'national_geographic.csv',
                      'FOX': 'fox.csv', 'FOX Life': 'fox.csv', 'FOX Comedy': 'fox.csv', 'FOX Crime': 'fox_crime.csv',
-                     'FOX Movies': 'fox_movies.csv', 'Disney Junior': 'disney_junior.csv'}
+                     'FOX Movies': 'fox_movies.csv', 'Disney Junior': 'disney_junior.csv',
+                     'Disney Channel': 'disney_junior.csv'}
     channels = list(channels_file.keys())
 
     @staticmethod
@@ -257,7 +258,7 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                         directors = directors.split(',')
 
                 # If the name of the directors is actually a placeholder
-                if '_ignore_directors' in fields:
+                if '_ignore_directors' in fields and directors:
                     if directors[0].strip() == fields['_ignore_directors'].field_format:
                         directors = None
             else:
@@ -327,7 +328,7 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                 if fields['episode'].field_format == 'int':
                     episode = int(row[fields['episode'].position].value)
                 elif 'title_with_Ep.' in fields['episode'].field_format:
-                    series = re.search(r'Ep\. [1-9]+', row[fields['episode'].position].value.strip())
+                    series = re.search(r'Ep\. [0-9]+', row[fields['episode'].position].value.strip())
 
                     if series is not None:
                         episode = int(series.group(0)[4:])
