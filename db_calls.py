@@ -185,10 +185,15 @@ def register_alarm(session: sqlalchemy.orm.Session, show_name: str, trakt_id: in
     :param user_id: the owner of the alarm.
     """
 
-    alarm = session.query(models.Alarm) \
-        .filter(models.Alarm.user_id == user_id) \
-        .filter(models.Alarm.is_movie == is_movie) \
-        .filter(models.Alarm.show_name == show_name).first()
+    if alarm_type == response_models.AlarmType.LISTINGS:
+        alarm = session.query(models.Alarm) \
+            .filter(models.Alarm.user_id == user_id) \
+            .filter(models.Alarm.is_movie == is_movie) \
+            .filter(models.Alarm.show_name == show_name).first()
+    else:
+        alarm = session.query(models.Alarm) \
+            .filter(models.Alarm.user_id == user_id) \
+            .filter(models.Alarm.trakt_id == trakt_id).first()
 
     # End processing if the alarm already exists
     if alarm is not None:
