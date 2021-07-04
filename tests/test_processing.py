@@ -1,6 +1,5 @@
 import datetime
 import unittest.mock
-from types import ModuleType
 from typing import Type
 
 import globalsub
@@ -14,16 +13,9 @@ import processing
 import response_models
 import tmdb_calls
 
-# Prepare the variables for replacing db_calls
-db_calls_backup: ModuleType
+# Prepare the mock variables for the modules
 db_calls_mock = unittest.mock.MagicMock()
-
-# Prepare the variables for replacing process_emails
-process_emails_backup: ModuleType
 process_emails_mock = unittest.mock.MagicMock()
-
-# Prepare the variables for replacing tmdb_calls
-tmdb_calls_backup: ModuleType
 tmdb_calls_mock = unittest.mock.MagicMock()
 
 
@@ -53,13 +45,7 @@ class TestProcessing(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        global db_calls_backup, db_calls_mock, process_emails_backup, process_emails_mock, tmdb_calls_backup, \
-            tmdb_calls_mock
-
-        # Save a reference to the modules
-        db_calls_backup = db_calls
-        process_emails_backup = process_emails
-        tmdb_calls_backup = tmdb_calls
+        global db_calls_mock, process_emails_mock, tmdb_calls_mock
 
         # Replace all references to the modules with mocks
         globalsub.subs(db_calls, db_calls_mock)
@@ -69,9 +55,9 @@ class TestProcessing(unittest.TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         # Replace back all references to the mocked modules
-        globalsub.subs(db_calls_mock, db_calls_backup)
-        globalsub.subs(process_emails_mock, process_emails_backup)
-        globalsub.subs(tmdb_calls_mock, tmdb_calls_backup)
+        globalsub.restore(db_calls)
+        globalsub.restore(process_emails)
+        globalsub.restore(tmdb_calls)
 
     def test_process_alarms_ok_01(self) -> None:
         """ Test the function process_alarms without alarms. """

@@ -7,8 +7,7 @@ import google.oauth2
 import configuration
 import external_authentication
 
-# Prepare the variables for replacing google.oauth2
-id_token_backup: ModuleType
+# Prepare the mock variables for the modules
 id_token_mock = unittest.mock.MagicMock()
 
 
@@ -29,18 +28,15 @@ class TestExternalAuthentication(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        global id_token_backup, id_token_mock
+        global id_token_mock
 
-        # Save a reference to the module db_calls
-        id_token_backup = google.oauth2.id_token
-
-        # Replace all references to the module db_calls with a mock
+        # Replace all references to the modules with mocks
         globalsub.subs(google.oauth2.id_token, id_token_mock)
 
     @classmethod
     def tearDownClass(cls) -> None:
-        # Replace back all references to the module db_calls to the module
-        globalsub.subs(id_token_mock, id_token_backup)
+        # Replace back all references to the mocked modules
+        globalsub.restore(google.oauth2.id_token)
 
     def test_external_authentication_ok(self) -> None:
         """ Test the function external_authentication, with a success case. """

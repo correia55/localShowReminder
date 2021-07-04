@@ -1,6 +1,5 @@
 import datetime
 import unittest.mock
-from types import ModuleType
 
 import globalsub
 import sqlalchemy.orm
@@ -11,12 +10,8 @@ import process_emails
 import reminders
 import response_models
 
-# Prepare the variables for replacing db_calls
-db_calls_backup: ModuleType
+# Prepare the mock variables for the modules
 db_calls_mock = unittest.mock.MagicMock()
-
-# Prepare the variables for replacing process_emails
-process_emails_backup: ModuleType
 process_emails_mock = unittest.mock.MagicMock()
 
 
@@ -28,21 +23,17 @@ class TestReminders(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        global db_calls_backup, db_calls_mock, process_emails_backup, process_emails_mock
+        global db_calls_mock, process_emails_mock
 
-        # Save a reference to the module db_calls and process_emails
-        db_calls_backup = db_calls
-        process_emails_backup = process_emails
-
-        # Replace all references to the module db_calls and process_emails with a mock
+        # Replace all references to the modules with mocks
         globalsub.subs(db_calls, db_calls_mock)
         globalsub.subs(process_emails, process_emails_mock)
 
     @classmethod
     def tearDownClass(cls) -> None:
-        # Replace back all references to the module db_calls and process_emails to the module
-        globalsub.subs(db_calls_mock, db_calls_backup)
-        globalsub.subs(process_emails_mock, process_emails_backup)
+        # Replace back all references to the mocked modules
+        globalsub.restore(db_calls)
+        globalsub.restore(process_emails)
 
     def test_get_reminders_error_01(self) -> None:
         """ Test the function that obtains the list of reminders of a user, without a user. """

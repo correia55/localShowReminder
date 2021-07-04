@@ -1,7 +1,6 @@
 import datetime
 import os
 import unittest.mock
-from types import ModuleType
 from typing import Type
 
 import globalsub
@@ -13,8 +12,7 @@ import file_parsers.generic_xlsx
 import models
 import tmdb_calls
 
-# Prepare the variables for replacing db_calls
-db_calls_backup: ModuleType
+# Prepare the mock variables for the modules
 db_calls_mock = unittest.mock.MagicMock()
 
 # To ensure the tests find the data folder no matter where it runs
@@ -53,18 +51,15 @@ class TestGenericXlsx(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        global db_calls_backup, db_calls_mock
+        global db_calls_mock
 
-        # Save a reference to the module db_calls
-        db_calls_backup = db_calls
-
-        # Replace all references to the module db_calls with a mock
+        # Replace all references to the modules with mocks
         globalsub.subs(db_calls, db_calls_mock)
 
     @classmethod
     def tearDownClass(cls) -> None:
-        # Replace back all references to the module db_calls to the module
-        globalsub.subs(db_calls_mock, db_calls_backup)
+        # Replace back all references to the mocked modules
+        globalsub.restore(db_calls)
 
     def test_process_title_01(self) -> None:
         """ Test the function GenericXlsx.process_title with format season_at_the_end on a series. """

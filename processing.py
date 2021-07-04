@@ -889,23 +889,6 @@ def process_excluded_channel_list(session: sqlalchemy.orm.Session, user_id: int,
     db_calls.commit(session)
 
 
-def update_show_tmdb_data(session: sqlalchemy.orm.Session, tmdb_show: tmdb_calls.TmdbShow) -> None:
-    """
-    Update a show's TMDB information.
-
-    :param session: the DB session.
-    :param tmdb_show: the TMDB show information.
-    """
-
-    show_data = db_calls.get_show_data_tmdb_id(session, tmdb_show.id)
-
-    if show_data is not None:
-        show_data.tmdb_vote_average = tmdb_show.vote_average
-        show_data.tmdb_popularity = tmdb_show.popularity
-
-        db_calls.commit(session)
-
-
 def calculate_score_highlights_week(session: sqlalchemy.orm.Session, year: int, week: int) -> None:
     """
     Calculate the score highlights and save them to the DB.

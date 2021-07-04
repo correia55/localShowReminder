@@ -1,8 +1,12 @@
 import os
 import unittest.mock
+import urllib.request
 
+import globalsub
 import sqlalchemy.orm
 
+import configuration
+import db_calls
 import tmdb_calls
 
 # To ensure the tests find the data folder no matter where it runs
@@ -11,17 +15,35 @@ if 'tests' in os.getcwd():
 else:
     base_path = 'tests/'
 
+# Prepare the mock variables for the modules
+configuration_mock = unittest.mock.MagicMock()
+db_calls_mock = unittest.mock.MagicMock()
+external_request_mock = unittest.mock.MagicMock()
+
 
 class TestTmdbCalls(unittest.TestCase):
     session: sqlalchemy.orm.Session
 
+    @classmethod
+    def setUpClass(cls) -> None:
+        global db_calls_mock, external_request_mock, configuration_mock
+
+        # Replace all references to the modules with mocks
+        globalsub.subs(configuration, configuration_mock)
+        globalsub.subs(db_calls, db_calls_mock)
+        globalsub.subs(urllib.request, external_request_mock)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        # Replace back all references to the mocked modules
+        globalsub.restore(configuration)
+        globalsub.restore(db_calls)
+        globalsub.restore(urllib.request)
+
     def setUp(self) -> None:
         self.session = unittest.mock.MagicMock()
 
-    @unittest.mock.patch('tmdb_calls.urllib.request')
-    @unittest.mock.patch('tmdb_calls.db_calls')
-    @unittest.mock.patch('tmdb_calls.configuration')
-    def test_get_show_using_id_01(self, configuration_mock, db_calls_mock, external_request_mock):
+    def test_get_show_using_id_01(self):
         """ Test get_show_using_id with no valid cache. """
 
         # Prepare the calls to the mocks
