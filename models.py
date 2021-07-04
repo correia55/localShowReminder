@@ -25,8 +25,10 @@ class ShowData(Base):
 
     # Technical
     id = Column(Integer, primary_key=True, autoincrement=True)
-    tmdb_id = Column(Integer, unique=True)
     search_title = Column(String(255))
+    tmdb_id = Column(Integer, unique=True)
+    tmdb_vote_average = Column(Integer)
+    tmdb_popularity = Column(Integer)
 
     # Present in all shows
     is_movie = Column(Boolean)
@@ -344,3 +346,33 @@ class Cache(Base):
     def __init__(self, key: str, result: str):
         self.key = key
         self.result = result
+
+
+class HighlightsType(Enum):
+    SCORE = 0
+    NEW = 1
+
+
+class Highlights(Base):
+    """Used to store the highlights of each week."""
+
+    __tablename__ = 'Highlights'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    key = Column(String(50))  # Either Score or New
+    year = Column(Integer)
+    week = Column(Integer)  # The number of the week
+    id_list = Column(String(2000))
+
+    def __init__(self, key: HighlightsType, year: int, week: int, id_list: [int]):
+        self.key = key.name
+        self.year = year
+        self.week = week
+
+        self.id_list = ''
+
+        for id in id_list:
+            if self.id_list != '':
+                self.id_list += ','
+
+            self.id_list += str(id)

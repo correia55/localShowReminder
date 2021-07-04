@@ -1,6 +1,7 @@
 import datetime
 import unittest.mock
 from types import ModuleType
+from typing import Type
 
 import globalsub
 import sqlalchemy.orm
@@ -11,6 +12,7 @@ import models
 import process_emails
 import processing
 import response_models
+import tmdb_calls
 
 # Prepare the variables for replacing db_calls
 db_calls_backup: ModuleType
@@ -20,31 +22,56 @@ db_calls_mock = unittest.mock.MagicMock()
 process_emails_backup: ModuleType
 process_emails_mock = unittest.mock.MagicMock()
 
+# Prepare the variables for replacing tmdb_calls
+tmdb_calls_backup: ModuleType
+tmdb_calls_mock = unittest.mock.MagicMock()
+
+
+# This class allows us to set a fake date as the today date in datetime
+# Remark: they need to be set and then reset
+class NewDate(datetime.date):
+    @classmethod
+    def today(cls):
+        return datetime.date(2021, 3, 10)
+
 
 class TestProcessing(unittest.TestCase):
     session: sqlalchemy.orm.Session
+
+    date_backup: Type[datetime.date]
 
     def setUp(self) -> None:
         self.session = unittest.mock.MagicMock()
         configuration.cache_validity_days = 1
 
+        # Save the datetime.date
+        self.date_backup = datetime.date
+
+    def tearDown(self) -> None:
+        # Reset the datetime class to work normally
+        datetime.date = self.date_backup
+
     @classmethod
     def setUpClass(cls) -> None:
-        global db_calls_backup, db_calls_mock, process_emails_backup, process_emails_mock
+        global db_calls_backup, db_calls_mock, process_emails_backup, process_emails_mock, tmdb_calls_backup, \
+            tmdb_calls_mock
 
-        # Save a reference to the module db_calls and process_emails
+        # Save a reference to the modules
         db_calls_backup = db_calls
         process_emails_backup = process_emails
+        tmdb_calls_backup = tmdb_calls
 
-        # Replace all references to the module db_calls and process_emails with a mock
+        # Replace all references to the modules with mocks
         globalsub.subs(db_calls, db_calls_mock)
         globalsub.subs(process_emails, process_emails_mock)
+        globalsub.subs(tmdb_calls, tmdb_calls_mock)
 
     @classmethod
     def tearDownClass(cls) -> None:
-        # Replace back all references to the module db_calls and process_emails to the module
+        # Replace back all references to the mocked modules
         globalsub.subs(db_calls_mock, db_calls_backup)
         globalsub.subs(process_emails_mock, process_emails_backup)
+        globalsub.subs(tmdb_calls_mock, tmdb_calls_backup)
 
     def test_process_alarms_ok_01(self) -> None:
         """ Test the function process_alarms without alarms. """
@@ -381,3 +408,90 @@ class TestProcessing(unittest.TestCase):
         db_calls_mock.get_user_id.assert_called_with(self.session, 1)
 
         db_calls_mock.get_user_excluded_channels.assert_called_with(self.session, 1)
+
+    def test_calculate_highlights_ok(self) -> None:
+        """ Test the function calculate_highlights. """
+
+        # Replace datetime class with a utility class with a fixed datetime
+        datetime.date = NewDate
+
+        # Prepare the mocks
+        # Calls to check if the highlights already exist
+        highlights_2 = models.Highlights(models.HighlightsType.SCORE, 2021, 11, [])
+
+        db_calls_mock.get_week_highlights.side_effect = [None, highlights_2]
+
+        # Call to obtains the shows of the week
+        show_data = models.ShowData('Show 1', 'Show 1')
+        show_data.tmdb_id = 1234
+        show_data.tmdb_vote_average = 3
+        show_data.is_movie = True
+        show_data.year = 2020
+
+        show_data_2 = models.ShowData('Show 2', 'Show 2')
+        show_data_2.tmdb_id = 6789
+        show_data_2.tmdb_vote_average = 6
+        show_data_2.is_movie = True
+        show_data_2.year = 2011
+
+        show_data_3 = models.ShowData('Show 3', 'Show 3')
+        show_data_3.tmdb_id = 1271
+        show_data_3.tmdb_vote_average = 6
+        show_data_3.is_movie = True
+        show_data_3.year = 2004
+
+        show_data_4 = models.ShowData('Show 4', 'Show 4')
+        show_data_4.tmdb_id = 1274
+        show_data_4.tmdb_vote_average = 5.4
+        show_data_4.is_movie = False
+        show_data_4.year = 2004
+
+        db_calls_mock.get_shows_interval.return_value = [show_data, show_data_2, show_data_3, show_data_4]
+
+        # Calls to obtain the TMDB data for each of the shows
+        tmdb_show = tmdb_calls.TmdbShow()
+        tmdb_show.vote_average = 7
+        tmdb_show.popularity = 100
+
+        tmdb_show_2 = tmdb_calls.TmdbShow()
+        tmdb_show_2.vote_average = 5
+        tmdb_show_2.popularity = 34
+
+        tmdb_show_3 = tmdb_calls.TmdbShow()
+        tmdb_show_3.vote_average = 5.5
+        tmdb_show_3.popularity = 123
+
+        tmdb_calls_mock.get_show_using_id.side_effect = [tmdb_show, tmdb_show_2, tmdb_show_3]
+
+        # Calls to get the highest scored shows
+        db_calls_mock.get_highest_scored_shows_interval.side_effect = [[(189, 1234, 7)], [(46, 1274, 5.5)]]
+
+        # Calls to register highlights
+        highlights = models.Highlights(models.HighlightsType.SCORE, 2021, 10, [1234, 1274])
+
+        db_calls_mock.register_highlight.return_value = highlights
+
+        # Call the function
+        processing.calculate_highlights(self.session)
+
+        # Verify the calls to the mocks
+        db_calls_mock.get_week_highlights.assert_has_calls(
+            [unittest.mock.call(self.session, models.HighlightsType.SCORE, 2021, 10),
+             unittest.mock.call(self.session, models.HighlightsType.SCORE, 2021, 11)])
+
+        db_calls_mock.get_shows_interval.assert_called_with(self.session, datetime.datetime(2021, 3, 8),
+                                                            datetime.datetime(2021, 3, 14, 23, 59, 59))
+
+        tmdb_calls_mock.get_show_using_id.assert_has_calls(
+            [unittest.mock.call(self.session, 1234, True),
+             unittest.mock.call(self.session, 6789, True),
+             unittest.mock.call(self.session, 1274, False)])
+
+        db_calls_mock.get_highest_scored_shows_interval.assert_has_calls(
+            [unittest.mock.call(self.session, datetime.datetime(2021, 3, 8),
+                                datetime.datetime(2021, 3, 14, 23, 59, 59), True),
+             unittest.mock.call(self.session, datetime.datetime(2021, 3, 8),
+                                datetime.datetime(2021, 3, 14, 23, 59, 59), False)])
+
+        db_calls_mock.register_highlight.assert_called_with(self.session, models.HighlightsType.SCORE, 2021, 10,
+                                                            [1234, 1274])

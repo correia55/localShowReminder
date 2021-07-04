@@ -9,6 +9,7 @@ import sqlalchemy.orm
 import auxiliary
 import configuration
 import db_calls
+import processing
 
 
 @auxiliary.auto_repr
@@ -218,6 +219,10 @@ def search_shows_by_text(session: sqlalchemy.orm.Session, search_text: str, lang
             tmdb_show = TmdbShow()
             tmdb_show.fill_from_dict(entry, is_movie)
 
+            # Update the vote average and popularity
+            if not cache_entry:
+                processing.update_show_tmdb_data(session, tmdb_show)
+
             tmdb_shows.append(tmdb_show)
 
     return response_dict['total_pages'], tmdb_shows
@@ -269,6 +274,10 @@ def get_show_using_id(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: b
 
     tmdb_show = TmdbShow()
     tmdb_show.fill_from_dict(response_dict, is_movie)
+
+    # Update the vote average and popularity
+    if not cache_entry:
+        processing.update_show_tmdb_data(session, tmdb_show)
 
     return tmdb_show
 

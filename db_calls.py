@@ -1424,6 +1424,94 @@ def get_last_update(session: sqlalchemy.orm.Session) -> Optional[models.LastUpda
         .first()
 
 
+def get_highest_scored_shows_interval(session: sqlalchemy.orm.Session, start_datetime: datetime.datetime,
+                                      end_datetime: datetime.datetime, is_movie: bool) \
+        -> List[Tuple[int, int, int]]:
+    """
+    Get the highest scored shows that have a session in the given interval.
+
+    :param session: the db session.
+    :param start_datetime: the start datetime.
+    :param end_datetime: the end datetime.
+    :param is_movie: whether or not it is a movie.
+    :return: the list of shows (each represented by a tuple of the show id, the tmdb id and the vote average).
+    """
+
+    return session.query(sqlalchemy.func.distinct(models.ShowSession.show_id), models.ShowData.tmdb_id,
+                         models.ShowData.tmdb_vote_average) \
+        .filter(models.ShowSession.show_id == models.ShowData.id) \
+        .filter(models.ShowSession.date_time >= start_datetime) \
+        .filter(models.ShowSession.date_time <= end_datetime) \
+        .filter(models.ShowData.is_movie == is_movie) \
+        .filter(models.ShowData.tmdb_id.isnot(None)) \
+        .order_by(models.ShowData.tmdb_vote_average.desc()) \
+        .limit(configuration.highlight_counter) \
+        .all()
+
+
+def get_shows_interval(session: sqlalchemy.orm.Session, start_datetime: datetime.datetime,
+                       end_datetime: datetime.datetime) \
+        -> List[models.ShowData]:
+    """
+    Get the shows that have a session in a given interval.
+
+    :param session: the db session.
+    :param start_datetime: the start datetime.
+    :param end_datetime: the end datetime.
+    :return: the list of shows.
+    """
+
+    return session.query(models.ShowData) \
+        .filter(models.ShowSession.show_id == models.ShowData.id) \
+        .filter(models.ShowSession.date_time >= start_datetime) \
+        .filter(models.ShowSession.date_time <= end_datetime) \
+        .filter(models.ShowData.tmdb_id.isnot(None)) \
+        .all()
+
+
+def register_highlight(session: sqlalchemy.orm.Session, key: models.HighlightsType, year: int, week: int,
+                       id_list: [int]) -> Optional[models.Highlights]:
+    """
+    Register a week's highlight list.
+
+    :param session: the db session.
+    :param key: the highlight key.
+    :param year: the year of interest.
+    :param week: the week of interest.
+    :param id_list: the id list.
+    :return: the Highlight, if successful.
+    """
+
+    highlights = models.Highlights(key, year, week, id_list)
+    session.add(highlights)
+
+    try:
+        session.commit()
+        return highlights
+    except (IntegrityError, InvalidRequestError):
+        session.rollback()
+        return None
+
+
+def get_week_highlights(session: sqlalchemy.orm.Session, key: models.HighlightsType, year: int, week: int) \
+        -> Optional[models.Highlights]:
+    """
+    Get the Highlight entry for a given key and week.
+
+    :param session: the db session.
+    :param key: the highlight key.
+    :param year: the year of interest.
+    :param week: the week of interest.
+    :return: the Highlight.
+    """
+
+    return session.query(models.Highlights) \
+        .filter(models.Highlights.key == key.name) \
+        .filter(models.Highlights.year == year) \
+        .filter(models.Highlights.week == week) \
+        .first()
+
+
 def commit(session: sqlalchemy.orm.Session) -> bool:
     """
     Commit the session.

@@ -1,4 +1,5 @@
 import datetime
+import time
 from enum import Enum
 from typing import List, Tuple, Mapping, Optional
 
@@ -888,7 +889,85 @@ def process_excluded_channel_list(session: sqlalchemy.orm.Session, user_id: int,
     db_calls.commit(session)
 
 
-def recover_password(session, recover_token: str, new_password: str):
+def update_show_tmdb_data(session: sqlalchemy.orm.Session, tmdb_show: tmdb_calls.TmdbShow) -> None:
+    """
+    Update a show's TMDB information.
+
+    :param session: the DB session.
+    :param tmdb_show: the TMDB show information.
+    """
+
+    show_data = db_calls.get_show_data_tmdb_id(session, tmdb_show.id)
+
+    if show_data is not None:
+        show_data.tmdb_vote_average = tmdb_show.vote_average
+        show_data.tmdb_popularity = tmdb_show.popularity
+
+        db_calls.commit(session)
+
+
+def calculate_score_highlights_week(session: sqlalchemy.orm.Session, year: int, week: int) -> None:
+    """
+    Calculate the score highlights and save them to the DB.
+
+    :param session: the db session.
+    :param year: the year.
+    :param week: the week.
+    """
+
+    week_start = datetime.date.fromisocalendar(year, week, 1)
+    week_end = datetime.date.fromisocalendar(year, week, 7)
+
+    start_datetime = datetime.datetime.combine(week_start, datetime.time(0, 0, 0))
+    end_datetime = datetime.datetime.combine(week_end, datetime.time(23, 59, 59))
+
+    # Get the top movies
+    shows = db_calls.get_highest_scored_shows_interval(session, start_datetime, end_datetime, True)
+
+    # Get the top tv shows
+    shows += db_calls.get_highest_scored_shows_interval(session, start_datetime, end_datetime, False)
+
+    id_list = []
+
+    for s in shows:
+        id_list.append(s[1])
+
+    db_calls.register_highlight(session, models.HighlightsType.SCORE, year, week, id_list)
+
+
+def update_tmdb_data_week(session: sqlalchemy.orm.Session, year: int, week: int) -> None:
+    """
+    Update the ShowData entries in a week with data from TMDB.
+
+    :param session: the db session.
+    :param year: the year.
+    :param week: the week.
+    """
+
+    week_start = datetime.date.fromisocalendar(year, week, 1)
+    week_end = datetime.date.fromisocalendar(year, week, 7)
+
+    start_datetime = datetime.datetime.combine(week_start, datetime.time(0, 0, 0))
+    end_datetime = datetime.datetime.combine(week_end, datetime.time(23, 59, 59))
+
+    shows = db_calls.get_shows_interval(session, start_datetime, end_datetime)
+
+    for s in shows:
+        if s.is_movie and s.year < 2010:
+            continue
+
+        tmdb_show = tmdb_calls.get_show_using_id(session, s.tmdb_id, s.is_movie)
+
+        if tmdb_show:
+            s.tmdb_vote_average = tmdb_show.vote_average
+            s.tmdb_popularity = tmdb_show.popularity
+
+            time.sleep(0.1)
+
+    db_calls.commit(session)
+
+
+def recover_password(session: sqlalchemy.orm.Session, recover_token: str, new_password: str):
     """
     Change the password of the user's account.
 
@@ -933,3 +1012,46 @@ def get_settings(session, user_id: int):
 
     return {'include_adult_channels': user.show_adult, 'language': user.language,
             'excluded_channel_list': current_excluded_channel_list}
+
+
+def calculate_highlights_week(db_session: sqlalchemy.orm.Session, year: int, week: int):
+    """
+    Calculate the highlights for the current week and the week after.
+
+    :param db_session: the DB session.
+    :param year: the year.
+    :param week: the week.
+    """
+
+    # Create only if the highlights does not exist
+    highlights = db_calls.get_week_highlights(db_session, models.HighlightsType.SCORE, year, week)
+
+    if highlights is None:
+        # Update the information on the shows of the week of interest
+        update_tmdb_data_week(db_session, year, week)
+
+        # Calculate the highlights
+        calculate_score_highlights_week(db_session, year, week)
+
+
+def calculate_highlights(db_session: sqlalchemy.orm.Session):
+    """
+    Calculate the highlights for the current week and the week after.
+
+    :param db_session: the DB session.
+    """
+
+    # Get the current week
+    today = datetime.date.today()
+    (year, week, _) = today.isocalendar()
+
+    calculate_highlights_week(db_session, year, week)
+
+    # Then the week after
+    if week == 52:
+        week = 1
+        year = year + 1
+    else:
+        week = week + 1
+
+    calculate_highlights_week(db_session, year, week)

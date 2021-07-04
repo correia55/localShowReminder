@@ -56,6 +56,8 @@ application_name: str
 application_link: str
 AVAILABLE_LANGUAGES: Any
 
+highlight_counter = int
+
 
 def initialize():
     """ Initialize this module, preparing all of the variables. """
@@ -233,6 +235,16 @@ def initialize():
     email_account = os.environ.get('EMAIL_ACCOUNT', None)
     email_user = os.environ.get('EMAIL_USER', None)
     email_password = os.environ.get('EMAIL_PASSWORD', None)
+
+    # endregion
+
+    # region Highlight
+    global highlight_counter
+
+    highlight_counter = os.environ.get('HIGHLIGHT_COUNTER', None)
+
+    if highlight_counter is None:
+        highlight_counter = 5
 
     # endregion
 

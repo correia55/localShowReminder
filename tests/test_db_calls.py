@@ -1656,3 +1656,385 @@ class TestSearchShowDataByOriginalTitle(unittest.TestCase):
         self.assertEqual(False, actual_result.is_movie)
         self.assertEqual(2010, actual_result.year)
         self.assertEqual('Director 1,Director 2', actual_result.director)
+
+
+class TestGetShowsInterval(unittest.TestCase):
+    session: sqlalchemy.orm.Session
+
+    def setUp(self) -> None:
+        self.session = configuration.Session()
+
+    def tearDown(self) -> None:
+        self.session.query(models.ShowSession).delete()
+        self.session.query(models.ShowData).delete()
+        self.session.query(models.Channel).delete()
+
+        self.session.commit()
+
+        self.session.close()
+
+    def test_ok_01(self) -> None:
+        """ Test the function get_shows_interval with three entries, but only two sessions. """
+
+        # Prepare the DB
+        channel = db_calls.register_channel(self.session, 'TC', 'TEST_CHANNEL')
+        self.assertIsNotNone(channel)
+
+        show_data = db_calls.register_show_data(self.session, 'Show 1')
+        self.assertIsNotNone(show_data)
+
+        show_data.tmdb_id = 1234
+        show_data.tmdb_vote_average = 7
+        show_data.is_movie = True
+
+        db_calls.commit(self.session)
+
+        show_session = db_calls.register_show_session(self.session, None, None, datetime.datetime(2021, 1, 10, 10),
+                                                      channel.id, show_data.id, should_commit=True)
+        self.assertIsNotNone(show_session)
+
+        show_data_2 = db_calls.register_show_data(self.session, 'Show 2')
+        self.assertIsNotNone(show_data_2)
+
+        show_data_2.tmdb_id = 6789
+        show_data_2.tmdb_vote_average = 5
+        show_data_2.is_movie = True
+
+        db_calls.commit(self.session)
+
+        show_session_2 = db_calls.register_show_session(self.session, None, None, datetime.datetime(2021, 1, 12, 22),
+                                                        channel.id, show_data_2.id, should_commit=True)
+        self.assertIsNotNone(show_session_2)
+
+        show_data_3 = db_calls.register_show_data(self.session, 'Show 3')
+        self.assertIsNotNone(show_data_3)
+
+        show_data_3.tmdb_id = 3483
+        show_data_3.tmdb_vote_average = 10
+        show_data_3.is_movie = True
+
+        db_calls.commit(self.session)
+
+        # Call the function
+        actual_result = db_calls.get_shows_interval(self.session, datetime.datetime(2021, 1, 10),
+                                                    datetime.datetime(2021, 1, 15, 23, 59, 59))
+
+        # Verify the result
+        self.assertIsNotNone(actual_result)
+
+        self.assertEqual(2, len(actual_result))
+
+        self.assertEqual(1234, actual_result[0].tmdb_id)
+        self.assertEqual(7, actual_result[0].tmdb_vote_average)
+
+        self.assertEqual(6789, actual_result[1].tmdb_id)
+        self.assertEqual(5, actual_result[1].tmdb_vote_average)
+
+    def test_ok_02(self) -> None:
+        """ Test the function get_shows_interval with no sessions in the interval. """
+
+        # Prepare the DB
+        channel = db_calls.register_channel(self.session, 'TC', 'TEST_CHANNEL')
+        self.assertIsNotNone(channel)
+
+        show_data = db_calls.register_show_data(self.session, 'Show 1')
+        self.assertIsNotNone(show_data)
+
+        show_data.tmdb_id = 1234
+        show_data.tmdb_vote_average = 7
+        show_data.is_movie = False
+
+        db_calls.commit(self.session)
+
+        show_session = db_calls.register_show_session(self.session, 1, 1, datetime.datetime(2021, 1, 9, 23),
+                                                      channel.id, show_data.id, should_commit=True)
+        self.assertIsNotNone(show_session)
+
+        show_data_2 = db_calls.register_show_data(self.session, 'Show 2')
+        self.assertIsNotNone(show_data_2)
+
+        show_data_2.tmdb_id = 6789
+        show_data_2.tmdb_vote_average = 5
+        show_data_2.is_movie = True
+
+        db_calls.commit(self.session)
+
+        show_session_2 = db_calls.register_show_session(self.session, None, None, datetime.datetime(2021, 1, 16, 0),
+                                                        channel.id, show_data_2.id, should_commit=True)
+        self.assertIsNotNone(show_session_2)
+
+        show_data_3 = db_calls.register_show_data(self.session, 'Show 3')
+        self.assertIsNotNone(show_data_3)
+
+        show_data_3.tmdb_id = 3483
+        show_data_3.tmdb_vote_average = 10
+        show_data_3.is_movie = True
+
+        db_calls.commit(self.session)
+
+        # Call the function
+        actual_result = db_calls.get_shows_interval(self.session, datetime.datetime(2021, 1, 10),
+                                                    datetime.datetime(2021, 1, 15, 23, 59, 59))
+
+        # Verify the result
+        self.assertIsNotNone(actual_result)
+
+        self.assertEqual(0, len(actual_result))
+
+    def test_ok_03(self) -> None:
+        """ Test the function get_shows_interval with multiple sessions of the same show. """
+
+        # Prepare the DB
+        channel = db_calls.register_channel(self.session, 'TC', 'TEST_CHANNEL')
+        self.assertIsNotNone(channel)
+
+        show_data = db_calls.register_show_data(self.session, 'Show 1')
+        self.assertIsNotNone(show_data)
+
+        show_data.tmdb_id = 1234
+        show_data.tmdb_vote_average = 7
+        show_data.is_movie = True
+
+        db_calls.commit(self.session)
+
+        show_session = db_calls.register_show_session(self.session, None, None, datetime.datetime(2021, 1, 10, 10),
+                                                      channel.id, show_data.id, should_commit=True)
+        self.assertIsNotNone(show_session)
+
+        show_session_3 = db_calls.register_show_session(self.session, None, None, datetime.datetime(2021, 1, 11, 7),
+                                                        channel.id, show_data.id, should_commit=True)
+        self.assertIsNotNone(show_session_3)
+
+        show_data_2 = db_calls.register_show_data(self.session, 'Show 2')
+        self.assertIsNotNone(show_data_2)
+
+        show_data_2.tmdb_id = 6789
+        show_data_2.tmdb_vote_average = 5
+        show_data_2.is_movie = True
+
+        db_calls.commit(self.session)
+
+        show_session_2 = db_calls.register_show_session(self.session, None, None, datetime.datetime(2021, 1, 12, 22),
+                                                        channel.id, show_data_2.id, should_commit=True)
+        self.assertIsNotNone(show_session_2)
+
+        show_data_3 = db_calls.register_show_data(self.session, 'Show 3')
+        self.assertIsNotNone(show_data_3)
+
+        show_data_3.tmdb_id = 3483
+        show_data_3.tmdb_vote_average = 10
+        show_data_3.is_movie = True
+
+        db_calls.commit(self.session)
+
+        # Call the function
+        actual_result = db_calls.get_shows_interval(self.session, datetime.datetime(2021, 1, 10),
+                                                    datetime.datetime(2021, 1, 15, 23, 59, 59))
+
+        # Verify the result
+        self.assertIsNotNone(actual_result)
+
+        self.assertEqual(2, len(actual_result))
+
+        self.assertEqual(1234, actual_result[0].tmdb_id)
+        self.assertEqual(7, actual_result[0].tmdb_vote_average)
+
+        self.assertEqual(6789, actual_result[1].tmdb_id)
+        self.assertEqual(5, actual_result[1].tmdb_vote_average)
+
+
+class TestGetHighestScoredShowsInterval(unittest.TestCase):
+    session: sqlalchemy.orm.Session
+    highlight_counter_backup: int
+
+    def setUp(self) -> None:
+        self.session = configuration.Session()
+
+        self.highlight_counter_backup = configuration.highlight_counter
+
+    def tearDown(self) -> None:
+        self.session.query(models.ShowSession).delete()
+        self.session.query(models.ShowData).delete()
+        self.session.query(models.Channel).delete()
+
+        self.session.commit()
+
+        self.session.close()
+
+        configuration.highlight_counter = self.highlight_counter_backup
+
+    def test_ok_01(self) -> None:
+        """ Test the function get_highest_scored_shows_interval with three entries, but with limitation set to 1. """
+
+        # Set the counter to 1
+        configuration.highlight_counter = 1
+
+        # Prepare the DB
+        channel = db_calls.register_channel(self.session, 'TC', 'TEST_CHANNEL')
+        self.assertIsNotNone(channel)
+
+        show_data = db_calls.register_show_data(self.session, 'Show 1')
+        self.assertIsNotNone(show_data)
+
+        show_data.tmdb_id = 1234
+        show_data.tmdb_vote_average = 7
+        show_data.is_movie = True
+
+        db_calls.commit(self.session)
+
+        show_session = db_calls.register_show_session(self.session, None, None, datetime.datetime(2021, 1, 10, 10),
+                                                      channel.id, show_data.id, should_commit=True)
+        self.assertIsNotNone(show_session)
+
+        show_data_2 = db_calls.register_show_data(self.session, 'Show 2')
+        self.assertIsNotNone(show_data_2)
+
+        show_data_2.tmdb_id = 6789
+        show_data_2.tmdb_vote_average = 5
+        show_data_2.is_movie = True
+
+        db_calls.commit(self.session)
+
+        show_session_2 = db_calls.register_show_session(self.session, None, None, datetime.datetime(2021, 1, 12, 22),
+                                                        channel.id, show_data_2.id, should_commit=True)
+        self.assertIsNotNone(show_session_2)
+
+        show_data_3 = db_calls.register_show_data(self.session, 'Show 3')
+        self.assertIsNotNone(show_data_3)
+
+        show_data_3.tmdb_id = 3483
+        show_data_3.tmdb_vote_average = 10
+        show_data_3.is_movie = True
+
+        db_calls.commit(self.session)
+
+        # Call the function
+        actual_result = db_calls.get_highest_scored_shows_interval(self.session, datetime.datetime(2021, 1, 10),
+                                                                   datetime.datetime(2021, 1, 15, 23, 59, 59), True)
+
+        # Verify the result
+        self.assertIsNotNone(actual_result)
+
+        self.assertEqual(1, len(actual_result))
+        self.assertEqual(1234, actual_result[0][1])
+        self.assertEqual(7, actual_result[0][2])
+
+    def test_ok_02(self) -> None:
+        """ Test the function get_highest_scored_shows_interval with three entries, but with limitation set to 1. """
+
+        # Set the counter to 1
+        configuration.highlight_counter = 1
+
+        # Prepare the DB
+        channel = db_calls.register_channel(self.session, 'TC', 'TEST_CHANNEL')
+        self.assertIsNotNone(channel)
+
+        show_data = db_calls.register_show_data(self.session, 'Show 1')
+        self.assertIsNotNone(show_data)
+
+        show_data.tmdb_id = 1234
+        show_data.tmdb_vote_average = 7
+        show_data.is_movie = False
+
+        db_calls.commit(self.session)
+
+        show_session = db_calls.register_show_session(self.session, 1, 1, datetime.datetime(2021, 1, 10, 10),
+                                                      channel.id, show_data.id, should_commit=True)
+        self.assertIsNotNone(show_session)
+
+        show_data_2 = db_calls.register_show_data(self.session, 'Show 2')
+        self.assertIsNotNone(show_data_2)
+
+        show_data_2.tmdb_id = 6789
+        show_data_2.tmdb_vote_average = 5
+        show_data_2.is_movie = True
+
+        db_calls.commit(self.session)
+
+        show_session_2 = db_calls.register_show_session(self.session, None, None, datetime.datetime(2021, 1, 12, 22),
+                                                        channel.id, show_data_2.id, should_commit=True)
+        self.assertIsNotNone(show_session_2)
+
+        show_data_3 = db_calls.register_show_data(self.session, 'Show 3')
+        self.assertIsNotNone(show_data_3)
+
+        show_data_3.tmdb_id = 3483
+        show_data_3.tmdb_vote_average = 10
+        show_data_3.is_movie = True
+
+        db_calls.commit(self.session)
+
+        # Call the function
+        actual_result = db_calls.get_highest_scored_shows_interval(self.session, datetime.datetime(2021, 1, 10),
+                                                                   datetime.datetime(2021, 1, 15, 23, 59, 59), True)
+
+        # Verify the result
+        self.assertIsNotNone(actual_result)
+
+        self.assertEqual(1, len(actual_result))
+        self.assertEqual(6789, actual_result[0][1])
+        self.assertEqual(5, actual_result[0][2])
+
+    def test_ok_03(self) -> None:
+        """ Test the function get_highest_scored_shows_interval with multiple sessions of the highest scored show. """
+
+        # Set the counter to 3
+        configuration.highlight_counter = 3
+
+        # Prepare the DB
+        channel = db_calls.register_channel(self.session, 'TC', 'TEST_CHANNEL')
+        self.assertIsNotNone(channel)
+
+        show_data = db_calls.register_show_data(self.session, 'Show 1')
+        self.assertIsNotNone(show_data)
+
+        show_data.tmdb_id = 1234
+        show_data.tmdb_vote_average = 7
+        show_data.is_movie = True
+
+        db_calls.commit(self.session)
+
+        show_session = db_calls.register_show_session(self.session, None, None, datetime.datetime(2021, 1, 10, 10),
+                                                      channel.id, show_data.id, should_commit=True)
+        self.assertIsNotNone(show_session)
+
+        show_session_3 = db_calls.register_show_session(self.session, None, None, datetime.datetime(2021, 1, 11, 7),
+                                                        channel.id, show_data.id, should_commit=True)
+        self.assertIsNotNone(show_session_3)
+
+        show_data_2 = db_calls.register_show_data(self.session, 'Show 2')
+        self.assertIsNotNone(show_data_2)
+
+        show_data_2.tmdb_id = 6789
+        show_data_2.tmdb_vote_average = 5
+        show_data_2.is_movie = True
+
+        db_calls.commit(self.session)
+
+        show_session_2 = db_calls.register_show_session(self.session, None, None, datetime.datetime(2021, 1, 12, 22),
+                                                        channel.id, show_data_2.id, should_commit=True)
+        self.assertIsNotNone(show_session_2)
+
+        show_data_3 = db_calls.register_show_data(self.session, 'Show 3')
+        self.assertIsNotNone(show_data_3)
+
+        show_data_3.tmdb_id = 3483
+        show_data_3.tmdb_vote_average = 10
+        show_data_3.is_movie = True
+
+        db_calls.commit(self.session)
+
+        # Call the function
+        actual_result = db_calls.get_highest_scored_shows_interval(self.session, datetime.datetime(2021, 1, 10),
+                                                                   datetime.datetime(2021, 1, 15, 23, 59, 59), True)
+
+        # Verify the result
+        self.assertIsNotNone(actual_result)
+
+        self.assertEqual(2, len(actual_result))
+
+        self.assertEqual(1234, actual_result[0][1])
+        self.assertEqual(7, actual_result[0][2])
+
+        self.assertEqual(6789, actual_result[1][1])
+        self.assertEqual(5, actual_result[1][2])
