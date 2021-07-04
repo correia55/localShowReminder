@@ -126,6 +126,8 @@ class TestGetFileData(unittest.TestCase):
         expected_result.is_movie = True
         expected_result.id = 2
         expected_result.original_title = 'Original Title'
+        expected_result.vote_average = 8.5
+        expected_result.popularity = 130
 
         # Prepare the mocks
         # Prepare the call to search_shows_by_text
@@ -134,6 +136,8 @@ class TestGetFileData(unittest.TestCase):
         tmdb_show_1.is_movie = True
         tmdb_show_1.id = 1
         tmdb_show_1.original_title = 'Similar Title'
+        tmdb_show_1.vote_average = 8.5
+        tmdb_show_1.popularity = 130
 
         tmdb_calls_mock.search_shows_by_text.return_value = (1, [tmdb_show_1, expected_result])
 

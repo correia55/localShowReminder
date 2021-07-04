@@ -657,12 +657,16 @@ class TestGenericXlsx(unittest.TestCase):
         tmdb_show.is_movie = False
         tmdb_show.id = 1
         tmdb_show.original_title = 'Odd Mom Out'
+        tmdb_show.vote_average = 3.4
+        tmdb_show.popularity = 123
 
         tmdb_show_2 = tmdb_calls.TmdbShow()
         tmdb_show_2.year = 2018
         tmdb_show_2.is_movie = True
         tmdb_show_2.id = 112
         tmdb_show_2.original_title = 'Home By Spring'
+        tmdb_show_2.vote_average = 5.6
+        tmdb_show_2.popularity = 212
 
         tmdb_calls_mock.search_shows_by_text.side_effect = [(1, [tmdb_show]), (1, [tmdb_show_2])]
 
@@ -795,12 +799,16 @@ class TestGenericXlsx(unittest.TestCase):
         tmdb_show.is_movie = False
         tmdb_show.id = 1
         tmdb_show.original_title = 'MacGyver'
+        tmdb_show.vote_average = 3.4
+        tmdb_show.popularity = 123
 
         tmdb_show_2 = tmdb_calls.TmdbShow()
         tmdb_show_2.year = 2012
         tmdb_show_2.is_movie = True
         tmdb_show_2.id = 112
         tmdb_show_2.original_title = 'Safe'
+        tmdb_show_2.vote_average = 5.6
+        tmdb_show_2.popularity = 343
 
         tmdb_calls_mock.search_shows_by_text.side_effect = [(1, [tmdb_show]), (1, [tmdb_show_2])]
 
@@ -1053,12 +1061,16 @@ class TestGenericXlsx(unittest.TestCase):
         tmdb_show.is_movie = False
         tmdb_show.id = 1
         tmdb_show.original_title = 'GIGANTOSAURUS'
+        tmdb_show.vote_average = 3.4
+        tmdb_show.popularity = 123
 
         tmdb_show_2 = tmdb_calls.TmdbShow()
         tmdb_show_2.year = 2019
         tmdb_show_2.is_movie = False
         tmdb_show_2.id = 112
         tmdb_show_2.original_title = 'BLUEY'
+        tmdb_show_2.vote_average = 7.5
+        tmdb_show_2.popularity = 45
 
         tmdb_calls_mock.search_shows_by_text.side_effect = [(1, [tmdb_show]), (1, [tmdb_show_2])]
 
