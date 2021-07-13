@@ -24,10 +24,14 @@ class GenericField:
 
 
 class GenericXlsx(get_file_data.ChannelInsertion):
-    channels_file = {'Nat Geo Wild': 'nat_geo_wild.csv', 'National Geographic': 'national_geographic.csv',
-                     'FOX': 'fox.csv', 'FOX Life': 'fox.csv', 'FOX Comedy': 'fox.csv', 'FOX Crime': 'fox_crime.csv',
-                     'FOX Movies': 'fox_movies.csv', 'Disney Junior': 'disney_junior.csv',
-                     'Disney Channel': 'disney_junior.csv'}
+    channels_file = {'(New) Nat Geo Wild': ('Nat Geo Wild', 'new_nat_geo_wild.csv'),
+                     'Nat Geo Wild': ('Nat Geo Wild', 'nat_geo_wild.csv'),
+                     'National Geographic': ('National Geographic', 'national_geographic.csv'),
+                     'FOX': ('FOX', 'fox.csv'), 'FOX Life': ('FOX Life', 'fox.csv'),
+                     'FOX Comedy': ('FOX Comedy', 'fox.csv'), 'FOX Crime': ('FOX Crime', 'fox_crime.csv'),
+                     'FOX Movies': ('FOX Movies', 'fox_movies.csv'),
+                     'Disney Junior': ('Disney Junior', 'disney_junior.csv'),
+                     'Disney Channel': ('Disney Channel', 'disney_junior.csv')}
     channels = list(channels_file.keys())
 
     @staticmethod
@@ -39,7 +43,7 @@ class GenericXlsx(get_file_data.ChannelInsertion):
         :return: a dictionary with the fields of interest, or None if invalid.
         """
 
-        file_name = GenericXlsx.channels_file[channel_name]
+        file_name = GenericXlsx.channels_file[channel_name][1]
 
         fields = dict()
 
@@ -149,6 +153,7 @@ class GenericXlsx(get_file_data.ChannelInsertion):
 
         # Get the position and format of the fields for this channel
         fields = GenericXlsx.process_configuration(channel_name)
+        channel_name = GenericXlsx.channels_file[channel_name][0]
 
         # If it is invalid
         if fields is None:
@@ -322,6 +327,10 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                         season = int(float(row[fields['season'].position].value))
                     except ValueError:
                         season = None
+
+                # Some files use 0 as a placeholder
+                if season == 0:
+                    season = None
 
                 episode = None
 

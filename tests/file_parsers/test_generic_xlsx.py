@@ -1258,3 +1258,117 @@ class TestGenericXlsx(unittest.TestCase):
                                 extended_cut=False, should_commit=False),
              unittest.mock.call(self.session, None, None, datetime.datetime(2021, 7, 4, 9, 50), 8373, 7912,
                                 audio_language=None, extended_cut=False, should_commit=False)])
+
+    @unittest.mock.patch('get_file_data.tmdb_calls')
+    def test_add_file_data_new_nat_geo_wild(self, tmdb_calls_mock) -> None:
+        """ Test the function GenericXlsx.add_file_data with a sample from a Nat Geo Wild file. """
+
+        # Prepare the mocks
+        # Replace datetime class with a utility class with a fixed datetime
+        datetime.datetime = NewDatetime
+
+        # Prepare the call to get_channel_name
+        channel_data = models.Channel('WILD', 'Nat Geo Wild')
+        channel_data.id = 8373
+
+        db_calls_mock.get_channel_name.return_value = channel_data
+
+        # Treatment of the entries
+        # ----------------------------
+        # Prepare the calls to search_channel_show_data
+        db_calls_mock.search_channel_show_data_correction.side_effect = [None, None]
+
+        # Prepare the calls to search_channel_show_data
+        show_data = models.ShowData('_Ultimate_Animals_Compilations_', 'Ultimate Animals Compilations')
+        show_data.id = 7503
+        show_data.original_title = 'Ultimate Animals Compilations'
+        show_data.synopsis = 'The elephant is strong enough to push a two-ton truck, the orangutan has the strength ' \
+                             'of seven men, and they are both super smart.'
+        show_data.genre = 'Series'
+        show_data.is_movie = False
+        show_data.age_classification = '6+'
+
+        show_data_2 = models.ShowData('_Shark_Island_', 'Shark Island')
+        show_data_2.id = 7912
+        show_data_2.original_title = 'Shark Island'
+        show_data_2.year = 2010
+        show_data_2.synopsis = 'National Geographic Ocean Explorer Enric Sala and his team are on a mission: Dive ' \
+                               'the protected waters of Cocos National Park off the western coast of mainland Costa ' \
+                               'Rica; be the first to dive the mysterious Las Gamelas seamounts; and to free sharks, ' \
+                               'turtles and tunas caught on illegal fishing lines. It\'s all part of an effort to ' \
+                               'understand how over-fishing affects shark populations - and what happens to ' \
+                               'eco-systems when the sharks disappear. The puzzle: using submarines, shark tags, ' \
+                               'and satellite technology, find the elusive "shark superhighway" in the Eastern ' \
+                               'Pacific where the predator has become prey.'
+        show_data_2.genre = 'Movie'
+        show_data_2.is_movie = True
+        show_data_2.age_classification = '12+'
+
+        db_calls_mock.insert_if_missing_show_data.side_effect = [(True, show_data), (True, show_data_2)]
+
+        # Prepare the calls to search_shows_by_text
+        tmdb_calls_mock.search_shows_by_text.side_effect = [(0, []), (0, []), (0, [])]
+
+        # Prepare the calls to register_show_session
+        show_session = models.ShowSession(1, 1, datetime.datetime(2021, 8, 1, 4), 8373, 7503)
+        show_session_2 = models.ShowSession(None, None, datetime.datetime(2021, 8, 1, 6, 35), 8373, 7912)
+
+        db_calls_mock.register_show_session.side_effect = [show_session, show_session_2]
+
+        # Call the function
+        actual_result = file_parsers.generic_xlsx.GenericXlsx.add_file_data(self.session,
+                                                                            base_path + 'data/new_nat_geo_wild_example.xls',
+                                                                            '(New) Nat Geo Wild')
+
+        # Get back the datetime.datetime
+        datetime.datetime = self.datetime_backup
+
+        # Verify the result
+        self.assertEqual(datetime.datetime(2021, 8, 1, 3, 55, 0), actual_result.start_datetime)
+        self.assertEqual(datetime.datetime(2021, 8, 1, 6, 40, 0), actual_result.end_datetime)
+        self.assertEqual(2, actual_result.total_nb_sessions_in_file)
+        self.assertEqual(0, actual_result.nb_updated_sessions)
+        self.assertEqual(2, actual_result.nb_added_sessions)
+        self.assertEqual(0, actual_result.nb_deleted_sessions)
+
+        # Verify the calls to the mocks
+        db_calls_mock.get_channel_name.assert_called_with(self.session, 'Nat Geo Wild')
+
+        db_calls_mock.search_channel_show_data_correction.assert_has_calls(
+            [unittest.mock.call(self.session, 8373, False, 'Ultimate Animals Compilations',
+                                'Ultimate Animals Compilations', directors=None, year=2017, subgenre=None,
+                                creators=None),
+             unittest.mock.call(self.session, 8373, True, 'Shark Island', 'Shark Island',
+                                directors=None, year=2010, subgenre=None, creators=None)])
+
+        db_calls_mock.insert_if_missing_show_data.assert_has_calls(
+            [unittest.mock.call(self.session, 'Ultimate Animals Compilations', cast=None,
+                                original_title='Ultimate Animals Compilations', duration=None,
+                                synopsis='The elephant is strong enough to push a two-ton truck, the orangutan has the '
+                                         'strength of seven men, and they are both super smart.', year=2017,
+                                genre='Series', subgenre=None, audio_languages=None, countries=None, directors=None,
+                                age_classification='6+', is_movie=False, season=1, creators=None),
+             unittest.mock.call(self.session, 'Shark Island', cast=None,
+                                original_title='Shark Island', duration=None,
+                                synopsis='National Geographic Ocean Explorer Enric Sala and his team are on a mission: '
+                                         'Dive the protected waters of Cocos National Park off the western coast of '
+                                         'mainland Costa Rica; be the first to dive the mysterious Las Gamelas '
+                                         'seamounts; and to free sharks, turtles and tunas caught on illegal fishing '
+                                         'lines. It\'s all part of an effort to understand how over-fishing affects '
+                                         'shark populations - and what happens to eco-systems when the sharks '
+                                         'disappear. The puzzle: using submarines, shark tags, and satellite '
+                                         'technology, find the elusive "shark superhighway" in the Eastern Pacific '
+                                         'where the predator has become prey.', year=2010, genre='Movie', subgenre=None,
+                                audio_languages=None, countries=None, directors=None, age_classification='12+',
+                                is_movie=True, season=None, creators=None)])
+
+        tmdb_calls_mock.search_shows_by_text.assert_has_calls(
+            [unittest.mock.call(self.session, 'Ultimate Animals Compilations', is_movie=False, year=None),
+             unittest.mock.call(self.session, 'Shark Island', is_movie=True, year=2010),
+             unittest.mock.call(self.session, 'Shark Island', is_movie=True, year=None)])
+
+        db_calls_mock.register_show_session.assert_has_calls(
+            [unittest.mock.call(self.session, 1, 1, datetime.datetime(2021, 8, 1, 4), 8373, 7503, audio_language=None,
+                                extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, None, None, datetime.datetime(2021, 8, 1, 6, 35), 8373, 7912,
+                                audio_language=None, extended_cut=False, should_commit=False)])

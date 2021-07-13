@@ -1,0 +1,11 @@
+field;column;format
+_file_format;-1;.xls
+date;0;%d/%m/%Y
+time;1;%H:%M
+original_title;2;season_at_the_end
+season;3;int
+episode;4;int
+original_episode_title;5;int
+year;6;int
+age_classification;7;str
+synopsis_english;8;str
