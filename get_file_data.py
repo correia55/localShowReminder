@@ -226,6 +226,9 @@ def delete_old_sessions(db_session: sqlalchemy.orm.Session, start_datetime: date
                 # Delete the reminder
                 db_session.delete(r)
 
+            # Commit to ensure there are no more references to the session
+            db_calls.commit(db_session)
+
         # Delete the session
         db_session.delete(s)
 
