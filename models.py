@@ -27,8 +27,6 @@ class ShowData(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     search_title = Column(String(255))
     tmdb_id = Column(Integer, unique=True)
-    tmdb_vote_average = Column(Integer)
-    tmdb_popularity = Column(Integer)
 
     # Present in all shows
     is_movie = Column(Boolean)
@@ -50,6 +48,12 @@ class ShowData(Base):
     # Only tv shows
     number_seasons = Column(Integer)
     creators = Column(String(255))
+
+    # Highlights
+    tmdb_vote_average = Column(Integer)
+    tmdb_popularity = Column(Integer)
+    premiere_date = Column(Date)
+    season_premiere = Column(Integer)
 
     def __init__(self, search_title: str, portuguese_title: str):
         self.search_title = search_title
@@ -371,8 +375,8 @@ class Highlights(Base):
 
         self.id_list = ''
 
-        for id in id_list:
+        for show_id in id_list:
             if self.id_list != '':
                 self.id_list += ','
 
-            self.id_list += str(id)
+            self.id_list += str(show_id)

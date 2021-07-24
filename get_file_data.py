@@ -87,7 +87,8 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
                                                                    subgenre=subgenre, audio_languages=audio_languages,
                                                                    countries=countries, directors=directors,
                                                                    age_classification=age_classification,
-                                                                   is_movie=is_movie, season=season, creators=creators)
+                                                                   is_movie=is_movie, season=season, creators=creators,
+                                                                   date_time=date_time)
 
         # If it is a new show, search the TMDB
         if new_show:
@@ -172,6 +173,14 @@ def process_show_session(db_session: sqlalchemy.orm.Session, insertion_result: I
 
     # Insert the new session
     if add_show:
+        # Update the information regarding the premiere of the show
+        if show_data.premiere_date is None:
+            show_data.premiere_date = date_time.date()
+            show_data.season_premiere = season
+        elif season is not None and season > show_data.season_premiere:
+            show_data.premiere_date = date_time.date()
+            show_data.season_premiere = season
+
         show_session = db_calls.register_show_session(db_session, season, episode, date_time, channel_id, show_data.id,
                                                       audio_language=audio_language, extended_cut=extended_cut,
                                                       should_commit=False)

@@ -403,36 +403,42 @@ class TestProcessing(unittest.TestCase):
 
         # Prepare the mocks
         # Calls to check if the highlights already exist
-        highlights_2 = models.Highlights(models.HighlightsType.SCORE, 2021, 11, [])
+        new_highlights_1 = models.Highlights(models.HighlightsType.NEW, 2021, 10, ['1', '2'])
 
-        db_calls_mock.get_week_highlights.side_effect = [None, highlights_2]
+        score_highlights_2 = models.Highlights(models.HighlightsType.SCORE, 2021, 11, [])
 
-        # Call to obtains the shows of the week
+        db_calls_mock.get_week_highlights.side_effect = [None, new_highlights_1, score_highlights_2, None]
+
+        # Call to obtains the shows of the week, for updating
         show_data = models.ShowData('Show 1', 'Show 1')
         show_data.tmdb_id = 1234
         show_data.tmdb_vote_average = 3
         show_data.is_movie = True
         show_data.year = 2020
+        show_data.id = 189
 
         show_data_2 = models.ShowData('Show 2', 'Show 2')
         show_data_2.tmdb_id = 6789
         show_data_2.tmdb_vote_average = 6
         show_data_2.is_movie = True
         show_data_2.year = 2011
+        show_data_2.id = 2
 
         show_data_3 = models.ShowData('Show 3', 'Show 3')
         show_data_3.tmdb_id = 1271
         show_data_3.tmdb_vote_average = 6
         show_data_3.is_movie = True
         show_data_3.year = 2004
+        show_data_3.id = 3
 
         show_data_4 = models.ShowData('Show 4', 'Show 4')
         show_data_4.tmdb_id = 1274
         show_data_4.tmdb_vote_average = 5.4
         show_data_4.is_movie = False
         show_data_4.year = 2004
+        show_data_4.id = 46
 
-        db_calls_mock.get_shows_interval.return_value = [show_data, show_data_2, show_data_3, show_data_4]
+        db_calls_mock.get_shows_interval.side_effect = [[show_data, show_data_2, show_data_3, show_data_4]]
 
         # Calls to obtain the TMDB data for each of the shows
         tmdb_show = tmdb_calls.TmdbShow()
@@ -452,10 +458,15 @@ class TestProcessing(unittest.TestCase):
         # Calls to get the highest scored shows
         db_calls_mock.get_highest_scored_shows_interval.side_effect = [[(189, 1234, 7)], [(46, 1274, 5.5)]]
 
-        # Calls to register highlights
-        highlights = models.Highlights(models.HighlightsType.SCORE, 2021, 10, [1234, 1274])
+        # Calls to get the new shows
+        db_calls_mock.get_new_shows_interval.side_effect = [[(55, 42, datetime.date(2021, 3, 10), 5)], []]
 
-        db_calls_mock.register_highlight.return_value = highlights
+        # Calls to register highlights
+        new_score_highlights = models.Highlights(models.HighlightsType.SCORE, 2021, 10, [189, 46])
+
+        new_new_highlights = models.Highlights(models.HighlightsType.NEW, 2021, 11, [55])
+
+        db_calls_mock.register_highlight.side_effect = [new_score_highlights, new_new_highlights]
 
         # Call the function
         processing.calculate_highlights(self.session)
@@ -463,7 +474,9 @@ class TestProcessing(unittest.TestCase):
         # Verify the calls to the mocks
         db_calls_mock.get_week_highlights.assert_has_calls(
             [unittest.mock.call(self.session, models.HighlightsType.SCORE, 2021, 10),
-             unittest.mock.call(self.session, models.HighlightsType.SCORE, 2021, 11)])
+             unittest.mock.call(self.session, models.HighlightsType.NEW, 2021, 10),
+             unittest.mock.call(self.session, models.HighlightsType.SCORE, 2021, 11),
+             unittest.mock.call(self.session, models.HighlightsType.NEW, 2021, 11)])
 
         db_calls_mock.get_shows_interval.assert_called_with(self.session, datetime.datetime(2021, 3, 8),
                                                             datetime.datetime(2021, 3, 14, 23, 59, 59))
@@ -479,5 +492,12 @@ class TestProcessing(unittest.TestCase):
              unittest.mock.call(self.session, datetime.datetime(2021, 3, 8),
                                 datetime.datetime(2021, 3, 14, 23, 59, 59), False)])
 
-        db_calls_mock.register_highlight.assert_called_with(self.session, models.HighlightsType.SCORE, 2021, 10,
-                                                            [1234, 1274])
+        db_calls_mock.get_new_shows_interval.assert_has_calls(
+            [unittest.mock.call(self.session, datetime.datetime(2021, 3, 15),
+                                datetime.datetime(2021, 3, 21, 23, 59, 59), True),
+             unittest.mock.call(self.session, datetime.datetime(2021, 3, 15),
+                                datetime.datetime(2021, 3, 21, 23, 59, 59), False)])
+
+        db_calls_mock.register_highlight.assert_has_calls(
+            [unittest.mock.call(self.session, models.HighlightsType.SCORE, 2021, 10, [189, 46]),
+             unittest.mock.call(self.session, models.HighlightsType.NEW, 2021, 11, [55])])

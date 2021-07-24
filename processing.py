@@ -913,9 +913,38 @@ def calculate_score_highlights_week(session: sqlalchemy.orm.Session, year: int, 
     id_list = []
 
     for s in shows:
-        id_list.append(s[1])
+        id_list.append(s[0])
 
     db_calls.register_highlight(session, models.HighlightsType.SCORE, year, week, id_list)
+
+
+def calculate_new_highlights_week(session: sqlalchemy.orm.Session, year: int, week: int) -> None:
+    """
+    Calculate the new highlights and save them to the DB.
+
+    :param session: the db session.
+    :param year: the year.
+    :param week: the week.
+    """
+
+    week_start = datetime.date.fromisocalendar(year, week, 1)
+    week_end = datetime.date.fromisocalendar(year, week, 7)
+
+    start_datetime = datetime.datetime.combine(week_start, datetime.time(0, 0, 0))
+    end_datetime = datetime.datetime.combine(week_end, datetime.time(23, 59, 59))
+
+    # Get the new movies
+    shows = db_calls.get_new_shows_interval(session, start_datetime, end_datetime, True)
+
+    # Get the new tv shows
+    shows += db_calls.get_new_shows_interval(session, start_datetime, end_datetime, False)
+
+    id_list = []
+
+    for s in shows:
+        id_list.append(s[0])
+
+    db_calls.register_highlight(session, models.HighlightsType.NEW, year, week, id_list)
 
 
 def update_tmdb_data_week(session: sqlalchemy.orm.Session, year: int, week: int) -> None:
@@ -997,16 +1026,16 @@ def get_settings(session, user_id: int):
             'excluded_channel_list': current_excluded_channel_list}
 
 
-def calculate_highlights_week(db_session: sqlalchemy.orm.Session, year: int, week: int):
+def get_highlights_week(db_session: sqlalchemy.orm.Session, year: int, week: int):
     """
-    Calculate the highlights for the current week and the week after.
+    Get the highlights for the a given week, calculating them if they don't already exist.
 
     :param db_session: the DB session.
     :param year: the year.
     :param week: the week.
     """
 
-    # Create only if the highlights does not exist
+    # Calculate the highlights, only if they do not exist
     highlights = db_calls.get_week_highlights(db_session, models.HighlightsType.SCORE, year, week)
 
     if highlights is None:
@@ -1015,6 +1044,13 @@ def calculate_highlights_week(db_session: sqlalchemy.orm.Session, year: int, wee
 
         # Calculate the highlights
         calculate_score_highlights_week(db_session, year, week)
+
+    # Calculate the highlights, only if they do not exist
+    highlights = db_calls.get_week_highlights(db_session, models.HighlightsType.NEW, year, week)
+
+    if highlights is None:
+        # Calculate the highlights
+        calculate_new_highlights_week(db_session, year, week)
 
 
 def calculate_highlights(db_session: sqlalchemy.orm.Session):
@@ -1028,7 +1064,7 @@ def calculate_highlights(db_session: sqlalchemy.orm.Session):
     today = datetime.date.today()
     (year, week, _) = today.isocalendar()
 
-    calculate_highlights_week(db_session, year, week)
+    get_highlights_week(db_session, year, week)
 
     # Then the week after
     if week == 52:
@@ -1037,4 +1073,4 @@ def calculate_highlights(db_session: sqlalchemy.orm.Session):
     else:
         week = week + 1
 
-    calculate_highlights_week(db_session, year, week)
+    get_highlights_week(db_session, year, week)

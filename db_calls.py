@@ -585,7 +585,7 @@ def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, o
                        duration: int = None, synopsis: str = None, year: int = None, genre: str = None,
                        director: str = None, cast: str = None, audio_languages: str = None, countries: str = None,
                        age_classification: str = None, subgenre: Optional[str] = None, is_movie: Optional[bool] = None,
-                       creators: str = None) \
+                       creators: str = None, season: int = None, date_time: datetime.datetime = None) \
         -> Optional[models.ShowData]:
     """
     Register an entry of ShowData.
@@ -605,12 +605,19 @@ def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, o
     :param subgenre: the subgenre of the show (Comedy, thriller, ...).
     :param is_movie: True if it is a movie, False if it is TV.
     :param creators: the list of creators separated by comma.
+    :param season: the season of the session.
+    :param date_time: the date and time of the session.
     :return: the created show data.
     """
 
     search_title = auxiliary.make_searchable_title(portuguese_title.strip())
 
     show_data = models.ShowData(search_title, portuguese_title.strip())
+
+    # This can only happen in the UTs
+    if date_time is not None:
+        show_data.premiere_date = date_time.date()
+        show_data.season_premiere = season
 
     if original_title is not None:
         show_data.original_title = original_title
@@ -697,7 +704,7 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, localized_title
                                 directors: List[str] = None, cast: str = None, audio_languages: str = None,
                                 countries: str = None, age_classification: str = None, subgenre: Optional[str] = None,
                                 is_movie: Optional[bool] = None, season: Optional[int] = None,
-                                creators: List[str] = None) \
+                                creators: List[str] = None, date_time: datetime.datetime = None) \
         -> [bool, Optional[models.ShowData]]:
     """
     Check, and return, if there's a matching entry of ShowData and, if not add it.
@@ -718,6 +725,7 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, localized_title
     :param is_movie: True if it is a movie, False if it is TV.
     :param season: the season of the session from which the data comes from.
     :param creators: the list of creators.
+    :param date_time: the date and time of the session.
     :return: a boolean for whether it is a new show or not and the corresponding show data.
     """
 
@@ -747,7 +755,7 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, localized_title
                                     synopsis=synopsis, year=year, genre=genre, director=director,
                                     cast=cast, audio_languages=audio_languages, countries=countries,
                                     age_classification=age_classification, subgenre=subgenre, is_movie=is_movie,
-                                    creators=creators)
+                                    creators=creators, season=season, date_time=date_time)
 
 
 def register_cache(session: sqlalchemy.orm.Session, key: str,
@@ -1445,7 +1453,34 @@ def get_highest_scored_shows_interval(session: sqlalchemy.orm.Session, start_dat
         .filter(models.ShowData.is_movie == is_movie) \
         .filter(models.ShowData.tmdb_id.isnot(None)) \
         .order_by(models.ShowData.tmdb_vote_average.desc()) \
-        .limit(configuration.highlight_counter) \
+        .limit(configuration.score_highlight_counter) \
+        .all()
+
+
+def get_new_shows_interval(session: sqlalchemy.orm.Session, start_datetime: datetime.datetime,
+                           end_datetime: datetime.datetime, is_movie: bool) \
+        -> List[Tuple[int, int, datetime.date, int]]:
+    """
+    Get the new shows in the given interval.
+
+    :param session: the db session.
+    :param start_datetime: the start datetime.
+    :param end_datetime: the end datetime.
+    :param is_movie: whether or not it is a movie.
+    :return: the list of shows (each represented by a tuple of the show id, the tmdb id, the premiere date and the
+    season).
+    """
+
+    return session.query(sqlalchemy.func.distinct(models.ShowSession.show_id), models.ShowData.tmdb_id,
+                         models.ShowData.premiere_date, models.ShowData.season_premiere) \
+        .filter(models.ShowSession.show_id == models.ShowData.id) \
+        .filter(models.ShowSession.date_time >= start_datetime) \
+        .filter(models.ShowSession.date_time <= end_datetime) \
+        .filter(models.ShowData.is_movie == is_movie) \
+        .filter(models.ShowData.tmdb_id.isnot(None)) \
+        .filter(models.ShowData.premiere_date >= start_datetime) \
+        .filter(models.ShowData.premiere_date <= end_datetime) \
+        .limit(configuration.new_highlight_counter) \
         .all()
 
 
