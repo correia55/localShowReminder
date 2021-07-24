@@ -209,7 +209,7 @@ class TestGenericXlsx(unittest.TestCase):
 
         # Prepare the calls to register_show_session
         show_session = models.ShowSession(4, 7, datetime.datetime(2021, 7, 1, 5), 8373, 7503)
-        show_session_2 = models.ShowSession(None, None, datetime.datetime(2021, 7, 1, 5, 50), 8373, 7912)
+        show_session_2 = models.ShowSession(None, None, datetime.datetime(2021, 7, 2, 0, 18), 8373, 7912)
 
         db_calls_mock.register_show_session.side_effect = [show_session, show_session_2]
 
@@ -248,7 +248,7 @@ class TestGenericXlsx(unittest.TestCase):
                                          'and keep the ranch workers and kids safe.', year=2019, genre='Series',
                                 subgenre='Natural History', audio_languages=None, countries='Australia',
                                 directors=None, age_classification='12+', is_movie=False, season=4,
-                                creators=None),
+                                creators=None, date_time=datetime.datetime(2021, 7, 1, 5)),
              unittest.mock.call(self.session, 'Tiger On The Run', cast=None,
                                 original_title='Tiger On The Run', duration=44,
                                 synopsis='"Tiger on the Run" is a natural history documentary following a young tiger '
@@ -258,7 +258,7 @@ class TestGenericXlsx(unittest.TestCase):
                                          'shrinking habitat.', year=2015, genre='Movie', subgenre='Natural History',
                                 audio_languages=None, countries='South Africa',
                                 directors=None, age_classification='12+', is_movie=True, season=None,
-                                creators=None)])
+                                creators=None, date_time=datetime.datetime(2021, 7, 2, 0, 18))])
 
         tmdb_calls_mock.search_shows_by_text.assert_has_calls(
             [unittest.mock.call(self.session, 'Monster Croc Wrangler', is_movie=False, year=None),
@@ -322,7 +322,7 @@ class TestGenericXlsx(unittest.TestCase):
 
         # Prepare the calls to register_show_session
         show_session = models.ShowSession(1, 4, datetime.datetime(2021, 7, 1, 5), 8373, 7503)
-        show_session_2 = models.ShowSession(None, None, datetime.datetime(2021, 7, 18, 0, 48), 8373, 7912)
+        show_session_2 = models.ShowSession(None, None, datetime.datetime(2021, 7, 17, 23, 48), 8373, 7912)
 
         db_calls_mock.register_show_session.side_effect = [show_session, show_session_2]
 
@@ -361,7 +361,7 @@ class TestGenericXlsx(unittest.TestCase):
                                          'templos.', year=2019, genre='Series',
                                 subgenre=None, audio_languages=None, countries=None,
                                 directors=None, age_classification='12+', is_movie=False, season=1,
-                                creators=None),
+                                creators=None, date_time=datetime.datetime(2021, 7, 1, 5)),
              unittest.mock.call(self.session, 'Bastidores: Marijuana', cast=None,
                                 original_title='Inside Marijuana', duration=None,
                                 synopsis='Marijuana é a substância ilícita mais consumida no planeta. Na maior parte '
@@ -373,7 +373,7 @@ class TestGenericXlsx(unittest.TestCase):
                                          'de perigo e promessa.', year=2008, genre='Movie', subgenre=None,
                                 audio_languages=None, countries=None,
                                 directors=None, age_classification='16+', is_movie=True, season=None,
-                                creators=None)])
+                                creators=None, date_time=datetime.datetime(2021, 7, 17, 23, 48))])
 
         tmdb_calls_mock.search_shows_by_text.assert_has_calls(
             [unittest.mock.call(self.session, 'Lost Cities With Albert Lin', is_movie=False, year=None),
@@ -472,7 +472,7 @@ class TestGenericXlsx(unittest.TestCase):
                                 year=2017, genre='Series',
                                 subgenre=None, audio_languages=None, countries=None,
                                 directors=None, age_classification='12+', is_movie=False, season=5,
-                                creators=['Kenya Barris']),
+                                creators=['Kenya Barris'], date_time=datetime.datetime(2021, 6, 1, 5, 6)),
              unittest.mock.call(self.session, 'Doidos à Solta, de Novo', cast='Jeff Daniels,Jim Carrey,Rob Riggle',
                                 original_title='Dumb and Dumber To', duration=111,
                                 synopsis='Vinte anos após a sua primeira aventura, Lloyd e Harry embarcam numa viagem '
@@ -481,7 +481,7 @@ class TestGenericXlsx(unittest.TestCase):
                                 audio_languages=None, countries=None,
                                 directors=['Bobby Farrelly', 'Peter Farrelly'], age_classification='12+', is_movie=True,
                                 season=None,
-                                creators=None)])
+                                creators=None, date_time=datetime.datetime(2021, 6, 27, 20, 8))])
 
         tmdb_calls_mock.search_shows_by_text.assert_has_calls(
             [unittest.mock.call(self.session, 'Black-ish', is_movie=False, year=None),
@@ -586,7 +586,7 @@ class TestGenericXlsx(unittest.TestCase):
                                          'comercial, no dia após o Dia de Ação de Graças.', year=2009, genre='Series',
                                 subgenre=None, audio_languages=None, countries=None,
                                 directors=None, age_classification='12+', is_movie=False, season=2,
-                                creators=None),
+                                creators=None, date_time=datetime.datetime(2021, 7, 1, 5)),
              unittest.mock.call(self.session, 'Crime, Disse Ela', cast='Angela Lansbury,Ron Masak,William Windom',
                                 original_title='Murder She Wrote', duration=None,
                                 synopsis='Será que um florista de Beverly Hills foi morto porque estava a fornecer '
@@ -594,7 +594,8 @@ class TestGenericXlsx(unittest.TestCase):
                                 genre='Series', subgenre=None,
                                 audio_languages=None, countries=None,
                                 directors=None, age_classification='12+', is_movie=False, season=9,
-                                creators=['Peter S. Fischer', 'Richard Levinson', 'William Link'])])
+                                creators=['Peter S. Fischer', 'Richard Levinson', 'William Link'],
+                                date_time=datetime.datetime(2021, 7, 1, 5, 34))])
 
         tmdb_calls_mock.search_shows_by_text.assert_has_calls(
             [unittest.mock.call(self.session, 'Lie To Me', is_movie=False, year=None),
@@ -718,7 +719,7 @@ class TestGenericXlsx(unittest.TestCase):
                                          'Krevitt tentam lidar com a sua nova realidade financeira.',
                                 year=2017, genre='Series', subgenre=None, audio_languages=None, countries=None,
                                 directors=None, age_classification='12+', is_movie=False, season=3,
-                                creators=['Jill Kargman']),
+                                creators=['Jill Kargman'], date_time=datetime.datetime(2021, 6, 1, 5)),
              unittest.mock.call(self.session, 'Home By Spring', cast='Poppy Drayton,Steven R. McQueen',
                                 original_title='Home By Spring', duration=87,
                                 synopsis='Uma organizadora de eventos ambiciosa tem uma oportunidade única e vai no '
@@ -728,7 +729,7 @@ class TestGenericXlsx(unittest.TestCase):
                                          'próximo do que imaginava?',
                                 year=2018, genre='Movie', subgenre=None, audio_languages=None, countries=None,
                                 directors=['Dwight H. Little'], age_classification='12+', is_movie=True, season=None,
-                                creators=None)])
+                                creators=None, date_time=datetime.datetime(2021, 6, 1, 7, 19))])
 
         tmdb_calls_mock.search_shows_by_text.assert_has_calls(
             [unittest.mock.call(self.session, 'Odd Mom Out', is_movie=False, year=None),
@@ -856,7 +857,7 @@ class TestGenericXlsx(unittest.TestCase):
                                          'membros da Phoenix.',
                                 year=2020, genre='Series', subgenre=None, audio_languages=None, countries=None,
                                 directors=None, age_classification='12+', is_movie=False, season=5,
-                                creators=None),
+                                creators=None, date_time=datetime.datetime(2021, 6, 1, 21, 15)),
              unittest.mock.call(self.session, 'Safe - O Intocável', cast='Catherine Chan,Chris Sarandon,Jason Statham',
                                 original_title='Safe', duration=99,
                                 synopsis='Mei, uma menina cuja memória contém um código numérico de valor '
@@ -865,7 +866,7 @@ class TestGenericXlsx(unittest.TestCase):
                                          'vida foi destruída pelos gangsters que andam atrás de Mei.',
                                 year=2012, genre='Movie', subgenre=None, audio_languages=None, countries=None,
                                 directors=['Boaz Yakin'], age_classification='18+', is_movie=True, season=None,
-                                creators=None)])
+                                creators=None, date_time=datetime.datetime(2021, 6, 1, 22, 4))])
 
         tmdb_calls_mock.search_shows_by_text.assert_has_calls(
             [unittest.mock.call(self.session, 'MacGyver', is_movie=False, year=None),
@@ -941,8 +942,8 @@ class TestGenericXlsx(unittest.TestCase):
         tmdb_calls_mock.search_shows_by_text.side_effect = [(0, []), (0, []), (0, []), (0, [])]
 
         # Prepare the calls to register_show_session
-        show_session = models.ShowSession(1, 4, datetime.datetime(2021, 7, 1, 5, 33), 8373, 7503)
-        show_session_2 = models.ShowSession(None, None, datetime.datetime(2021, 7, 5, 8, 52), 8373, 7912)
+        show_session = models.ShowSession(1, 4, datetime.datetime(2021, 7, 1, 6), 8373, 7503)
+        show_session_2 = models.ShowSession(None, None, datetime.datetime(2021, 7, 1, 8, 10), 8373, 7912)
 
         db_calls_mock.register_show_session.side_effect = [show_session, show_session_2]
 
@@ -987,7 +988,7 @@ class TestGenericXlsx(unittest.TestCase):
                                          'começou a batalha pelo amanhã...',
                                 year=1991, genre='Movie', subgenre=None, audio_languages=None, countries=None,
                                 directors=['James Cameron'], age_classification='12+', is_movie=True, season=None,
-                                creators=None),
+                                creators=None, date_time=datetime.datetime(2021, 7, 1, 6)),
              unittest.mock.call(self.session, 'Heat - Cidade Sob Pressão', cast='Al Pacino,Robert De Niro,Val Kilmer',
                                 original_title='Heat', duration=170,
                                 synopsis='Um grupo de ladrões liderados pelo criminoso experiente Neal McCauley ('
@@ -1001,7 +1002,7 @@ class TestGenericXlsx(unittest.TestCase):
                                 year=1995,
                                 genre='Movie', subgenre=None, audio_languages=None, countries=None,
                                 directors=['Michael Mann'], age_classification='13+', is_movie=True,
-                                season=None, creators=None)])
+                                season=None, creators=None, date_time=datetime.datetime(2021, 7, 1, 8, 10))])
 
         tmdb_calls_mock.search_shows_by_text.assert_has_calls(
             [unittest.mock.call(self.session, 'Terminator 2: Judgement Day', is_movie=True, year=1991),
@@ -1124,13 +1125,13 @@ class TestGenericXlsx(unittest.TestCase):
                                          'dinossauro já visto!',
                                 year=2018, genre='Series', subgenre=None, audio_languages=None, countries='França',
                                 directors=['Olivier Lelardoux'], age_classification='T', is_movie=False, season=1,
-                                creators=None),
+                                creators=None, date_time=datetime.datetime(2021, 6, 30, 22, 50)),
              unittest.mock.call(self.session, 'BLUEY', cast=None, original_title='BLUEY', duration=10,
                                 synopsis='Bluey está de volta com a irmã, Bingo, transformando a vida quotidiana em '
                                          'diversão sem fim!',
                                 year=2020, genre='Series', subgenre=None, audio_languages=None, countries='Austrália',
                                 directors=None, age_classification='T', is_movie=False, season=2,
-                                creators=None)])
+                                creators=None, date_time=datetime.datetime(2021, 7, 1, 7, 5))])
 
         tmdb_calls_mock.search_shows_by_text.assert_has_calls(
             [unittest.mock.call(self.session, 'GIGANTOSAURUS', is_movie=False, year=None),
@@ -1234,7 +1235,7 @@ class TestGenericXlsx(unittest.TestCase):
                                 year=2019, genre='Series',
                                 subgenre=None, audio_languages=None, countries='Espanha',
                                 directors=None, age_classification='T', is_movie=False, season=3,
-                                creators=None),
+                                creators=None, date_time=datetime.datetime(2021, 6, 30, 23, 15)),
              unittest.mock.call(self.session, 'MAGIA AO CONTRÁRIO',
                                 cast='Izabela Rose, Kyle Howard, Siena Agudong, Elie Samouhi',
                                 original_title='UPSIDE-DOWN MAGIC', duration=115,
@@ -1244,8 +1245,7 @@ class TestGenericXlsx(unittest.TestCase):
                                 genre='Movie', subgenre=None,
                                 audio_languages=None, countries='EUA',
                                 directors=['Joe Nussbaum'], age_classification='T', is_movie=True,
-                                season=None,
-                                creators=None)])
+                                season=None, creators=None, date_time=datetime.datetime(2021, 7, 4, 9, 50))])
 
         tmdb_calls_mock.search_shows_by_text.assert_has_calls(
             [unittest.mock.call(self.session, 'CLUB HOUDINI', is_movie=False, year=None),
@@ -1347,7 +1347,8 @@ class TestGenericXlsx(unittest.TestCase):
                                 synopsis='The elephant is strong enough to push a two-ton truck, the orangutan has the '
                                          'strength of seven men, and they are both super smart.', year=2017,
                                 genre='Series', subgenre=None, audio_languages=None, countries=None, directors=None,
-                                age_classification='6+', is_movie=False, season=1, creators=None),
+                                age_classification='6+', is_movie=False, season=1, creators=None,
+                                date_time=datetime.datetime(2021, 8, 1, 4)),
              unittest.mock.call(self.session, 'Shark Island', cast=None,
                                 original_title='Shark Island', duration=None,
                                 synopsis='National Geographic Ocean Explorer Enric Sala and his team are on a mission: '
@@ -1360,7 +1361,8 @@ class TestGenericXlsx(unittest.TestCase):
                                          'technology, find the elusive "shark superhighway" in the Eastern Pacific '
                                          'where the predator has become prey.', year=2010, genre='Movie', subgenre=None,
                                 audio_languages=None, countries=None, directors=None, age_classification='12+',
-                                is_movie=True, season=None, creators=None)])
+                                is_movie=True, season=None, creators=None,
+                                date_time=datetime.datetime(2021, 8, 1, 6, 35))])
 
         tmdb_calls_mock.search_shows_by_text.assert_has_calls(
             [unittest.mock.call(self.session, 'Ultimate Animals Compilations', is_movie=False, year=None),
