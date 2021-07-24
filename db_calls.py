@@ -1505,7 +1505,7 @@ def get_shows_interval(session: sqlalchemy.orm.Session, start_datetime: datetime
 
 
 def register_highlight(session: sqlalchemy.orm.Session, key: models.HighlightsType, year: int, week: int,
-                       id_list: [int]) -> Optional[models.Highlights]:
+                       id_list: [int], season_list: [int] = None) -> Optional[models.Highlights]:
     """
     Register a week's highlight list.
 
@@ -1514,10 +1514,15 @@ def register_highlight(session: sqlalchemy.orm.Session, key: models.HighlightsTy
     :param year: the year of interest.
     :param week: the week of interest.
     :param id_list: the id list.
+    :param season_list: the season list - only for NEW.
     :return: the Highlight, if successful.
     """
 
-    highlights = models.Highlights(key, year, week, id_list)
+    if season_list is not None:
+        if len(id_list) != len(season_list):
+            print("The list of ids and seasons do not have the same size!")
+
+    highlights = models.Highlights(key, year, week, id_list, season_list)
     session.add(highlights)
 
     try:

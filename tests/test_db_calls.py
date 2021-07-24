@@ -2241,3 +2241,46 @@ class TestGetNewShowsInterval(unittest.TestCase):
         self.assertEqual(111, actual_result[0][1])
         self.assertEqual(datetime.date(2021, 1, 10), actual_result[0][2])
         self.assertEqual(2, actual_result[0][3])
+
+
+class TestHighlights(unittest.TestCase):
+    session: sqlalchemy.orm.Session
+
+    def setUp(self) -> None:
+        self.session = configuration.Session()
+
+    def tearDown(self) -> None:
+        self.session.query(models.Highlights).delete()
+
+        self.session.commit()
+
+        self.session.close()
+
+    def test_register_highlight_ok_01(self) -> None:
+        """ Test the function register_highlight with a SCORE highlight. """
+
+        # Call the function
+        actual_result = db_calls.register_highlight(self.session, models.HighlightsType.SCORE, 2021, 1, [1, 2, 3])
+
+        # Verify the result
+        self.assertIsNotNone(actual_result)
+
+        self.assertEqual(2021, actual_result.year)
+        self.assertEqual(1, actual_result.week)
+        self.assertEqual("SCORE", actual_result.key)
+        self.assertEqual('[{"id":1},{"id":2},{"id":3}]', actual_result.result_list_json)
+
+    def test_register_highlight_ok_02(self) -> None:
+        """ Test the function register_highlight with a NEW highlight. """
+
+        # Call the function
+        actual_result = db_calls.register_highlight(self.session, models.HighlightsType.SCORE, 2021, 1, [1, 2, 3],
+                                                    [None, 1, 10])
+
+        # Verify the result
+        self.assertIsNotNone(actual_result)
+
+        self.assertEqual(2021, actual_result.year)
+        self.assertEqual(1, actual_result.week)
+        self.assertEqual("SCORE", actual_result.key)
+        self.assertEqual('[{"id":1},{"id":2,"season":1},{"id":3,"season":10}]', actual_result.result_list_json)

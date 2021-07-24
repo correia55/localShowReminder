@@ -403,9 +403,9 @@ class TestProcessing(unittest.TestCase):
 
         # Prepare the mocks
         # Calls to check if the highlights already exist
-        new_highlights_1 = models.Highlights(models.HighlightsType.NEW, 2021, 10, ['1', '2'])
+        new_highlights_1 = models.Highlights(models.HighlightsType.NEW, 2021, 10, ['1', '2'], [None, 10])
 
-        score_highlights_2 = models.Highlights(models.HighlightsType.SCORE, 2021, 11, [])
+        score_highlights_2 = models.Highlights(models.HighlightsType.SCORE, 2021, 11, [], None)
 
         db_calls_mock.get_week_highlights.side_effect = [None, new_highlights_1, score_highlights_2, None]
 
@@ -437,6 +437,7 @@ class TestProcessing(unittest.TestCase):
         show_data_4.is_movie = False
         show_data_4.year = 2004
         show_data_4.id = 46
+        show_data_4.season_premiere = 3
 
         db_calls_mock.get_shows_interval.side_effect = [[show_data, show_data_2, show_data_3, show_data_4]]
 
@@ -462,9 +463,9 @@ class TestProcessing(unittest.TestCase):
         db_calls_mock.get_new_shows_interval.side_effect = [[(55, 42, datetime.date(2021, 3, 10), 5)], []]
 
         # Calls to register highlights
-        new_score_highlights = models.Highlights(models.HighlightsType.SCORE, 2021, 10, [189, 46])
+        new_score_highlights = models.Highlights(models.HighlightsType.SCORE, 2021, 10, [189, 46], None)
 
-        new_new_highlights = models.Highlights(models.HighlightsType.NEW, 2021, 11, [55])
+        new_new_highlights = models.Highlights(models.HighlightsType.NEW, 2021, 11, [55], [5])
 
         db_calls_mock.register_highlight.side_effect = [new_score_highlights, new_new_highlights]
 
@@ -499,5 +500,5 @@ class TestProcessing(unittest.TestCase):
                                 datetime.datetime(2021, 3, 21, 23, 59, 59), False)])
 
         db_calls_mock.register_highlight.assert_has_calls(
-            [unittest.mock.call(self.session, models.HighlightsType.SCORE, 2021, 10, [189, 46]),
-             unittest.mock.call(self.session, models.HighlightsType.NEW, 2021, 11, [55])])
+            [unittest.mock.call(self.session, models.HighlightsType.SCORE, 2021, 10, [1234, 1274]),
+             unittest.mock.call(self.session, models.HighlightsType.NEW, 2021, 11, [42], [5])])

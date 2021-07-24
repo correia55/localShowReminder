@@ -913,7 +913,7 @@ def calculate_score_highlights_week(session: sqlalchemy.orm.Session, year: int, 
     id_list = []
 
     for s in shows:
-        id_list.append(s[0])
+        id_list.append(s[1])
 
     db_calls.register_highlight(session, models.HighlightsType.SCORE, year, week, id_list)
 
@@ -940,11 +940,13 @@ def calculate_new_highlights_week(session: sqlalchemy.orm.Session, year: int, we
     shows += db_calls.get_new_shows_interval(session, start_datetime, end_datetime, False)
 
     id_list = []
+    season_list = []
 
     for s in shows:
-        id_list.append(s[0])
+        id_list.append(s[1])
+        season_list.append(s[3])
 
-    db_calls.register_highlight(session, models.HighlightsType.NEW, year, week, id_list)
+    db_calls.register_highlight(session, models.HighlightsType.NEW, year, week, id_list, season_list)
 
 
 def update_tmdb_data_week(session: sqlalchemy.orm.Session, year: int, week: int) -> None:
