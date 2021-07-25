@@ -106,15 +106,19 @@ def convert_datetime_to_utc(date_time: datetime.datetime) -> datetime.datetime:
 
 
 def auto_repr(cls):
-    """
-    Automatically generate the method __repr__ for a class.
-    Source: https://stackoverflow.com/questions/32910096/is-there-a-way-to-auto-generate-a-str-implementation-in-python#33800620
-    """
+    """ Automatically generate the method __repr__ for a class. """
 
     def __repr__(self):
+        items = []
+
+        # Remove base class attributes and all methods
+        for item in dir(self):
+            if not item.startswith("__") and not callable(getattr(self, item)):
+                items.append(item)
+
         return '%s(%s)' % (
             type(self).__name__,
-            ', '.join('%s=%s' % item for item in vars(self).items())
+            ', '.join('%s=%s' % (item, repr(getattr(self, item))) for item in items)
         )
 
     cls.__repr__ = __repr__

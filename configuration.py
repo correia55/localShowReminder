@@ -77,7 +77,7 @@ def initialize():
     database_url = os.environ.get('DATABASE_URL', None)
 
     if database_url is None:
-        print('Unable to find database url!')
+        print('Warning: Unable to find database url!')
         exit(1)
 
     engine = create_engine(database_url, encoding='utf-8', pool_recycle=280)
@@ -153,13 +153,13 @@ def initialize():
     trakt_key = os.environ.get('TRAKT_KEY', None)
 
     if trakt_key is None:
-        print('Unable to find trakt key!')
+        print('Warning: Unable to find trakt key!')
 
     # Cache validity, in days
     cache_validity_days = os.environ.get('CACHE_VALIDITY', None)
 
     if cache_validity_days is None:
-        print('Unable to find CACHE_VALIDITY key!')
+        print('Warning: Unable to find CACHE_VALIDITY key!')
 
         # Set 1 days as the default value
         cache_validity_days = 1
@@ -168,20 +168,20 @@ def initialize():
     omdb_key = os.environ.get('OMDB_KEY', None)
 
     if omdb_key is None:
-        print('Unable to find omdb key!')
+        print('Warning: Unable to find omdb key!')
 
     # Get the api key for omdb
     tmdb_key = os.environ.get('TMDB_KEY', None)
 
     if tmdb_key is None:
-        print('Unable to find tmdb key!')
+        print('Warning: Unable to find tmdb key!')
         exit(1)
 
     # Get the number of pages that should be retrieved from TMDB
     tmdb_max_mb_pages = os.environ.get('TMDB_MAX_NB_PAGES', None)
 
     if tmdb_max_mb_pages is None:
-        print('Unable to find tmdb max number of pages!')
+        print('Warning: Unable to find tmdb max number of pages!')
 
         # Set 2 pages as the default value
         tmdb_max_mb_pages = 2
@@ -203,7 +203,7 @@ def initialize():
     secret_key = os.environ.get('SECRET_KEY', None)
 
     if secret_key is None:
-        print('Unable to find secret key!')
+        print('Warning: Unable to find secret key!')
         exit(1)
 
     # Validity of the different types of token
@@ -224,7 +224,7 @@ def initialize():
     google_client_id = os.environ.get('GOOGLE_CLIENT_ID', None)
 
     if google_client_id is None:
-        print('Unable to find google client id!')
+        print('Warning: Unable to find google client id!')
         exit(1)
 
     # endregion

@@ -2,6 +2,7 @@ import datetime
 from enum import Enum
 from typing import List, Optional, Tuple
 
+import auxiliary
 import models
 
 
@@ -124,7 +125,7 @@ class LocalShowResult:
     @staticmethod
     def create_from_show_session(show_session: models.ShowSession, channel: models.Channel, show_data: models.ShowData):
         """
-        Create local show result from the a show session, the name of the show, whether it is a movie or not and the
+        Create local show result from a show session, the name of the show, whether it is a movie or not and the
         name of the channel.
 
         :param show_session: the corresponding session.
@@ -221,3 +222,194 @@ class LocalShowResult:
             local_show_dict['original'] = self.original
 
         return local_show_dict
+
+
+@auxiliary.auto_repr
+class HighlightResponse:
+    key = str  # Either SCORE or NEW
+    year = int
+    week = int  # The number of the week
+    show_list: [dict]
+
+    @staticmethod
+    def create_from_highlight(db_highlight: models.Highlights):
+        """
+        Create a highlight from an entry in the Highlight table of the DB.
+
+        :param db_highlight: the highlight entry from the DB.
+        :return: the Highlight Response.
+        """
+
+        highlight_response = HighlightResponse()
+        highlight_response.key = db_highlight.key
+        highlight_response.year = db_highlight.year
+        highlight_response.week = db_highlight.week
+        highlight_response.show_list = []
+
+        return highlight_response
+
+    def to_dict(self) -> dict:
+        """
+        Create a dictionary from the current object.
+
+        :return: the corresponding dictionary.
+        """
+
+        # Remark: the show_list already comes as a dict
+        highlight_dict = {'key': self.key, 'year': self.year, 'week': self.week, 'show_list': self.show_list}
+
+        return highlight_dict
+
+
+@auxiliary.auto_repr
+class TmdbShow(object):
+    """The class that will represent the data in the response from a search to tmdb."""
+
+    id: int
+    original_title: str
+    original_language: str
+    popularity: float
+    overview: str
+    title: str
+    vote_average: float
+    is_movie: bool
+    adult: bool
+    genres: List[str]
+
+    poster_path: Optional[str]
+    origin_country: Optional[str]
+    year: Optional[int]
+    creators: List[str]
+
+    def __init__(self):
+        self.poster_path = None
+        self.year = None
+        self.origin_country = None
+        self.adult = False
+        self.genres = []
+        self.creators = []
+
+    def fill_from_dict(self, show_dict: dict, is_movie: bool = None):
+        if is_movie is not None:
+            self.is_movie = is_movie
+        else:
+            self.is_movie = show_dict['media_type'] == 'movie'
+
+        if self.is_movie:
+            self.original_title = show_dict['original_title']
+            self.title = show_dict['title']
+
+            if 'release_date' in show_dict and show_dict['release_date'] != '':
+                self.year = int(show_dict['release_date'][0:4])
+        else:
+            self.original_title = show_dict['original_name']
+            self.title = show_dict['name']
+
+            if 'first_air_date' in show_dict and show_dict['first_air_date'] != '' \
+                    and show_dict['first_air_date'] is not None:
+                self.year = int(show_dict['first_air_date'][0:4])
+
+            self.origin_country = show_dict['origin_country']
+
+        self.id = int(show_dict['id'])
+        self.popularity = show_dict['popularity']
+        self.vote_average = show_dict['vote_average']
+        self.original_language = show_dict['original_language']
+        self.overview = show_dict['overview']
+
+        if 'genres' in show_dict:
+            for g in show_dict['genres']:
+                self.genres.append(g['name'])
+
+        if 'adult' in show_dict:
+            self.adult = show_dict['adult']
+
+        if 'poster_path' in show_dict and show_dict['poster_path']:
+            self.poster_path = 'https://image.tmdb.org/t/p/w220_and_h330_face' + show_dict['poster_path']
+
+        if 'created_by' in show_dict:
+            for c in show_dict['created_by']:
+                self.creators.append(c['name'])
+
+    def to_dict(self) -> dict:
+        """
+        Create a dictionary from the current object.
+
+        :return: the corresponding dictionary.
+        """
+
+        show_dict = {'is_movie': self.is_movie, 'show_title': self.title, 'show_year': self.year, 'trakt_id': self.id,
+                     'show_overview': self.overview, 'language': self.original_language,
+                     'vote_average': self.vote_average, 'popularity': self.popularity}
+
+        if self.poster_path:
+            show_dict['show_image'] = self.poster_path
+        else:
+            show_dict['show_image'] = 'N/A'
+
+        return show_dict
+
+
+class TmdbTranslation(object):
+    """The class that will represent a tmdb translation."""
+
+    tmdb_id: int
+    title: str
+    overview: str
+    language_country: str
+
+    def __init__(self):
+        return
+
+    def fill_from_dict(self, tmdb_id: int, translation_dict: dict, is_movie: bool = None):
+        self.tmdb_id = tmdb_id
+
+        self.language_country = '%s-%s' % (
+            translation_dict['iso_639_1'], translation_dict['iso_3166_1'])  # pt-PT, en-US...
+
+        data: dict = translation_dict['data']
+
+        self.overview = data['overview']
+
+        if is_movie:
+            self.title = data['title']
+        else:
+            self.title = data['name']
+
+
+class TmdbAlias(object):
+    """The class that will represent a tmdb translation."""
+
+    tmdb_id: int
+    title: str
+    country: str
+
+    def __init__(self):
+        return
+
+    def fill_from_dict(self, tmdb_id: int, alias_dict: dict):
+        self.tmdb_id = tmdb_id
+
+        self.country = alias_dict['iso_3166_1']
+        self.title = alias_dict['title']
+
+
+class TmdbCrewMember(object):
+    """The class that will represent a tmdb crew member."""
+
+    name: str
+    jobs: List[str]
+
+    def __init__(self):
+        return
+
+    def fill_from_dict(self, crew_member_dict: dict, is_movie: bool):
+        self.name = crew_member_dict['name']
+
+        if is_movie:
+            self.jobs = [crew_member_dict['job']]
+        else:
+            self.jobs = []
+
+            for job in crew_member_dict['jobs']:
+                self.jobs.append(job['job'])

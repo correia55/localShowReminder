@@ -99,13 +99,7 @@ def search_show_information(session: sqlalchemy.orm.Session, search_text: str, i
         i += 1
 
     for s in trakt_shows:
-        show_dict = {'is_movie': s.is_movie, 'show_title': s.title, 'show_year': s.year, 'trakt_id': s.id,
-                     'show_overview': s.overview, 'language': s.original_language}
-
-        if s.poster_path:
-            show_dict['show_image'] = s.poster_path
-        else:
-            show_dict['show_image'] = 'N/A'
+        show_dict = s.to_dict()
 
         # Get the translations of the overview and title
         if language != s.original_language:
@@ -915,7 +909,7 @@ def calculate_score_highlights_week(session: sqlalchemy.orm.Session, year: int, 
     for s in shows:
         id_list.append(s[1])
 
-    db_calls.register_highlight(session, models.HighlightsType.SCORE, year, week, id_list)
+    db_calls.register_highlights(session, models.HighlightsType.SCORE, year, week, id_list)
 
 
 def calculate_new_highlights_week(session: sqlalchemy.orm.Session, year: int, week: int) -> None:
@@ -946,7 +940,7 @@ def calculate_new_highlights_week(session: sqlalchemy.orm.Session, year: int, we
         id_list.append(s[1])
         season_list.append(s[3])
 
-    db_calls.register_highlight(session, models.HighlightsType.NEW, year, week, id_list, season_list)
+    db_calls.register_highlights(session, models.HighlightsType.NEW, year, week, id_list, season_list)
 
 
 def update_tmdb_data_week(session: sqlalchemy.orm.Session, year: int, week: int) -> None:
@@ -1076,3 +1070,55 @@ def calculate_highlights(db_session: sqlalchemy.orm.Session):
         week = week + 1
 
     get_highlights_week(db_session, year, week)
+
+
+def get_response_highlights_week(db_session: sqlalchemy.orm.Session, year: int, week: int) \
+        -> [response_models.HighlightResponse]:
+    """
+    Get the highlights for the a given week, calculating them if they don't already exist.
+
+    :param db_session: the DB session.
+    :param year: the year.
+    :param week: the week.
+    :return the list of response highlights.
+    """
+
+    highlights = []
+
+    # Convert the highlights from the DB to the format of the response
+    for db_highlight in [db_calls.get_week_highlights(db_session, models.HighlightsType.SCORE, year, week),
+                         db_calls.get_week_highlights(db_session, models.HighlightsType.NEW, year, week)]:
+        if db_highlight is None:
+            continue
+
+        # Create the response highlight
+        highlight = response_models.HighlightResponse.create_from_highlight(db_highlight)
+
+        # Create the list of shows for each highlight
+        id_list = db_highlight.id_list.split(",")
+        season_list = None
+
+        if db_highlight.season_list is not None:
+            season_list = db_highlight.season_list.split(",")
+
+        for i in range(len(id_list)):
+            tmdb_id = int(id_list[i])
+
+            db_show = db_calls.get_show_data_by_tmdb_id(db_session, tmdb_id)
+            tmdb_show = tmdb_calls.get_show_using_id(db_session, tmdb_id, db_show.is_movie)
+
+            if db_show is None:
+                continue
+
+            show_dict = tmdb_show.to_dict()
+            show_dict['show_overview'] = db_show.synopsis
+            show_dict['show_title'] = db_show.portuguese_title
+
+            if season_list is not None and season_list[i] != "-1":
+                show_dict['season_premiere'] = int(season_list[i])
+
+            highlight.show_list.append(show_dict)
+
+        highlights.append(highlight)
+
+    return highlights

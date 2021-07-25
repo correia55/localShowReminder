@@ -685,20 +685,6 @@ def get_show_data_id(session: sqlalchemy.orm.Session, show_data_id: int) -> Opti
         .first()
 
 
-def get_show_data_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: int) -> Optional[models.ShowData]:
-    """
-    Get the ShowData with a given TMDB id.
-
-    :param session: the db session.
-    :param tmdb_id: the TMDB id.
-    :return: the ShowData.
-    """
-
-    return session.query(models.ShowData) \
-        .filter(models.ShowData.tmdb_id == tmdb_id) \
-        .first()
-
-
 def insert_if_missing_show_data(session: sqlalchemy.orm.Session, localized_title: str, original_title: str = None,
                                 duration: int = None, synopsis: str = None, year: int = None, genre: str = None,
                                 directors: List[str] = None, cast: str = None, audio_languages: str = None,
@@ -1504,8 +1490,8 @@ def get_shows_interval(session: sqlalchemy.orm.Session, start_datetime: datetime
         .all()
 
 
-def register_highlight(session: sqlalchemy.orm.Session, key: models.HighlightsType, year: int, week: int,
-                       id_list: [int], season_list: [int] = None) -> Optional[models.Highlights]:
+def register_highlights(session: sqlalchemy.orm.Session, key: models.HighlightsType, year: int, week: int,
+                        id_list: [int], season_list: [int] = None) -> Optional[models.Highlights]:
     """
     Register a week's highlight list.
 

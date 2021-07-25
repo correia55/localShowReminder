@@ -403,7 +403,7 @@ class TestProcessing(unittest.TestCase):
 
         # Prepare the mocks
         # Calls to check if the highlights already exist
-        new_highlights_1 = models.Highlights(models.HighlightsType.NEW, 2021, 10, ['1', '2'], [None, 10])
+        new_highlights_1 = models.Highlights(models.HighlightsType.NEW, 2021, 10, [1, 2], [None, 10])
 
         score_highlights_2 = models.Highlights(models.HighlightsType.SCORE, 2021, 11, [], None)
 
@@ -442,15 +442,15 @@ class TestProcessing(unittest.TestCase):
         db_calls_mock.get_shows_interval.side_effect = [[show_data, show_data_2, show_data_3, show_data_4]]
 
         # Calls to obtain the TMDB data for each of the shows
-        tmdb_show = tmdb_calls.TmdbShow()
+        tmdb_show = response_models.TmdbShow()
         tmdb_show.vote_average = 7
         tmdb_show.popularity = 100
 
-        tmdb_show_2 = tmdb_calls.TmdbShow()
+        tmdb_show_2 = response_models.TmdbShow()
         tmdb_show_2.vote_average = 5
         tmdb_show_2.popularity = 34
 
-        tmdb_show_3 = tmdb_calls.TmdbShow()
+        tmdb_show_3 = response_models.TmdbShow()
         tmdb_show_3.vote_average = 5.5
         tmdb_show_3.popularity = 123
 
@@ -467,7 +467,7 @@ class TestProcessing(unittest.TestCase):
 
         new_new_highlights = models.Highlights(models.HighlightsType.NEW, 2021, 11, [55], [5])
 
-        db_calls_mock.register_highlight.side_effect = [new_score_highlights, new_new_highlights]
+        db_calls_mock.register_highlights.side_effect = [new_score_highlights, new_new_highlights]
 
         # Call the function
         processing.calculate_highlights(self.session)
@@ -499,6 +499,120 @@ class TestProcessing(unittest.TestCase):
              unittest.mock.call(self.session, datetime.datetime(2021, 3, 15),
                                 datetime.datetime(2021, 3, 21, 23, 59, 59), False)])
 
-        db_calls_mock.register_highlight.assert_has_calls(
+        db_calls_mock.register_highlights.assert_has_calls(
             [unittest.mock.call(self.session, models.HighlightsType.SCORE, 2021, 10, [1234, 1274]),
              unittest.mock.call(self.session, models.HighlightsType.NEW, 2021, 11, [42], [5])])
+
+    def test_get_response_highlights_week_ok(self) -> None:
+        """ Test the function get_response_highlights_week. """
+
+        # Prepare the mocks
+        # Calls to get the highlights
+        score_highlights = models.Highlights(models.HighlightsType.SCORE, 2021, 2, [3792], None)
+        new_highlights = models.Highlights(models.HighlightsType.NEW, 2021, 2, [84, 1111], [None, 10])
+
+        db_calls_mock.get_week_highlights.side_effect = [score_highlights, new_highlights]
+
+        # Calls to get the shows
+        show_3 = models.ShowData("_Programa_3_", "Programa 3")
+        show_3.id = 3
+        show_3.tmdb_id = 3792
+        show_3.synopsis = "Synopsis 3"
+        show_3.is_movie = True
+
+        show_1 = models.ShowData("_Programa_1_", "Programa 1")
+        show_1.id = 1
+        show_1.tmdb_id = 84
+        show_1.synopsis = "Synopsis 1"
+        show_1.is_movie = False
+
+        show_2 = models.ShowData("_Programa_2_", "Programa 2")
+        show_2.id = 2
+        show_2.tmdb_id = 1111
+        show_2.synopsis = "Synopsis 2"
+        show_2.is_movie = False
+
+        db_calls_mock.get_show_data_by_tmdb_id.side_effect = [show_3, show_1, show_2]
+
+        # Calls to obtain the TMDB data for each of the shows
+        tmdb_show_3 = response_models.TmdbShow()
+        tmdb_show_3.id = 3792
+        tmdb_show_3.vote_average = 5.5
+        tmdb_show_3.popularity = 123
+        tmdb_show_3.original_title = "Show 3"
+        tmdb_show_3.title = "Show 3"
+        tmdb_show_3.is_movie = True
+        tmdb_show_3.overview = "Overview 3"
+        tmdb_show_3.original_language = "en"
+
+        tmdb_show = response_models.TmdbShow()
+        tmdb_show.id = 84
+        tmdb_show.vote_average = 7
+        tmdb_show.popularity = 100
+        tmdb_show.original_title = "Show 1"
+        tmdb_show.title = "Show 1"
+        tmdb_show.is_movie = False
+        tmdb_show.overview = "Overview 1"
+        tmdb_show.original_language = "en"
+
+        tmdb_show_2 = response_models.TmdbShow()
+        tmdb_show_2.id = 1111
+        tmdb_show_2.vote_average = 5
+        tmdb_show_2.popularity = 34
+        tmdb_show_2.original_title = "Show 2"
+        tmdb_show_2.title = "Show 2"
+        tmdb_show_2.is_movie = False
+        tmdb_show_2.overview = "Overview 2"
+        tmdb_show_2.original_language = "en"
+
+        tmdb_calls_mock.get_show_using_id.side_effect = [tmdb_show_3, tmdb_show, tmdb_show_2]
+
+        # Call the function
+        actual_result = processing.get_response_highlights_week(self.session, 2021, 2)
+
+        # Verify the calls to the mocks
+        db_calls_mock.get_week_highlights.assert_has_calls(
+            [unittest.mock.call(self.session, models.HighlightsType.SCORE, 2021, 2),
+             unittest.mock.call(self.session, models.HighlightsType.NEW, 2021, 2)])
+
+        db_calls_mock.get_show_data_by_tmdb_id.assert_has_calls(
+            [unittest.mock.call(self.session, 3792),
+             unittest.mock.call(self.session, 84),
+             unittest.mock.call(self.session, 1111)])
+
+        tmdb_calls_mock.get_show_using_id.assert_has_calls(
+            [unittest.mock.call(self.session, 3792, True),
+             unittest.mock.call(self.session, 84, False),
+             unittest.mock.call(self.session, 1111, False)])
+
+        # Verify the result
+        self.assertEqual(2, len(actual_result))
+
+        self.assertEqual("SCORE", actual_result[0].key)
+        self.assertEqual(2021, actual_result[0].year)
+        self.assertEqual(2, actual_result[0].week)
+
+        expected_show_3 = {'is_movie': True, 'show_title': 'Programa 3', 'show_year': None, 'trakt_id': 3792,
+                           'show_overview': "Synopsis 3", 'language': "en", 'vote_average': 5.5, 'popularity': 123,
+                           'show_image': 'N/A'}
+
+        self.assertEqual(1, len(actual_result[0].show_list))
+        self.assertEqual(expected_show_3, actual_result[0].show_list[0])
+
+        self.assertEqual("NEW", actual_result[1].key)
+        self.assertEqual(2021, actual_result[1].year)
+        self.assertEqual(2, actual_result[1].week)
+
+        self.assertEqual(2, len(actual_result[1].show_list))
+
+        expected_show_1 = {'is_movie': False, 'show_title': 'Programa 1', 'show_year': None, 'trakt_id': 84,
+                           'show_overview': "Synopsis 1", 'language': "en", 'vote_average': 7, 'popularity': 100,
+                           'show_image': 'N/A'}
+
+        self.assertEqual(expected_show_1, actual_result[1].show_list[0])
+
+        expected_show_2 = {'is_movie': False, 'show_title': 'Programa 2', 'show_year': None, 'trakt_id': 1111,
+                           'show_overview': "Synopsis 2", 'language': "en", 'vote_average': 5, 'popularity': 34,
+                           'show_image': 'N/A', 'season_premiere': 10}
+
+        self.assertEqual(expected_show_2, actual_result[1].show_list[1])

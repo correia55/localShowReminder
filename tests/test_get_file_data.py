@@ -9,7 +9,7 @@ import db_calls
 import get_file_data
 import models
 import process_emails
-import tmdb_calls
+import response_models
 
 # Prepare the mock variables for the modules
 db_calls_mock = unittest.mock.MagicMock()
@@ -121,7 +121,7 @@ class TestGetFileData(unittest.TestCase):
         """ Test the function search_tmdb_match with a match on a query with year. """
 
         # The expected result
-        expected_result = tmdb_calls.TmdbShow()
+        expected_result = response_models.TmdbShow()
         expected_result.year = 2020
         expected_result.is_movie = True
         expected_result.id = 2
@@ -131,7 +131,7 @@ class TestGetFileData(unittest.TestCase):
 
         # Prepare the mocks
         # Prepare the call to search_shows_by_text
-        tmdb_show_1 = tmdb_calls.TmdbShow()
+        tmdb_show_1 = response_models.TmdbShow()
         tmdb_show_1.year = 2020
         tmdb_show_1.is_movie = True
         tmdb_show_1.id = 1

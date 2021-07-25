@@ -10,7 +10,7 @@ import configuration
 import db_calls
 import file_parsers.generic_xlsx
 import models
-import tmdb_calls
+import response_models
 
 # Prepare the mock variables for the modules
 db_calls_mock = unittest.mock.MagicMock()
@@ -653,7 +653,7 @@ class TestGenericXlsx(unittest.TestCase):
         db_calls_mock.insert_if_missing_show_data.side_effect = [(True, show_data), (True, show_data_2)]
 
         # Prepare the calls to search_shows_by_text
-        tmdb_show = tmdb_calls.TmdbShow()
+        tmdb_show = response_models.TmdbShow()
         tmdb_show.year = 2015
         tmdb_show.is_movie = False
         tmdb_show.id = 1
@@ -661,7 +661,7 @@ class TestGenericXlsx(unittest.TestCase):
         tmdb_show.vote_average = 3.4
         tmdb_show.popularity = 123
 
-        tmdb_show_2 = tmdb_calls.TmdbShow()
+        tmdb_show_2 = response_models.TmdbShow()
         tmdb_show_2.year = 2018
         tmdb_show_2.is_movie = True
         tmdb_show_2.id = 112
@@ -672,13 +672,13 @@ class TestGenericXlsx(unittest.TestCase):
         tmdb_calls_mock.search_shows_by_text.side_effect = [(1, [tmdb_show]), (1, [tmdb_show_2])]
 
         # Prepare the calls to get_show_using_id - for the first entry
-        show_details = tmdb_calls.TmdbShow()
+        show_details = response_models.TmdbShow()
         show_details.creators = ['Other Person', 'Jill Kargman']
 
         tmdb_calls_mock.get_show_using_id.return_value = show_details
 
-        # Prepare the calls to get_show_data_tmdb_id
-        db_calls_mock.get_show_data_tmdb_id.side_effect = [None, None]
+        # Prepare the calls to get_show_data_by_tmdb_id
+        db_calls_mock.get_show_data_by_tmdb_id.side_effect = [None, None]
 
         # Prepare the calls to register_show_session
         show_session = models.ShowSession(3, 1, datetime.datetime(2021, 6, 1, 5), 8373, 7503)
@@ -737,7 +737,7 @@ class TestGenericXlsx(unittest.TestCase):
 
         tmdb_calls_mock.get_show_using_id.assert_called_with(self.session, 1, False)
 
-        db_calls_mock.get_show_data_tmdb_id.assert_has_calls(
+        db_calls_mock.get_show_data_by_tmdb_id.assert_has_calls(
             [unittest.mock.call(self.session, 1),
              unittest.mock.call(self.session, 112)])
 
@@ -795,7 +795,7 @@ class TestGenericXlsx(unittest.TestCase):
         db_calls_mock.insert_if_missing_show_data.side_effect = [(True, show_data), (True, show_data_2)]
 
         # Prepare the calls to search_shows_by_text
-        tmdb_show = tmdb_calls.TmdbShow()
+        tmdb_show = response_models.TmdbShow()
         tmdb_show.year = 2015
         tmdb_show.is_movie = False
         tmdb_show.id = 1
@@ -803,7 +803,7 @@ class TestGenericXlsx(unittest.TestCase):
         tmdb_show.vote_average = 3.4
         tmdb_show.popularity = 123
 
-        tmdb_show_2 = tmdb_calls.TmdbShow()
+        tmdb_show_2 = response_models.TmdbShow()
         tmdb_show_2.year = 2012
         tmdb_show_2.is_movie = True
         tmdb_show_2.id = 112
@@ -813,8 +813,8 @@ class TestGenericXlsx(unittest.TestCase):
 
         tmdb_calls_mock.search_shows_by_text.side_effect = [(1, [tmdb_show]), (1, [tmdb_show_2])]
 
-        # Prepare the calls to get_show_data_tmdb_id
-        db_calls_mock.get_show_data_tmdb_id.side_effect = [None, None]
+        # Prepare the calls to get_show_data_by_tmdb_id
+        db_calls_mock.get_show_data_by_tmdb_id.side_effect = [None, None]
 
         # Prepare the calls to register_show_session
         show_session = models.ShowSession(3, 1, datetime.datetime(2021, 6, 1, 21, 15), 8373, 7503)
@@ -872,7 +872,7 @@ class TestGenericXlsx(unittest.TestCase):
             [unittest.mock.call(self.session, 'MacGyver', is_movie=False, year=None),
              unittest.mock.call(self.session, 'Safe', is_movie=True, year=2012)])
 
-        db_calls_mock.get_show_data_tmdb_id.assert_has_calls(
+        db_calls_mock.get_show_data_by_tmdb_id.assert_has_calls(
             [unittest.mock.call(self.session, 1),
              unittest.mock.call(self.session, 112)])
 
@@ -1057,7 +1057,7 @@ class TestGenericXlsx(unittest.TestCase):
         db_calls_mock.insert_if_missing_show_data.side_effect = [(True, show_data), (True, show_data_2)]
 
         # Prepare the calls to search_shows_by_text
-        tmdb_show = tmdb_calls.TmdbShow()
+        tmdb_show = response_models.TmdbShow()
         tmdb_show.year = 2018
         tmdb_show.is_movie = False
         tmdb_show.id = 1
@@ -1065,7 +1065,7 @@ class TestGenericXlsx(unittest.TestCase):
         tmdb_show.vote_average = 3.4
         tmdb_show.popularity = 123
 
-        tmdb_show_2 = tmdb_calls.TmdbShow()
+        tmdb_show_2 = response_models.TmdbShow()
         tmdb_show_2.year = 2019
         tmdb_show_2.is_movie = False
         tmdb_show_2.id = 112
@@ -1076,16 +1076,16 @@ class TestGenericXlsx(unittest.TestCase):
         tmdb_calls_mock.search_shows_by_text.side_effect = [(1, [tmdb_show]), (1, [tmdb_show_2])]
 
         # Prepare the calls to get_show_using_id
-        show_details = tmdb_calls.TmdbShow()
+        show_details = response_models.TmdbShow()
         show_details.creators = ['Other Person', 'Olivier Lelardoux']
 
-        show_details_2 = tmdb_calls.TmdbShow()
+        show_details_2 = response_models.TmdbShow()
         show_details_2.creators = ['Some Person', 'Someone Else']
 
         tmdb_calls_mock.get_show_using_id.side_effect = [show_details, show_details_2]
 
-        # Prepare the calls to get_show_data_tmdb_id
-        db_calls_mock.get_show_data_tmdb_id.side_effect = [None, None]
+        # Prepare the calls to get_show_data_by_tmdb_id
+        db_calls_mock.get_show_data_by_tmdb_id.side_effect = [None, None]
 
         # Prepare the calls to register_show_session
         show_session = models.ShowSession(3, 1, datetime.datetime(2021, 6, 30, 22, 50), 8373, 7503)
@@ -1139,7 +1139,7 @@ class TestGenericXlsx(unittest.TestCase):
 
         tmdb_calls_mock.get_show_using_id.assert_called_with(self.session, 1, False)
 
-        db_calls_mock.get_show_data_tmdb_id.assert_has_calls(
+        db_calls_mock.get_show_data_by_tmdb_id.assert_has_calls(
             [unittest.mock.call(self.session, 1),
              unittest.mock.call(self.session, 112)])
 

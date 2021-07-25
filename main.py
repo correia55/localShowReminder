@@ -1016,6 +1016,28 @@ class UsersBASettingsEP(fr.Resource):
                 return flask.make_response('Missing Parameter', 400)
 
 
+class HighlightsEP(fr.Resource):
+    def __init__(self):
+        super(HighlightsEP, self).__init__()
+
+    get_args = \
+        {
+            'year': webargs.fields.Int(required=True),
+            'week': webargs.fields.Int(required=True)
+        }
+
+    @fp.use_args(get_args)
+    def get(self, args):
+        """Get the list of highlights."""
+
+        year = args['year']
+        week = args['week']
+
+        with session_scope() as session:
+            highlights = processing.get_response_highlights_week(session, year, week)
+            return flask.make_response(flask.jsonify({'highlight_list': auxiliary.list_to_json(highlights)}), 200)
+
+
 # Functions
 api.add_resource(LoginEP, '/login', endpoint='login')
 api.add_resource(ExternalLoginEP, '/external-login', endpoint='external_login')
@@ -1036,6 +1058,7 @@ api.add_resource(LocalShowsEP, '/local-shows', endpoint='local-shows')
 api.add_resource(UsersEP, '/users', endpoint='users')
 api.add_resource(UsersSettingsEP, '/users-settings', endpoint='users-settings')
 api.add_resource(UsersBASettingsEP, '/users-ba-settings', endpoint='users-ba-settings')
+api.add_resource(HighlightsEP, '/highlights', endpoint='highlights')
 
 if __name__ == '__main__':
     app.run(debug=True, threaded=True, use_reloader=False)

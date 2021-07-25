@@ -126,7 +126,7 @@ class TestAuxiliary(unittest.TestCase):
         """ Test the annotation that automatically generates the function __repr__ for any class. """
 
         # The expected result
-        expected_result = 'AutoReprTest(string=a string, number=353)'
+        expected_result = 'AutoReprTest(number=353, string=\'a string\')'
 
         # Call the function
         auto_repr_test = AutoReprTest('a string', 353)

@@ -2260,7 +2260,7 @@ class TestHighlights(unittest.TestCase):
         """ Test the function register_highlight with a SCORE highlight. """
 
         # Call the function
-        actual_result = db_calls.register_highlight(self.session, models.HighlightsType.SCORE, 2021, 1, [1, 2, 3])
+        actual_result = db_calls.register_highlights(self.session, models.HighlightsType.SCORE, 2021, 1, [1, 2, 3])
 
         # Verify the result
         self.assertIsNotNone(actual_result)
@@ -2268,14 +2268,14 @@ class TestHighlights(unittest.TestCase):
         self.assertEqual(2021, actual_result.year)
         self.assertEqual(1, actual_result.week)
         self.assertEqual("SCORE", actual_result.key)
-        self.assertEqual('[{"id":1},{"id":2},{"id":3}]', actual_result.result_list_json)
+        self.assertEqual('1,2,3', actual_result.id_list)
 
     def test_register_highlight_ok_02(self) -> None:
         """ Test the function register_highlight with a NEW highlight. """
 
         # Call the function
-        actual_result = db_calls.register_highlight(self.session, models.HighlightsType.SCORE, 2021, 1, [1, 2, 3],
-                                                    [None, 1, 10])
+        actual_result = db_calls.register_highlights(self.session, models.HighlightsType.SCORE, 2021, 1, [1, 2, 3],
+                                                     [None, 1, 10])
 
         # Verify the result
         self.assertIsNotNone(actual_result)
@@ -2283,4 +2283,5 @@ class TestHighlights(unittest.TestCase):
         self.assertEqual(2021, actual_result.year)
         self.assertEqual(1, actual_result.week)
         self.assertEqual("SCORE", actual_result.key)
-        self.assertEqual('[{"id":1},{"id":2,"season":1},{"id":3,"season":10}]', actual_result.result_list_json)
+        self.assertEqual('1,2,3', actual_result.id_list)
+        self.assertEqual('-1,1,10', actual_result.season_list)

@@ -97,7 +97,7 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
 
             # If it found a match in TMDB
             if tmdb_show:
-                tmdb_show_data = db_calls.get_show_data_tmdb_id(db_session, tmdb_show.id)
+                tmdb_show_data = db_calls.get_show_data_by_tmdb_id(db_session, tmdb_show.id)
 
                 correction_needed = is_correction_needed(show_data, tmdb_show)
 
@@ -247,7 +247,7 @@ def delete_old_sessions(db_session: sqlalchemy.orm.Session, start_datetime: date
 
 
 def search_tmdb_match(db_session: sqlalchemy.orm.Session, show_data: models.ShowData, use_year: bool = True) \
-        -> Optional[tmdb_calls.TmdbShow]:
+        -> Optional[response_models.TmdbShow]:
     """
     Search for a TMDB match.
 
@@ -338,7 +338,7 @@ def search_tmdb_match(db_session: sqlalchemy.orm.Session, show_data: models.Show
         return None
 
 
-def update_show_data_with_tmdb(show_data: models.ShowData, tmdb_show: tmdb_calls.TmdbShow):
+def update_show_data_with_tmdb(show_data: models.ShowData, tmdb_show: response_models.TmdbShow):
     """
     Update a show data with the data from TMDB.
 
@@ -367,7 +367,7 @@ def update_show_data_with_tmdb(show_data: models.ShowData, tmdb_show: tmdb_calls
         show_data.cast = None
 
 
-def is_correction_needed(show_data: models.ShowData, tmdb_show: tmdb_calls.TmdbShow):
+def is_correction_needed(show_data: models.ShowData, tmdb_show: response_models.TmdbShow):
     """
     Compare the data in the DB with the one from TMDB to check if a correction is needed.
 

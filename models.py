@@ -357,37 +357,42 @@ class HighlightsType(Enum):
     NEW = 1
 
 
+@auxiliary.auto_repr
 class Highlights(Base):
     """Used to store the highlights of each week."""
 
     __tablename__ = 'Highlights'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    key = Column(String(50))  # Either Score or New
+    key = Column(String(50))  # Either SCORE or NEW
     year = Column(Integer)
     week = Column(Integer)  # The number of the week
-    result_list_json = Column(String(50000))  # The list of pairs (id/season) in json
+    id_list = Column(String(10000))  # The list of ids
+    season_list = Column(String(5000))  # The list of seasons - only for NEW
 
     def __init__(self, key: HighlightsType, year: int, week: int, id_list: [int], season_list: [int]):
         self.key = key.name
         self.year = year
         self.week = week
 
-        # Combine the lists of ids and seasons and convert it to json
-        self.result_list_json = '['
+        # Create a string with the list of ids
+        self.id_list = ''
 
-        for i in range(len(id_list)):
-            show_id = id_list[i]
+        for show_id in id_list:
+            if self.id_list != '':
+                self.id_list += ','
 
-            if self.result_list_json != '[':
-                self.result_list_json += ','
+            self.id_list += str(show_id)
 
-            self.result_list_json += '{"id":' + str(show_id)
+        # Create a string with the list of seasons
+        if season_list is not None:
+            self.season_list = ''
 
-            # Combine the list of seasons - only for NEW highlights
-            if season_list is not None and season_list[i] is not None:
-                self.result_list_json += ',"season":' + str(season_list[i])
+            for season in season_list:
+                if self.season_list != '':
+                    self.season_list += ','
 
-            self.result_list_json += '}'
-
-        self.result_list_json += ']'
+                if season is None:
+                    self.season_list += "-1"
+                else:
+                    self.season_list += str(season)
