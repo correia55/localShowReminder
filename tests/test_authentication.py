@@ -359,7 +359,7 @@ class TestAuthentication(unittest.TestCase):
         # Call the function
         token = authentication.generate_token(123, authentication.TokenType.ACCESS)
 
-        actual_result = authentication.validate_token(token, authentication.TokenType.ACCESS)
+        actual_result = authentication.validate_token(token.encode(), authentication.TokenType.ACCESS)
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -379,7 +379,7 @@ class TestAuthentication(unittest.TestCase):
         db_calls_mock.get_token.return_value = models.Token(token)
 
         # Call the function
-        actual_result = authentication.validate_token(token, authentication.TokenType.REFRESH,
+        actual_result = authentication.validate_token(token.encode(), authentication.TokenType.REFRESH,
                                                       unittest.mock.MagicMock())
 
         # Verify the result
@@ -446,7 +446,7 @@ class TestAuthentication(unittest.TestCase):
         # Call the function
         token = authentication.generate_token(123, authentication.TokenType.REFRESH)
 
-        actual_result = authentication.validate_token(token, authentication.TokenType.REFRESH,
+        actual_result = authentication.validate_token(token.encode(), authentication.TokenType.REFRESH,
                                                       unittest.mock.MagicMock())
 
         # Verify the result

@@ -1034,7 +1034,7 @@ def register_token(session: sqlalchemy.orm.Session, token: bytes) -> Optional[mo
     :return: the created token.
     """
 
-    token = models.Token(token.decode())
+    token = models.Token(token)
     session.add(token)
 
     try:
@@ -1196,9 +1196,14 @@ def search_old_sessions(session: sqlalchemy.orm.Session, start_datetime: datetim
     now = datetime.datetime.utcnow() - datetime.timedelta(hours=1)
 
     # Get the corresponding channel ids
-    channels_ids = session.query(models.Channel.id) \
+    db_channels = session.query(models.Channel) \
         .filter(models.Channel.name.in_(channels)) \
         .all()
+
+    channels_ids = []
+
+    for db_channel in db_channels:
+        channels_ids.append(db_channel.id)
 
     # Search the sessions
     query = session.query(models.ShowSession) \

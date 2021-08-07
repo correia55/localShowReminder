@@ -284,7 +284,7 @@ class ShowTitles(Base):
     __tablename__ = 'ShowTitles'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    tmdb_id = Column(Integer, unique=True)
+    tmdb_id = Column(Integer)
     is_movie = Column(Boolean)
     titles = Column(String(1000), nullable=False)  # Titles separated by a vertical var (|)
     # TODO: DATE SHOULD BE ENOUGH

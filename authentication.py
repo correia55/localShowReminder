@@ -20,7 +20,7 @@ class TokenType(Enum):
 
 
 def generate_token(user_id: int, token_type: TokenType, session: sqlalchemy.orm.Session = None,
-                   payload_extra: dict = None) -> Optional[bytes]:
+                   payload_extra: dict = None) -> Optional[str]:
     """
     Source: https://realpython.com/token-based-authentication-with-flask/
     Generate a token of the given type, for the specified user.

@@ -184,7 +184,8 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
     return final_results
 
 
-def search_sessions_db_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie : bool, only_new: bool = False,
+def search_sessions_db_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: bool,
+                                    only_new: bool = False,
                                     show_season: int = None, show_episode: int = None,
                                     use_excluded_channels: bool = False, user_id: int = None) \
         -> List[response_models.LocalShowResult]:
@@ -581,7 +582,7 @@ def send_verification_email(user: models.User):
     :param user: the user.
     """
 
-    verification_token = authentication.generate_token(user.id, authentication.TokenType.VERIFICATION).decode()
+    verification_token = authentication.generate_token(user.id, authentication.TokenType.VERIFICATION)
 
     process_emails.set_language(user.language)
     return process_emails.send_verification_email(user.email, verification_token)
@@ -601,7 +602,7 @@ def send_deletion_email(session, user_id: str) -> bool:
     if user is None:
         return False
 
-    deletion_token = authentication.generate_token(user.id, authentication.TokenType.DELETION, session).decode()
+    deletion_token = authentication.generate_token(user.id, authentication.TokenType.DELETION, session)
 
     process_emails.set_language(user.language)
     return process_emails.send_deletion_email(user.email, deletion_token)
@@ -622,7 +623,7 @@ def send_change_email_old(session, user_id: str) -> bool:
         return False
 
     change_email_old_token = authentication.generate_token(user.id, authentication.TokenType.CHANGE_EMAIL_OLD,
-                                                           session).decode()
+                                                           session)
 
     process_emails.set_language(user.language)
     return process_emails.send_change_email_old(user.email, change_email_old_token)
@@ -683,7 +684,7 @@ def send_password_recovery_email(session, user_id: str) -> bool:
         return False
 
     password_recovery_token = authentication.generate_token(user.id, authentication.TokenType.PASSWORD_RECOVERY,
-                                                            session).decode()
+                                                            session)
 
     process_emails.set_language(user.language)
     return process_emails.send_password_recovery_email(user.email, password_recovery_token)

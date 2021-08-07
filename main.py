@@ -110,7 +110,7 @@ class LoginEP(fr.Resource):
             if user is not None:
                 if user.verified:
                     refresh_token = authentication.generate_token(user.id, authentication.TokenType.REFRESH,
-                                                                  session=session).decode()
+                                                                  session=session)
 
                     if auth['username'].find('@') != -1:
                         username = auth['username'][:auth['username'].index('@')]
@@ -178,7 +178,7 @@ class ExternalLoginEP(fr.Resource):
 
             # Generate the refresh token
             refresh_token = authentication.generate_token(user.id, authentication.TokenType.REFRESH,
-                                                          session=session).decode()
+                                                          session=session)
 
             username = user.email[:user.email.index('@')]
 
@@ -315,7 +315,7 @@ class RemindersEP(fr.Resource):
             'reminder_id': webargs.fields.Int(required=True)
         }
 
-    @fp.use_args(delete_args)
+    @fp.use_args(delete_args, location='query')
     def delete(self, args):
         """Delete a reminder."""
 
@@ -358,6 +358,7 @@ class AlarmsEP(fr.Resource):
             'is_movie': webargs.fields.Bool(required=True),
             'type': webargs.fields.Str(required=True),
             'trakt_id': webargs.fields.Int(),
+            'show_language': webargs.fields.Str(),  # TODO: NOT BEING UTILIZED
             'show_season': webargs.fields.Int(validate=[webargs.validate.Range(min=1, max=50)]),
             'show_episode': webargs.fields.Int(validate=[webargs.validate.Range(min=1)])
         }
@@ -446,7 +447,7 @@ class AlarmsEP(fr.Resource):
             'alarm_id': webargs.fields.Int(required=True)
         }
 
-    @fp.use_args(delete_args)
+    @fp.use_args(delete_args, location='query')
     def delete(self, args):
         """Delete a alarm."""
 
@@ -611,7 +612,7 @@ class AccessEP(fr.Resource):
             valid, access_token = authentication.generate_access_token(session, refresh_token.encode())
 
             if valid:
-                return flask.make_response(flask.jsonify({'token': str(access_token.decode())}), 200)
+                return flask.make_response(flask.jsonify({'token': str(access_token)}), 200)
             else:
                 return flask.make_response('Invalid Token', 403)  # Should be 503
 
@@ -639,7 +640,7 @@ class ShowsEP(fr.Resource):
             'language': webargs.fields.Str(required=True)
         }
 
-    @fp.use_args(search_args)
+    @fp.use_args(search_args, location='query')
     def get(self, args):
         """Get search results for the search_text, using the Trakt API."""
 
@@ -691,7 +692,7 @@ class LocalShowsEP(fr.Resource):
             'is_movie': webargs.fields.Bool(),
         }
 
-    @fp.use_args(search_args)
+    @fp.use_args(search_args, location='query')
     def get(self, args):
         """Get search results for the search_text or the show_id, in the listings and streaming services."""
 
@@ -870,7 +871,7 @@ class UsersEP(fr.Resource):
             'deletion_token': webargs.fields.Str(required=True)
         }
 
-    @fp.use_args(deletion_args)
+    @fp.use_args(deletion_args, location='query')
     def delete(self, args):
         """Delete a user's account."""
 
@@ -1026,7 +1027,7 @@ class HighlightsEP(fr.Resource):
             'week': webargs.fields.Int(required=True)
         }
 
-    @fp.use_args(get_args)
+    @fp.use_args(get_args, location='query')
     def get(self, args):
         """Get the list of highlights."""
 
