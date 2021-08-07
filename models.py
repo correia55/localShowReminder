@@ -17,6 +17,193 @@ class AccountType(Enum):
     GOOGLE = 1
 
 
+class Alarm(Base):
+    __tablename__ = 'Alarm'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    show_name = Column(String(255), nullable=False)
+    trakt_id = Column(Integer)
+
+    is_movie = Column(Boolean)
+    alarm_type = Column(Integer, nullable=False)
+
+    show_season = Column(Integer)
+    show_episode = Column(Integer)
+
+    user_id = Column(Integer, ForeignKey('User.id'))
+
+    def __init__(self, show_name: str, trakt_id: int, is_movie: bool, alarm_type: int, show_season: int,
+                 show_episode: int, user_id: int):
+        self.show_name = show_name
+        self.trakt_id = trakt_id
+
+        self.is_movie = is_movie
+        self.alarm_type = alarm_type
+
+        self.show_season = show_season
+        self.show_episode = show_episode
+
+        self.user_id = user_id
+
+
+class Cache(Base):
+    """Used as cache to all outside requests."""
+
+    __tablename__ = 'Cache'
+
+    key = Column(String(200), primary_key=True)
+    result = Column(String(100000))
+    date_time = Column(DateTime, default=datetime.datetime.utcnow())
+
+    def __init__(self, key: str, result: str):
+        self.key = key
+        self.result = result
+
+
+class Channel(Base):
+    """Used to store all of the information associated with a TV channel."""
+
+    __tablename__ = 'Channel'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    acronym = Column(String(255), unique=True)
+    name = Column(String(255), unique=True)
+    adult = Column(Boolean)
+    search_epg = Column(Boolean)
+
+    def __init__(self, acronym, name):
+        self.acronym = acronym
+        self.name = name
+        self.adult = False
+        self.search_epg = True
+
+    def __str__(self):
+        return 'id: %d; acronym: %s; name: %s; adult: %r; search_epg: %r' \
+               % (self.id, self.acronym, self.name, self.adult, self.search_epg)
+
+    def to_dict(self) -> dict:
+        """
+        Create a dictionary from the current object.
+
+        :return: the corresponding dictionary.
+        """
+
+        return {'id': self.id, 'name': self.name, 'adult': self.adult}
+
+
+@auxiliary.auto_repr
+class ChannelShowData(Base):
+    """Used to store corrections on names of the shows for a given channel."""
+
+    __tablename__ = 'ChannelShowData'
+
+    # Technical
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # Foreign key
+    show_id = Column(Integer, ForeignKey('ShowData.id'))
+    channel_id = Column(Integer, ForeignKey('Channel.id'))
+
+    # Mandatory
+    is_movie = Column(Boolean)
+    original_title = Column(String(255))
+    localized_title = Column(String(255))
+
+    # Optional
+    year = Column(Integer)
+    directors = Column(String(255))
+    creators = Column(String(255))
+    subgenre = Column(String(255))
+
+    def __init__(self, channel_id: int, show_id: int, is_movie: bool, original_title: str, localized_title: str):
+        self.channel_id = channel_id
+        self.show_id = show_id
+
+        self.is_movie = is_movie
+        self.original_title = original_title
+        self.localized_title = localized_title
+
+
+class HighlightsType(Enum):
+    SCORE = 0
+    NEW = 1
+
+
+@auxiliary.auto_repr
+class Highlights(Base):
+    """Used to store the highlights of each week."""
+
+    __tablename__ = 'Highlights'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    key = Column(String(50))  # Either SCORE or NEW
+    year = Column(Integer)
+    week = Column(Integer)  # The number of the week
+    id_list = Column(String(10000))  # The list of ids
+    season_list = Column(String(5000))  # The list of seasons - only for NEW
+
+    def __init__(self, key: HighlightsType, year: int, week: int, id_list: [int], season_list: [int]):
+        self.key = key.name
+        self.year = year
+        self.week = week
+
+        # Create a string with the list of ids
+        self.id_list = ''
+
+        for show_id in id_list:
+            if self.id_list != '':
+                self.id_list += ','
+
+            self.id_list += str(show_id)
+
+        # Create a string with the list of seasons
+        if season_list is not None:
+            self.season_list = ''
+
+            for season in season_list:
+                if self.season_list != '':
+                    self.season_list += ','
+
+                if season is None:
+                    self.season_list += "-1"
+                else:
+                    self.season_list += str(season)
+
+
+class LastUpdate(Base):
+    """Used to store the data from the last update."""
+
+    __tablename__ = 'LastUpdate'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    epg_date = Column(Date)
+    alarms_datetime = Column(DateTime)
+
+    def __init__(self, epg_date: datetime.date, alarms_datetime: datetime.datetime):
+        self.epg_date = epg_date
+        self.alarms_datetime = alarms_datetime
+
+
+class Reminder(Base):
+    __tablename__ = 'Reminder'
+    __table_args__ = (
+        sqlalchemy.UniqueConstraint("session_id", "user_id"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    anticipation_minutes = Column(Integer, nullable=False)
+
+    session_id = Column(Integer, ForeignKey('ShowSession.id'))
+    user_id = Column(Integer, ForeignKey('User.id'))
+
+    def __init__(self, anticipation_minutes: int, session_id: int, user_id: int):
+        self.anticipation_minutes = anticipation_minutes
+        self.session_id = session_id
+        self.user_id = user_id
+
+
 @auxiliary.auto_repr
 class ShowData(Base):
     """Used to store all the data associated with a show."""
@@ -60,53 +247,6 @@ class ShowData(Base):
         self.portuguese_title = portuguese_title
 
 
-class ShowTitles(Base):
-    """Used to store all of the titles associated with a tmdb id, for caching purposes."""
-
-    __tablename__ = 'ShowTitles'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    tmdb_id = Column(Integer, unique=True)
-    titles = Column(String(1000), nullable=False)  # Titles separated by a vertical var (|)
-    # TODO: DATE SHOULD BE ENOUGH
-    insertion_datetime = Column(DateTime, default=datetime.datetime.utcnow())
-
-    def __init__(self, trakt_id: int, titles: str):
-        self.tmdb_id = trakt_id
-        self.titles = titles
-
-
-class Channel(Base):
-    """Used to store all of the information associated with a TV channel."""
-
-    __tablename__ = 'Channel'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    acronym = Column(String(255), unique=True)
-    name = Column(String(255), unique=True)
-    adult = Column(Boolean)
-    search_epg = Column(Boolean)
-
-    def __init__(self, acronym, name):
-        self.acronym = acronym
-        self.name = name
-        self.adult = False
-        self.search_epg = True
-
-    def __str__(self):
-        return 'id: %d; acronym: %s; name: %s; adult: %r; search_epg: %r' \
-               % (self.id, self.acronym, self.name, self.adult, self.search_epg)
-
-    def to_dict(self) -> dict:
-        """
-        Create a dictionary from the current object.
-
-        :return: the corresponding dictionary.
-        """
-
-        return {'id': self.id, 'name': self.name, 'adult': self.adult}
-
-
 @auxiliary.auto_repr
 class ShowSession(Base):
     __tablename__ = 'ShowSession'
@@ -138,37 +278,20 @@ class ShowSession(Base):
         self.extended_cut = extended_cut
 
 
-@auxiliary.auto_repr
-class ChannelShowData(Base):
-    """Used to store corrections on names of the shows for a given channel."""
+class ShowTitles(Base):
+    """Used to store all of the titles associated with a tmdb id, for caching purposes."""
 
-    __tablename__ = 'ChannelShowData'
+    __tablename__ = 'ShowTitles'
 
-    # Technical
     id = Column(Integer, primary_key=True, autoincrement=True)
+    tmdb_id = Column(Integer, unique=True)
+    titles = Column(String(1000), nullable=False)  # Titles separated by a vertical var (|)
+    # TODO: DATE SHOULD BE ENOUGH
+    insertion_datetime = Column(DateTime, default=datetime.datetime.utcnow())
 
-    # Foreign key
-    show_id = Column(Integer, ForeignKey('ShowData.id'))
-    channel_id = Column(Integer, ForeignKey('Channel.id'))
-
-    # Mandatory
-    is_movie = Column(Boolean)
-    original_title = Column(String(255))
-    localized_title = Column(String(255))
-
-    # Optional
-    year = Column(Integer)
-    directors = Column(String(255))
-    creators = Column(String(255))
-    subgenre = Column(String(255))
-
-    def __init__(self, channel_id: int, show_id: int, is_movie: bool, original_title: str, localized_title: str):
-        self.channel_id = channel_id
-        self.show_id = show_id
-
-        self.is_movie = is_movie
-        self.original_title = original_title
-        self.localized_title = localized_title
+    def __init__(self, trakt_id: int, titles: str):
+        self.tmdb_id = trakt_id
+        self.titles = titles
 
 
 class StreamingService(Base):
@@ -220,6 +343,18 @@ class StreamingServiceShow(Base):
         self.streaming_service_id = streaming_service_id
 
 
+class Token(Base):
+    """Used to store user's valid refresh tokens."""
+
+    __tablename__ = 'Token'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    token = Column(String(400), unique=True, nullable=False)
+
+    def __init__(self, token: str):
+        self.token = token
+
+
 class User(Base):
     """Used to store the user's information."""
 
@@ -250,55 +385,6 @@ class User(Base):
         self.language = language
 
 
-class Alarm(Base):
-    __tablename__ = 'Alarm'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-
-    show_name = Column(String(255), nullable=False)
-    trakt_id = Column(Integer)
-
-    is_movie = Column(Boolean)
-    alarm_type = Column(Integer, nullable=False)
-
-    show_season = Column(Integer)
-    show_episode = Column(Integer)
-
-    user_id = Column(Integer, ForeignKey('User.id'))
-
-    def __init__(self, show_name: str, trakt_id: int, is_movie: bool, alarm_type: int, show_season: int,
-                 show_episode: int, user_id: int):
-        self.show_name = show_name
-        self.trakt_id = trakt_id
-
-        self.is_movie = is_movie
-        self.alarm_type = alarm_type
-
-        self.show_season = show_season
-        self.show_episode = show_episode
-
-        self.user_id = user_id
-
-
-class Reminder(Base):
-    __tablename__ = 'Reminder'
-    __table_args__ = (
-        sqlalchemy.UniqueConstraint("session_id", "user_id"),
-    )
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-
-    anticipation_minutes = Column(Integer, nullable=False)
-
-    session_id = Column(Integer, ForeignKey('ShowSession.id'))
-    user_id = Column(Integer, ForeignKey('User.id'))
-
-    def __init__(self, anticipation_minutes: int, session_id: int, user_id: int):
-        self.anticipation_minutes = anticipation_minutes
-        self.session_id = session_id
-        self.user_id = user_id
-
-
 class UserExcludedChannel(Base):
     """Used to store the channels whose content the user does not care."""
 
@@ -310,89 +396,3 @@ class UserExcludedChannel(Base):
     def __init__(self, user_id: int, channel_id: int):
         self.user_id = user_id
         self.channel_id = channel_id
-
-
-class Token(Base):
-    """Used to store user's valid refresh tokens."""
-
-    __tablename__ = 'Token'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    token = Column(String(400), unique=True, nullable=False)
-
-    def __init__(self, token: str):
-        self.token = token
-
-
-class LastUpdate(Base):
-    """Used to store the data from the last update."""
-
-    __tablename__ = 'LastUpdate'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    epg_date = Column(Date)
-    alarms_datetime = Column(DateTime)
-
-    def __init__(self, epg_date: datetime.date, alarms_datetime: datetime.datetime):
-        self.epg_date = epg_date
-        self.alarms_datetime = alarms_datetime
-
-
-class Cache(Base):
-    """Used as cache to all outside requests."""
-
-    __tablename__ = 'Cache'
-
-    key = Column(String(200), primary_key=True)
-    result = Column(String(100000))
-    date_time = Column(DateTime, default=datetime.datetime.utcnow())
-
-    def __init__(self, key: str, result: str):
-        self.key = key
-        self.result = result
-
-
-class HighlightsType(Enum):
-    SCORE = 0
-    NEW = 1
-
-
-@auxiliary.auto_repr
-class Highlights(Base):
-    """Used to store the highlights of each week."""
-
-    __tablename__ = 'Highlights'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    key = Column(String(50))  # Either SCORE or NEW
-    year = Column(Integer)
-    week = Column(Integer)  # The number of the week
-    id_list = Column(String(10000))  # The list of ids
-    season_list = Column(String(5000))  # The list of seasons - only for NEW
-
-    def __init__(self, key: HighlightsType, year: int, week: int, id_list: [int], season_list: [int]):
-        self.key = key.name
-        self.year = year
-        self.week = week
-
-        # Create a string with the list of ids
-        self.id_list = ''
-
-        for show_id in id_list:
-            if self.id_list != '':
-                self.id_list += ','
-
-            self.id_list += str(show_id)
-
-        # Create a string with the list of seasons
-        if season_list is not None:
-            self.season_list = ''
-
-            for season in season_list:
-                if self.season_list != '':
-                    self.season_list += ','
-
-                if season is None:
-                    self.season_list += "-1"
-                else:
-                    self.season_list += str(season)
