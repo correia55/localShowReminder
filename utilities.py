@@ -112,7 +112,7 @@ def set_tmdb_match(db_session: sqlalchemy.orm.Session, show_id: int, tmdb_id: in
         directors = None
 
     # Check if the tmdb_id is not already present in another entry
-    original_show = db_calls.get_show_data_by_tmdb_id(db_session, tmdb_id)
+    original_show = db_calls.get_show_data_by_tmdb_id(db_session, tmdb_id, is_movie)
 
     # If it is:
     if original_show is not None:

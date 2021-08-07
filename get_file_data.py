@@ -97,7 +97,7 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
 
             # If it found a match in TMDB
             if tmdb_show:
-                tmdb_show_data = db_calls.get_show_data_by_tmdb_id(db_session, tmdb_show.id)
+                tmdb_show_data = db_calls.get_show_data_by_tmdb_id(db_session, tmdb_show.id, tmdb_show.is_movie)
 
                 correction_needed = is_correction_needed(show_data, tmdb_show)
 

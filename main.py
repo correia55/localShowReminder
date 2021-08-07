@@ -733,7 +733,7 @@ class LocalShowsEP(fr.Resource):
 
                 titles = processing.get_show_titles(session, show_id, is_movie)
 
-                db_shows = processing.search_sessions_db_with_tmdb_id(session, show_id)
+                db_shows = processing.search_sessions_db_with_tmdb_id(session, show_id, is_movie)
             else:
                 if len(search_text) < 2:
                     return flask.make_response('Search Text Too Small', 400)

@@ -101,7 +101,7 @@ class TestProcessing(unittest.TestCase):
         db_calls_mock.get_alarms.return_value = [alarm]
 
         # The db_calls.get_show_titles in get_show_titles
-        show_titles = models.ShowTitles(123, 'Title 1|Title 2')
+        show_titles = models.ShowTitles(123, True, 'Title 1|Title 2')
         show_titles.insertion_datetime = datetime.datetime.utcnow() - datetime.timedelta(hours=3)
 
         db_calls_mock.get_show_titles.return_value = show_titles
@@ -170,13 +170,13 @@ class TestProcessing(unittest.TestCase):
 
         db_calls_mock.get_alarms.assert_called_with(self.session)
 
-        db_calls_mock.get_show_titles.assert_called_with(self.session, 123)
+        db_calls_mock.get_show_titles.assert_called_with(self.session, 123, True)
 
         db_calls_mock.get_last_update.assert_has_calls([unittest.mock.call(self.session),
                                                         unittest.mock.call(self.session),
                                                         unittest.mock.call(self.session)])
 
-        db_calls_mock.search_show_sessions_data_with_tmdb_id.assert_called_with(self.session, 123, None, None,
+        db_calls_mock.search_show_sessions_data_with_tmdb_id.assert_called_with(self.session, 123, True, None, None,
                                                                                 below_datetime=original_datetime)
 
         db_calls_mock.get_user_excluded_channels.assert_has_calls([unittest.mock.call(self.session, 933),
@@ -233,7 +233,7 @@ class TestProcessing(unittest.TestCase):
         db_calls_mock.get_alarms.return_value = [alarm]
 
         # The db_calls.get_show_titles in get_show_titles
-        show_titles = models.ShowTitles(123, 'Title 1|Title 2')
+        show_titles = models.ShowTitles(123, True, 'Title 1|Title 2')
         show_titles.insertion_datetime = datetime.datetime.utcnow() - datetime.timedelta(hours=3)
 
         db_calls_mock.get_show_titles.return_value = show_titles
@@ -294,13 +294,13 @@ class TestProcessing(unittest.TestCase):
 
         db_calls_mock.get_alarms.assert_called_with(self.session)
 
-        db_calls_mock.get_show_titles.assert_called_with(self.session, 123)
+        db_calls_mock.get_show_titles.assert_called_with(self.session, 123, True)
 
         db_calls_mock.get_last_update.assert_has_calls([unittest.mock.call(self.session),
                                                         unittest.mock.call(self.session),
                                                         unittest.mock.call(self.session)])
 
-        db_calls_mock.search_show_sessions_data_with_tmdb_id.assert_called_with(self.session, 123, None, None,
+        db_calls_mock.search_show_sessions_data_with_tmdb_id.assert_called_with(self.session, 123, True, None, None,
                                                                                 below_datetime=original_datetime)
 
         db_calls_mock.get_user_excluded_channels.assert_has_calls([unittest.mock.call(self.session, 933),
@@ -500,16 +500,16 @@ class TestProcessing(unittest.TestCase):
                                 datetime.datetime(2021, 3, 21, 23, 59, 59), False)])
 
         db_calls_mock.register_highlights.assert_has_calls(
-            [unittest.mock.call(self.session, models.HighlightsType.SCORE, 2021, 10, [1234, 1274]),
-             unittest.mock.call(self.session, models.HighlightsType.NEW, 2021, 11, [42], [5])])
+            [unittest.mock.call(self.session, models.HighlightsType.SCORE, 2021, 10, [189, 46]),
+             unittest.mock.call(self.session, models.HighlightsType.NEW, 2021, 11, [55], [5])])
 
     def test_get_response_highlights_week_ok(self) -> None:
         """ Test the function get_response_highlights_week. """
 
         # Prepare the mocks
         # Calls to get the highlights
-        score_highlights = models.Highlights(models.HighlightsType.SCORE, 2021, 2, [3792], None)
-        new_highlights = models.Highlights(models.HighlightsType.NEW, 2021, 2, [84, 1111], [None, 10])
+        score_highlights = models.Highlights(models.HighlightsType.SCORE, 2021, 2, [3], None)
+        new_highlights = models.Highlights(models.HighlightsType.NEW, 2021, 2, [1, 2], [None, 10])
 
         db_calls_mock.get_week_highlights.side_effect = [score_highlights, new_highlights]
 
@@ -532,7 +532,7 @@ class TestProcessing(unittest.TestCase):
         show_2.synopsis = "Synopsis 2"
         show_2.is_movie = False
 
-        db_calls_mock.get_show_data_by_tmdb_id.side_effect = [show_3, show_1, show_2]
+        db_calls_mock.get_show_data_id.side_effect = [show_3, show_1, show_2]
 
         # Calls to obtain the TMDB data for each of the shows
         tmdb_show_3 = response_models.TmdbShow()
@@ -575,10 +575,10 @@ class TestProcessing(unittest.TestCase):
             [unittest.mock.call(self.session, models.HighlightsType.SCORE, 2021, 2),
              unittest.mock.call(self.session, models.HighlightsType.NEW, 2021, 2)])
 
-        db_calls_mock.get_show_data_by_tmdb_id.assert_has_calls(
-            [unittest.mock.call(self.session, 3792),
-             unittest.mock.call(self.session, 84),
-             unittest.mock.call(self.session, 1111)])
+        db_calls_mock.get_show_data_id.assert_has_calls(
+            [unittest.mock.call(self.session, 3),
+             unittest.mock.call(self.session, 1),
+             unittest.mock.call(self.session, 2)])
 
         tmdb_calls_mock.get_show_using_id.assert_has_calls(
             [unittest.mock.call(self.session, 3792, True),

@@ -325,18 +325,20 @@ def get_sessions_reminders(session: sqlalchemy.orm.Session) -> List[Tuple[models
         .all()
 
 
-def get_show_data_by_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: int) \
+def get_show_data_by_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: bool) \
         -> Optional[models.ShowData]:
     """
     Get the show data with a given tmdb id.
 
     :param session: the db session.
     :param tmdb_id: the TMDB id.
+    :param is_movie: whether it is a movie
     :return: the show data with that data.
     """
 
     return session.query(models.ShowData) \
         .filter(models.ShowData.tmdb_id == tmdb_id) \
+        .filter(models.ShowData.is_movie == is_movie) \
         .first()
 
 
@@ -419,17 +421,19 @@ def get_show_sessions_show_id(session: sqlalchemy.orm.Session, show_id: int) \
         .all()
 
 
-def get_show_titles(session: sqlalchemy.orm.Session, tmdb_id: int) -> Optional[models.ShowTitles]:
+def get_show_titles(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: bool) -> Optional[models.ShowTitles]:
     """
     Get the various possible titles for the selected title, in both english and portuguese, using the DB.
 
     :param session: the db session.
     :param tmdb_id: the tmdb id of the show.
+    :param is_movie: whether or not it is a movie.
     :return: the various possible titles.
     """
 
     return session.query(models.ShowTitles) \
         .filter(models.ShowTitles.tmdb_id == tmdb_id) \
+        .filter(models.ShowTitles.is_movie == is_movie) \
         .first()
 
 
@@ -940,17 +944,19 @@ def register_show_session(session: sqlalchemy.orm.Session, season: Optional[int]
         return show_session
 
 
-def register_show_titles(session: sqlalchemy.orm.Session, tmdb_id: int, titles_str: str) -> Optional[models.ShowTitles]:
+def register_show_titles(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: bool,
+                         titles_str: str) -> Optional[models.ShowTitles]:
     """
     Register an entry of ShowTitles.
 
     :param session: the db session.
     :param tmdb_id: the tmdb id of the show.
+    :param is_movie: whether it is a movie.
     :param titles_str: the string with the list of titles for the show.
     :return: the created ShowTitles.
     """
 
-    show_titles = models.ShowTitles(tmdb_id, titles_str)
+    show_titles = models.ShowTitles(tmdb_id, is_movie, titles_str)
     session.add(show_titles)
 
     try:
@@ -1332,14 +1338,16 @@ def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: s
     return query.all()
 
 
-def search_show_sessions_data_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: int, season: Optional[int],
-                                           episode: Optional[int], below_datetime: Optional[datetime.datetime] = None) \
+def search_show_sessions_data_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: bool,
+                                           season: Optional[int], episode: Optional[int],
+                                           below_datetime: Optional[datetime.datetime] = None) \
         -> List[Tuple[models.ShowSession, models.Channel, models.ShowData]]:
     """
     Search the show sessions, and all associated data, that match a tmdb_id.
 
     :param session: the db session.
     :param tmdb_id: the TMDB id.
+    :param is_movie: whether it is a movie.
     :param season: to specify a season.
     :param episode: to specify an episode.
     :param below_datetime: a datetime below to limit the search.
@@ -1347,7 +1355,8 @@ def search_show_sessions_data_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb
     """
 
     query = session.query(models.ShowSession, models.Channel, models.ShowData) \
-        .filter(models.ShowData.tmdb_id == tmdb_id)
+        .filter(models.ShowData.tmdb_id == tmdb_id) \
+        .filter(models.ShowData.is_movie == is_movie)
 
     if season is not None:
         query = query.filter(models.ShowSession.season == season)
@@ -1432,7 +1441,7 @@ def search_streaming_service_shows_data(session: sqlalchemy.orm.Session, search_
     return query.all()
 
 
-def search_streaming_service_shows_data_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: int,
+def search_streaming_service_shows_data_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie:bool,
                                                      season: Optional[int], episode: Optional[int],
                                                      below_datetime: Optional[datetime.datetime] = None) \
         -> List[Tuple[models.ShowSession, models.StreamingService, models.ShowData]]:
@@ -1441,6 +1450,7 @@ def search_streaming_service_shows_data_with_tmdb_id(session: sqlalchemy.orm.Ses
 
     :param session: the db session.
     :param tmdb_id: the TMDB id.
+    :param is_movie: whether it is a movie
     :param season: to specify a season.
     :param episode: to specify an episode.
     :param below_datetime: a datetime below to limit the search.
@@ -1448,7 +1458,8 @@ def search_streaming_service_shows_data_with_tmdb_id(session: sqlalchemy.orm.Ses
     """
 
     query = session.query(models.StreamingServiceShow, models.StreamingService, models.ShowData) \
-        .filter(models.ShowData.tmdb_id == tmdb_id)
+        .filter(models.ShowData.tmdb_id == tmdb_id) \
+        .filter(models.ShowData.is_movie == is_movie) \
 
     if season is not None:
         query = query.filter(models.StreamingServiceShow.first_season_available <= season)

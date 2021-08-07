@@ -140,7 +140,7 @@ class Highlights(Base):
     key = Column(String(50))  # Either SCORE or NEW
     year = Column(Integer)
     week = Column(Integer)  # The number of the week
-    id_list = Column(String(10000))  # The list of ids
+    id_list = Column(String(10000))  # The list of ids - DB ids, not TMDB
     season_list = Column(String(5000))  # The list of seasons - only for NEW
 
     def __init__(self, key: HighlightsType, year: int, week: int, id_list: [int], season_list: [int]):
@@ -285,12 +285,14 @@ class ShowTitles(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     tmdb_id = Column(Integer, unique=True)
+    is_movie = Column(Boolean)
     titles = Column(String(1000), nullable=False)  # Titles separated by a vertical var (|)
     # TODO: DATE SHOULD BE ENOUGH
     insertion_datetime = Column(DateTime, default=datetime.datetime.utcnow())
 
-    def __init__(self, trakt_id: int, titles: str):
+    def __init__(self, trakt_id: int, is_movie: bool, titles: str):
         self.tmdb_id = trakt_id
+        self.is_movie = is_movie
         self.titles = titles
 
 

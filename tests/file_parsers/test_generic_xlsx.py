@@ -738,8 +738,8 @@ class TestGenericXlsx(unittest.TestCase):
         tmdb_calls_mock.get_show_using_id.assert_called_with(self.session, 1, False)
 
         db_calls_mock.get_show_data_by_tmdb_id.assert_has_calls(
-            [unittest.mock.call(self.session, 1),
-             unittest.mock.call(self.session, 112)])
+            [unittest.mock.call(self.session, 1, False),
+             unittest.mock.call(self.session, 112, True)])
 
         db_calls_mock.register_show_session.assert_has_calls(
             [unittest.mock.call(self.session, 3, 1, datetime.datetime(2021, 6, 1, 5), 8373, 7503, audio_language=None,
@@ -873,8 +873,8 @@ class TestGenericXlsx(unittest.TestCase):
              unittest.mock.call(self.session, 'Safe', is_movie=True, year=2012)])
 
         db_calls_mock.get_show_data_by_tmdb_id.assert_has_calls(
-            [unittest.mock.call(self.session, 1),
-             unittest.mock.call(self.session, 112)])
+            [unittest.mock.call(self.session, 1, False),
+             unittest.mock.call(self.session, 112, True)])
 
         db_calls_mock.register_show_session.assert_has_calls(
             [unittest.mock.call(self.session, 5, 10, datetime.datetime(2021, 6, 1, 21, 15), 8373, 7503,
@@ -1140,8 +1140,8 @@ class TestGenericXlsx(unittest.TestCase):
         tmdb_calls_mock.get_show_using_id.assert_called_with(self.session, 1, False)
 
         db_calls_mock.get_show_data_by_tmdb_id.assert_has_calls(
-            [unittest.mock.call(self.session, 1),
-             unittest.mock.call(self.session, 112)])
+            [unittest.mock.call(self.session, 1, False),
+             unittest.mock.call(self.session, 112, False)])
 
         db_calls_mock.register_show_session.assert_has_calls(
             [unittest.mock.call(self.session, 1, 25, datetime.datetime(2021, 6, 30, 22, 50), 8373, 7503,

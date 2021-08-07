@@ -184,7 +184,7 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
     return final_results
 
 
-def search_sessions_db_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: int, only_new: bool = False,
+def search_sessions_db_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie : bool, only_new: bool = False,
                                     show_season: int = None, show_episode: int = None,
                                     use_excluded_channels: bool = False, user_id: int = None) \
         -> List[response_models.LocalShowResult]:
@@ -193,6 +193,7 @@ def search_sessions_db_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: in
 
     :param session: the db session.
     :param tmdb_id: the TMDB id.
+    :param is_movie: whether it is a movie.
     :param only_new: search only new shows (updated yesterday).
     :param show_season: to specify a season.
     :param show_episode: to specify an episode.
@@ -208,7 +209,7 @@ def search_sessions_db_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: in
 
     results = dict()
 
-    db_shows = db_calls.search_show_sessions_data_with_tmdb_id(session, tmdb_id, show_season, show_episode,
+    db_shows = db_calls.search_show_sessions_data_with_tmdb_id(session, tmdb_id, is_movie, show_season, show_episode,
                                                                below_datetime=below_datetime)
 
     excluded_channels = []
@@ -330,7 +331,7 @@ def get_show_titles(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: boo
     :return: the list of titles a show can have.
     """
 
-    show_titles = db_calls.get_show_titles(session, tmdb_id)
+    show_titles = db_calls.get_show_titles(session, tmdb_id, is_movie)
 
     # Titles in the DB are still valid
     if show_titles is not None \
@@ -352,7 +353,7 @@ def get_show_titles(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: boo
 
     # Create a new entry
     if show_titles is None:
-        show_titles = db_calls.register_show_titles(session, tmdb_id, titles_str)
+        show_titles = db_calls.register_show_titles(session, tmdb_id, is_movie, titles_str)
         session.add(show_titles)
     # Update the current entry
     else:
@@ -462,9 +463,9 @@ def process_alarms(session: sqlalchemy.orm.Session):
         else:
             titles = get_show_titles(session, a.trakt_id, a.is_movie)
 
-            db_shows = search_sessions_db_with_tmdb_id(session, a.trakt_id, only_new=True, show_season=a.show_season,
-                                                       show_episode=a.show_episode, use_excluded_channels=True,
-                                                       user_id=user.id)
+            db_shows = search_sessions_db_with_tmdb_id(session, a.trakt_id, a.is_movie, only_new=True,
+                                                       show_season=a.show_season, show_episode=a.show_episode,
+                                                       use_excluded_channels=True, user_id=user.id)
 
         db_shows += search_sessions_db(session, titles, a.is_movie, complete_title=True, only_new=True,
                                        show_season=a.show_season, show_episode=a.show_episode,
@@ -907,7 +908,7 @@ def calculate_score_highlights_week(session: sqlalchemy.orm.Session, year: int, 
     id_list = []
 
     for s in shows:
-        id_list.append(s[1])
+        id_list.append(s[0])
 
     db_calls.register_highlights(session, models.HighlightsType.SCORE, year, week, id_list)
 
@@ -937,7 +938,7 @@ def calculate_new_highlights_week(session: sqlalchemy.orm.Session, year: int, we
     season_list = []
 
     for s in shows:
-        id_list.append(s[1])
+        id_list.append(s[0])
         season_list.append(s[3])
 
     db_calls.register_highlights(session, models.HighlightsType.NEW, year, week, id_list, season_list)
@@ -1102,10 +1103,10 @@ def get_response_highlights_week(db_session: sqlalchemy.orm.Session, year: int, 
             season_list = db_highlight.season_list.split(",")
 
         for i in range(len(id_list)):
-            tmdb_id = int(id_list[i])
+            show_id = int(id_list[i])
 
-            db_show = db_calls.get_show_data_by_tmdb_id(db_session, tmdb_id)
-            tmdb_show = tmdb_calls.get_show_using_id(db_session, tmdb_id, db_show.is_movie)
+            db_show = db_calls.get_show_data_id(db_session, show_id)
+            tmdb_show = tmdb_calls.get_show_using_id(db_session, db_show.tmdb_id, db_show.is_movie)
 
             if db_show is None:
                 continue
