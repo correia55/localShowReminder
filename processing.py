@@ -961,7 +961,7 @@ def update_tmdb_data_week(session: sqlalchemy.orm.Session, year: int, week: int)
     shows = db_calls.get_shows_interval(session, start_datetime, end_datetime)
 
     for s in shows:
-        if s.is_movie and s.year < 2010:
+        if s.is_movie and (s.year is None or s.year < 2010):
             continue
 
         tmdb_show = tmdb_calls.get_show_using_id(session, s.tmdb_id, s.is_movie)
