@@ -113,7 +113,9 @@ class MEPG:
                 # Get the shows info for our list of channels
                 response_json = requests.post(shows_url, data=payload, headers={'Content-Type': 'application/json'},
                                               verify=False).json()
-            except:
+            except BaseException as e:
+                print('Exception occurred, retrying in 10 seconds!' + str(e))
+
                 # Wait 10 seconds and then retry
                 time.sleep(10)
 

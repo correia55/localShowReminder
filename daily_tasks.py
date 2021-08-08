@@ -36,6 +36,10 @@ def daily_tasks(db_session: sqlalchemy.orm.Session):
     processing.process_alarms(db_session)
     print('Alarms processed!')
 
+    # Calculate the highlights
+    processing.calculate_highlights(db_session)
+    print('Highlights calculated!')
+
 
 def main():
     configuration.initialize()
