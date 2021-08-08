@@ -46,6 +46,27 @@ def count_channel_sessions(session: sqlalchemy.orm.Session, channel_id: int):
     return session.query(models.ShowSession).filter(models.ShowSession.channel_id == channel_id).count()
 
 
+def delete_channel_show_data(session: sqlalchemy.orm.Session, channel_id: int) -> bool:
+    """
+    Delete all ChannelShowData entries for a given channel.
+
+    :param session: the db session.
+    :param channel_id: the id of the channel.
+    :return: True if the operation was a success.
+    """
+
+    session.query(models.ChannelShowData) \
+        .filter(models.ChannelShowData.channel_id == channel_id) \
+        .delete()
+
+    try:
+        session.commit()
+        return True
+    except (IntegrityError, InvalidRequestError):
+        session.rollback()
+        return False
+
+
 def delete_reminder(session: sqlalchemy.orm.Session, reminder_id: int, user_id: int) -> bool:
     """
     Delete the reminder with the corresponding id.
@@ -1446,7 +1467,7 @@ def search_streaming_service_shows_data(session: sqlalchemy.orm.Session, search_
     return query.all()
 
 
-def search_streaming_service_shows_data_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie:bool,
+def search_streaming_service_shows_data_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: bool,
                                                      season: Optional[int], episode: Optional[int],
                                                      below_datetime: Optional[datetime.datetime] = None) \
         -> List[Tuple[models.ShowSession, models.StreamingService, models.ShowData]]:
@@ -1464,7 +1485,7 @@ def search_streaming_service_shows_data_with_tmdb_id(session: sqlalchemy.orm.Ses
 
     query = session.query(models.StreamingServiceShow, models.StreamingService, models.ShowData) \
         .filter(models.ShowData.tmdb_id == tmdb_id) \
-        .filter(models.ShowData.is_movie == is_movie) \
+        .filter(models.ShowData.is_movie == is_movie)
 
     if season is not None:
         query = query.filter(models.StreamingServiceShow.first_season_available <= season)

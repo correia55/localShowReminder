@@ -2,6 +2,7 @@ import csv
 import datetime
 import os
 import re
+import time
 
 import requests
 import sqlalchemy.orm
@@ -25,6 +26,7 @@ def update_channel_list(session: sqlalchemy.orm.Session):
     for channel in db_channels:
         if db_calls.count_channel_sessions(session, channel.id) == 0:
             print('Deleted channel without content: %s!' % channel.name)
+            db_calls.delete_channel_show_data(session, channel.id)
             session.delete(channel)
 
     db_calls.commit(session)
@@ -101,9 +103,27 @@ class MEPG:
 
         print(payload)
 
-        # Get the shows info for our list of channels
-        response_json = requests.post(shows_url, data=payload, headers={'Content-Type': 'application/json'},
-                                      verify=False).json()
+        # Try the request X times
+        tries = 0
+
+        while tries < configuration.max_number_retries:
+            try:
+                # Get the shows info for our list of channels
+                response_json = requests.post(shows_url, data=payload, headers={'Content-Type': 'application/json'},
+                                              verify=False).json()
+            except:
+                # Wait 10 seconds and then retry
+                time.sleep(10)
+
+                tries = tries + 1
+                continue
+
+            break
+
+        # If it exceeded the number of tries
+        if tries == configuration.max_number_retries:
+            print("Exceeded maximum number of retries, skipping this call!")
+            return
 
         shows_added = False
 

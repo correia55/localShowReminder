@@ -27,6 +27,7 @@ channels_url: str
 shows_url: str
 max_channels_request: int
 show_sessions_validity_days: int
+max_number_retries: int
 
 same_session_minutes: int
 
@@ -116,7 +117,7 @@ def initialize():
     # endregion
 
     # region Data Gathering
-    global selected_epg, channels_url, shows_url, max_channels_request, show_sessions_validity_days
+    global selected_epg, channels_url, shows_url, max_channels_request, show_sessions_validity_days, max_number_retries
 
     # Get the selected EPG
     selected_epg = os.environ.get('EPG', None)
@@ -130,6 +131,9 @@ def initialize():
 
     # Number of days after the date in which the sessions are still kept
     show_sessions_validity_days = os.environ.get('SHOW_SESSIONS_VALIDITY_DAYS', 7)
+
+    # Number of days after the date in which the sessions are still kept
+    max_number_retries = os.environ.get('MAX_NUMBER_RETRIES', 5)
 
     # endregion
 
