@@ -272,6 +272,7 @@ class TmdbShow(object):
     overview: str
     title: str
     vote_average: float
+    vote_count: int
     is_movie: bool
     adult: bool
     genres: List[str]
@@ -314,6 +315,7 @@ class TmdbShow(object):
         self.id = int(show_dict['id'])
         self.popularity = show_dict['popularity']
         self.vote_average = show_dict['vote_average']
+        self.vote_count = show_dict['vote_count']
         self.original_language = show_dict['original_language']
         self.overview = show_dict['overview']
 
@@ -340,7 +342,7 @@ class TmdbShow(object):
 
         show_dict = {'is_movie': self.is_movie, 'show_title': self.title, 'show_year': self.year, 'trakt_id': self.id,
                      'show_overview': self.overview, 'language': self.original_language,
-                     'vote_average': self.vote_average, 'popularity': self.popularity}
+                     'vote_average': self.vote_average, 'vote_count': self.vote_count, 'popularity': self.popularity}
 
         if self.poster_path:
             show_dict['show_image'] = self.poster_path

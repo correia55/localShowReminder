@@ -57,8 +57,9 @@ application_name: str
 application_link: str
 AVAILABLE_LANGUAGES: Any
 
-score_highlight_counter = int
-new_highlight_counter = int
+score_highlight_counter: int
+new_highlight_counter: int
+minimum_number_votes: int
 
 
 def initialize():
@@ -244,17 +245,13 @@ def initialize():
     # endregion
 
     # region Highlights
-    global score_highlight_counter, new_highlight_counter
+    global score_highlight_counter, new_highlight_counter, minimum_number_votes
 
-    score_highlight_counter = os.environ.get('SCORE_HIGHLIGHT_COUNTER', None)
+    score_highlight_counter = os.environ.get('SCORE_HIGHLIGHT_COUNTER', 5)
 
-    if score_highlight_counter is None:
-        score_highlight_counter = 5
+    new_highlight_counter = os.environ.get('NEW_HIGHLIGHT_COUNTER', 50)
 
-    new_highlight_counter = os.environ.get('NEW_HIGHLIGHT_COUNTER', None)
-
-    if new_highlight_counter is None:
-        new_highlight_counter = 50
+    minimum_number_votes = os.environ.get('MINIMUM_NUMBER_VOTES', 20)
 
     # endregion
 

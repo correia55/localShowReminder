@@ -1878,6 +1878,7 @@ class TestGetHighestScoredShowsInterval(unittest.TestCase):
 
         show_data.tmdb_id = 1234
         show_data.tmdb_vote_average = 7
+        show_data.tmdb_vote_count = 25
         show_data.is_movie = True
 
         db_calls.commit(self.session)
@@ -1891,6 +1892,7 @@ class TestGetHighestScoredShowsInterval(unittest.TestCase):
 
         show_data_2.tmdb_id = 6789
         show_data_2.tmdb_vote_average = 5
+        show_data_2.tmdb_vote_count = 25
         show_data_2.is_movie = True
 
         db_calls.commit(self.session)
@@ -1904,9 +1906,25 @@ class TestGetHighestScoredShowsInterval(unittest.TestCase):
 
         show_data_3.tmdb_id = 3483
         show_data_3.tmdb_vote_average = 10
+        show_data_3.tmdb_vote_count = 25
         show_data_3.is_movie = True
 
         db_calls.commit(self.session)
+
+        # Show 4 is not selected due to the small vote count
+        show_data_4 = db_calls.register_show_data(self.session, 'Show 4')
+        self.assertIsNotNone(show_data_4)
+
+        show_data_4.tmdb_id = 222
+        show_data_4.tmdb_vote_average = 9
+        show_data_4.tmdb_vote_count = 10
+        show_data_4.is_movie = True
+
+        db_calls.commit(self.session)
+
+        show_session_4 = db_calls.register_show_session(self.session, None, None, datetime.datetime(2021, 1, 12, 22),
+                                                        channel.id, show_data_4.id, should_commit=True)
+        self.assertIsNotNone(show_session_4)
 
         # Call the function
         actual_result = db_calls.get_highest_scored_shows_interval(self.session, datetime.datetime(2021, 1, 10),
@@ -1934,6 +1952,7 @@ class TestGetHighestScoredShowsInterval(unittest.TestCase):
 
         show_data.tmdb_id = 1234
         show_data.tmdb_vote_average = 7
+        show_data.tmdb_vote_count = 25
         show_data.is_movie = False
 
         db_calls.commit(self.session)
@@ -1947,6 +1966,7 @@ class TestGetHighestScoredShowsInterval(unittest.TestCase):
 
         show_data_2.tmdb_id = 6789
         show_data_2.tmdb_vote_average = 5
+        show_data_2.tmdb_vote_count = 25
         show_data_2.is_movie = True
 
         db_calls.commit(self.session)
@@ -1960,6 +1980,7 @@ class TestGetHighestScoredShowsInterval(unittest.TestCase):
 
         show_data_3.tmdb_id = 3483
         show_data_3.tmdb_vote_average = 10
+        show_data_3.tmdb_vote_count = 25
         show_data_3.is_movie = True
 
         db_calls.commit(self.session)
@@ -1990,6 +2011,7 @@ class TestGetHighestScoredShowsInterval(unittest.TestCase):
 
         show_data.tmdb_id = 1234
         show_data.tmdb_vote_average = 7
+        show_data.tmdb_vote_count = 25
         show_data.is_movie = True
 
         db_calls.commit(self.session)
@@ -2007,6 +2029,7 @@ class TestGetHighestScoredShowsInterval(unittest.TestCase):
 
         show_data_2.tmdb_id = 6789
         show_data_2.tmdb_vote_average = 5
+        show_data_2.tmdb_vote_count = 25
         show_data_2.is_movie = True
 
         db_calls.commit(self.session)
@@ -2020,6 +2043,7 @@ class TestGetHighestScoredShowsInterval(unittest.TestCase):
 
         show_data_3.tmdb_id = 3483
         show_data_3.tmdb_vote_average = 10
+        show_data_3.tmdb_vote_count = 25
         show_data_3.is_movie = True
 
         db_calls.commit(self.session)

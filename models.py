@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Optional
 
 import sqlalchemy
-from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, DateTime, Date
+from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, DateTime, Date, Float
 from sqlalchemy.ext.declarative import declarative_base
 
 import auxiliary
@@ -237,7 +237,8 @@ class ShowData(Base):
     creators = Column(String(255))
 
     # Highlights
-    tmdb_vote_average = Column(Integer)
+    tmdb_vote_average = Column(Float)
+    tmdb_vote_count = Column(Integer)
     tmdb_popularity = Column(Integer)
     premiere_date = Column(Date)
     season_premiere = Column(Integer)

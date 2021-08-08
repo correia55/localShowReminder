@@ -348,6 +348,7 @@ def update_show_data_with_tmdb(show_data: models.ShowData, tmdb_show: response_m
 
     show_data.tmdb_id = tmdb_show.id
     show_data.tmdb_vote_average = tmdb_show.vote_average
+    show_data.tmdb_vote_count = tmdb_show.vote_count
     show_data.tmdb_popularity = tmdb_show.popularity
 
     show_data.year = tmdb_show.year

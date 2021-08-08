@@ -413,6 +413,7 @@ class TestProcessing(unittest.TestCase):
         show_data = models.ShowData('Show 1', 'Show 1')
         show_data.tmdb_id = 1234
         show_data.tmdb_vote_average = 3
+        show_data.tmdb_vote_count = 25
         show_data.is_movie = True
         show_data.year = 2020
         show_data.id = 189
@@ -420,6 +421,7 @@ class TestProcessing(unittest.TestCase):
         show_data_2 = models.ShowData('Show 2', 'Show 2')
         show_data_2.tmdb_id = 6789
         show_data_2.tmdb_vote_average = 6
+        show_data_2.tmdb_vote_count = 25
         show_data_2.is_movie = True
         show_data_2.year = 2011
         show_data_2.id = 2
@@ -427,6 +429,7 @@ class TestProcessing(unittest.TestCase):
         show_data_3 = models.ShowData('Show 3', 'Show 3')
         show_data_3.tmdb_id = 1271
         show_data_3.tmdb_vote_average = 6
+        show_data_3.tmdb_vote_count = 25
         show_data_3.is_movie = True
         show_data_3.year = 2004
         show_data_3.id = 3
@@ -434,6 +437,7 @@ class TestProcessing(unittest.TestCase):
         show_data_4 = models.ShowData('Show 4', 'Show 4')
         show_data_4.tmdb_id = 1274
         show_data_4.tmdb_vote_average = 5.4
+        show_data_4.tmdb_vote_count = 25
         show_data_4.is_movie = False
         show_data_4.year = 2004
         show_data_4.id = 46
@@ -445,14 +449,20 @@ class TestProcessing(unittest.TestCase):
         tmdb_show = response_models.TmdbShow()
         tmdb_show.vote_average = 7
         tmdb_show.popularity = 100
+        tmdb_show.vote_count = 25
+        tmdb_show.id = 1234
 
         tmdb_show_2 = response_models.TmdbShow()
         tmdb_show_2.vote_average = 5
         tmdb_show_2.popularity = 34
+        tmdb_show_2.vote_count = 25
+        tmdb_show_2.id = 6789
 
         tmdb_show_3 = response_models.TmdbShow()
         tmdb_show_3.vote_average = 5.5
         tmdb_show_3.popularity = 123
+        tmdb_show_3.vote_count = 25
+        tmdb_show_3.id = 1274
 
         tmdb_calls_mock.get_show_using_id.side_effect = [tmdb_show, tmdb_show_2, tmdb_show_3]
 
@@ -538,6 +548,7 @@ class TestProcessing(unittest.TestCase):
         tmdb_show_3 = response_models.TmdbShow()
         tmdb_show_3.id = 3792
         tmdb_show_3.vote_average = 5.5
+        tmdb_show_3.vote_count = 25
         tmdb_show_3.popularity = 123
         tmdb_show_3.original_title = "Show 3"
         tmdb_show_3.title = "Show 3"
@@ -548,6 +559,7 @@ class TestProcessing(unittest.TestCase):
         tmdb_show = response_models.TmdbShow()
         tmdb_show.id = 84
         tmdb_show.vote_average = 7
+        tmdb_show.vote_count = 50
         tmdb_show.popularity = 100
         tmdb_show.original_title = "Show 1"
         tmdb_show.title = "Show 1"
@@ -558,6 +570,7 @@ class TestProcessing(unittest.TestCase):
         tmdb_show_2 = response_models.TmdbShow()
         tmdb_show_2.id = 1111
         tmdb_show_2.vote_average = 5
+        tmdb_show_2.vote_count = 33
         tmdb_show_2.popularity = 34
         tmdb_show_2.original_title = "Show 2"
         tmdb_show_2.title = "Show 2"
@@ -593,8 +606,8 @@ class TestProcessing(unittest.TestCase):
         self.assertEqual(2, actual_result[0].week)
 
         expected_show_3 = {'is_movie': True, 'show_title': 'Programa 3', 'show_year': None, 'trakt_id': 3792,
-                           'show_overview': "Synopsis 3", 'language': "en", 'vote_average': 5.5, 'popularity': 123,
-                           'show_image': 'N/A'}
+                           'show_overview': "Synopsis 3", 'language': "en", 'vote_average': 5.5, 'vote_count': 25,
+                           'popularity': 123, 'show_image': 'N/A'}
 
         self.assertEqual(1, len(actual_result[0].show_list))
         self.assertEqual(expected_show_3, actual_result[0].show_list[0])
@@ -606,13 +619,13 @@ class TestProcessing(unittest.TestCase):
         self.assertEqual(2, len(actual_result[1].show_list))
 
         expected_show_1 = {'is_movie': False, 'show_title': 'Programa 1', 'show_year': None, 'trakt_id': 84,
-                           'show_overview': "Synopsis 1", 'language': "en", 'vote_average': 7, 'popularity': 100,
-                           'show_image': 'N/A'}
+                           'show_overview': "Synopsis 1", 'language': "en", 'vote_average': 7, 'vote_count': 50,
+                           'popularity': 100, 'show_image': 'N/A'}
 
         self.assertEqual(expected_show_1, actual_result[1].show_list[0])
 
         expected_show_2 = {'is_movie': False, 'show_title': 'Programa 2', 'show_year': None, 'trakt_id': 1111,
-                           'show_overview': "Synopsis 2", 'language': "en", 'vote_average': 5, 'popularity': 34,
-                           'show_image': 'N/A', 'season_premiere': 10}
+                           'show_overview': "Synopsis 2", 'language': "en", 'vote_average': 5, 'vote_count': 33,
+                           'popularity': 34, 'show_image': 'N/A', 'season_premiere': 10}
 
         self.assertEqual(expected_show_2, actual_result[1].show_list[1])

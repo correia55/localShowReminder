@@ -240,6 +240,7 @@ def get_highest_scored_shows_interval(session: sqlalchemy.orm.Session, start_dat
         .filter(models.ShowSession.date_time <= end_datetime) \
         .filter(models.ShowData.is_movie == is_movie) \
         .filter(models.ShowData.tmdb_id.isnot(None)) \
+        .filter(models.ShowData.tmdb_vote_count > configuration.minimum_number_votes) \
         .order_by(models.ShowData.tmdb_vote_average.desc()) \
         .limit(configuration.score_highlight_counter) \
         .all()
