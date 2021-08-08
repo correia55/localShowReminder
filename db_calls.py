@@ -92,6 +92,27 @@ def delete_reminder(session: sqlalchemy.orm.Session, reminder_id: int, user_id: 
     return True
 
 
+def delete_user_excluded_channel(session: sqlalchemy.orm.Session, channel_id: int) -> bool:
+    """
+    Delete all UserExcludedChannel entries for a given channel.
+
+    :param session: the db session.
+    :param channel_id: the id of the channel.
+    :return: True if the operation was a success.
+    """
+
+    session.query(models.UserExcludedChannel) \
+        .filter(models.UserExcludedChannel.channel_id == channel_id) \
+        .delete()
+
+    try:
+        session.commit()
+        return True
+    except (IntegrityError, InvalidRequestError):
+        session.rollback()
+        return False
+
+
 def get_alarms(session: sqlalchemy.orm.Session) -> List[models.Alarm]:
     """
     Get all alarms.

@@ -25,8 +25,10 @@ def update_channel_list(session: sqlalchemy.orm.Session):
     # Delete channels without shows
     for channel in db_channels:
         if db_calls.count_channel_sessions(session, channel.id) == 0:
-            print('Deleted channel without content: %s!' % channel.name)
             db_calls.delete_channel_show_data(session, channel.id)
+            db_calls.delete_user_excluded_channel(session, channel.id)
+
+            print('Deleted channel without content: %s!' % channel.name)
             session.delete(channel)
 
     db_calls.commit(session)
