@@ -969,6 +969,7 @@ def update_tmdb_data_week(session: sqlalchemy.orm.Session, year: int, week: int)
         tmdb_show = tmdb_calls.get_show_using_id(session, s.tmdb_id, s.is_movie)
 
         if tmdb_show:
+            s.tmdb_vote_count = tmdb_show.vote_count
             s.tmdb_vote_average = tmdb_show.vote_average
             s.tmdb_popularity = tmdb_show.popularity
 
@@ -1097,13 +1098,16 @@ def get_response_highlights_week(db_session: sqlalchemy.orm.Session, year: int, 
         highlight = response_models.HighlightResponse.create_from_highlight(db_highlight)
 
         # Create the list of shows for each highlight
-        id_list = db_highlight.id_list.split(",")
+        id_list = db_highlight.id_list.split(',')
         season_list = None
 
         if db_highlight.season_list is not None:
-            season_list = db_highlight.season_list.split(",")
+            season_list = db_highlight.season_list.split(',')
 
         for i in range(len(id_list)):
+            if id_list[i] is None or id_list[i] == '':
+                continue
+
             show_id = int(id_list[i])
 
             db_show = db_calls.get_show_data_id(db_session, show_id)
@@ -1116,7 +1120,7 @@ def get_response_highlights_week(db_session: sqlalchemy.orm.Session, year: int, 
             show_dict['show_overview'] = db_show.synopsis
             show_dict['show_title'] = db_show.portuguese_title
 
-            if season_list is not None and season_list[i] != "-1":
+            if season_list is not None and season_list[i] != '-1':
                 show_dict['season_premiere'] = int(season_list[i])
 
             highlight.show_list.append(show_dict)
