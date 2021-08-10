@@ -209,11 +209,14 @@ class ShowData(Base):
     """Used to store all the data associated with a show."""
 
     __tablename__ = 'ShowData'
+    __table_args__ = (
+        sqlalchemy.UniqueConstraint("tmdb_id", "is_movie"),
+    )
 
     # Technical
     id = Column(Integer, primary_key=True, autoincrement=True)
     search_title = Column(String(255))
-    tmdb_id = Column(Integer, unique=True)
+    tmdb_id = Column(Integer)
 
     # Present in all shows
     is_movie = Column(Boolean)
