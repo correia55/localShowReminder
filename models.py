@@ -356,7 +356,7 @@ class Token(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     token = Column(String(400), unique=True, nullable=False)
-    expiration_date = Column(Date)
+    expiration_date = Column(Date, nullable=False)
 
     def __init__(self, token: str, expiration_date: datetime.date):
         self.token = token
@@ -372,7 +372,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     verified = Column(Boolean)
     account_type = Column(String(20))
-    registration_date = Column(Date)
+    registration_date = Column(Date, nullable=False)
 
     # Necessary
     email = Column(String(255), unique=True, nullable=False)
