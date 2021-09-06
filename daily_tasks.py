@@ -18,6 +18,10 @@ def daily_tasks(db_session: sqlalchemy.orm.Session):
     processing.clear_show_list(db_session)
     print('Shows list cleared!')
 
+    # Delete old tokens from the DB
+    processing.clear_tokens_list(db_session)
+    print('Tokens list cleared!')
+
     # Delete invalid cache
     db_calls.clear_cache(db_session)
     print('Cache cleared!')

@@ -61,6 +61,18 @@ def clear_show_list(session):
     db_calls.commit(session)
 
 
+def clear_tokens_list(session):
+    """Delete tokens that have expired, from the DB."""
+
+    today = datetime.date.today()
+
+    session.query(models.Token) \
+        .filter(models.Token.expiration_date < today) \
+        .delete()
+
+    db_calls.commit(session)
+
+
 def search_show_information(session: sqlalchemy.orm.Session, search_text: str, is_movie: bool, language: str,
                             show_adult: bool) -> Tuple[bool, List[dict]]:
     """
