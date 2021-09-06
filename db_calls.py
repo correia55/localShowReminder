@@ -1068,16 +1068,18 @@ def register_streaming_service_show(session: sqlalchemy.orm.Session, first_seaso
         return ss_show
 
 
-def register_token(session: sqlalchemy.orm.Session, token: bytes) -> Optional[models.Token]:
+def register_token(session: sqlalchemy.orm.Session, token: bytes, expiration_date: datetime.date) \
+        -> Optional[models.Token]:
     """
     Register a token.
 
     :param session: the db session.
     :param token: the token.
+    :param expiration_date: the expiration date.
     :return: the created token.
     """
 
-    token = models.Token(token)
+    token = models.Token(token, expiration_date)
     session.add(token)
 
     try:

@@ -356,9 +356,11 @@ class Token(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     token = Column(String(400), unique=True, nullable=False)
+    expiration_date = Column(Date)
 
-    def __init__(self, token: str):
+    def __init__(self, token: str, expiration_date: datetime.date):
         self.token = token
+        self.expiration_date = expiration_date
 
 
 class User(Base):

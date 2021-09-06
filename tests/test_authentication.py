@@ -1,6 +1,5 @@
 import datetime
 import unittest.mock
-from types import ModuleType
 
 import globalsub
 import jwt
@@ -168,7 +167,7 @@ class TestAuthentication(unittest.TestCase):
         token = jwt.encode(token_payload, 'secret key', algorithm='HS256')
 
         configuration.REFRESH_TOKEN_VALIDITY_DAYS = 5
-        db_calls_mock.register_token.return_value = models.Token(token)
+        db_calls_mock.register_token.return_value = models.Token(token, expected_expiration_date.date())
 
         # Call the function
         actual_result = authentication.generate_token(1, authentication.TokenType.REFRESH, unittest.mock.MagicMock())
@@ -315,7 +314,7 @@ class TestAuthentication(unittest.TestCase):
         configuration.ACCESS_TOKEN_VALIDITY_HOURS = 10
 
         refresh_token = authentication.generate_token(123, authentication.TokenType.REFRESH, unittest.mock.MagicMock())
-        db_calls_mock.register_token.return_value = models.Token(refresh_token)
+        db_calls_mock.register_token.return_value = models.Token(refresh_token, expected_expiration_date.date())
 
         # Call the function
         actual_result, actual_token = authentication.generate_access_token(unittest.mock.MagicMock(), refresh_token)
@@ -376,7 +375,9 @@ class TestAuthentication(unittest.TestCase):
 
         token = authentication.generate_token(123, authentication.TokenType.REFRESH, unittest.mock.MagicMock())
 
-        db_calls_mock.get_token.return_value = models.Token(token)
+        db_calls_mock.get_token.return_value = models.Token(token, datetime.date.today()
+                                                            + datetime.timedelta(
+            days=configuration.REFRESH_TOKEN_VALIDITY_DAYS))
 
         # Call the function
         actual_result = authentication.validate_token(token.encode(), authentication.TokenType.REFRESH,

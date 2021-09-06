@@ -66,7 +66,7 @@ def generate_token(user_id: int, token_type: TokenType, session: sqlalchemy.orm.
 
         # If it's an authentication token, save it on the db
         if token_type == TokenType.REFRESH:
-            db_token = db_calls.register_token(session, token)
+            db_token = db_calls.register_token(session, token, exp.date())
 
             if db_token is None:
                 print('WARNING: Token registration failed!')
