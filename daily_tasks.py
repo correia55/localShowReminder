@@ -22,6 +22,10 @@ def daily_tasks(db_session: sqlalchemy.orm.Session):
     processing.clear_tokens_list(db_session)
     print('Tokens list cleared!')
 
+    # Delete unverified users from the DB
+    processing.clear_unverified_users(db_session)
+    print('Unverified users cleared!')
+
     # Delete invalid cache
     db_calls.clear_cache(db_session)
     print('Cache cleared!')

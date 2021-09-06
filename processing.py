@@ -73,6 +73,18 @@ def clear_tokens_list(session):
     db_calls.commit(session)
 
 
+def clear_unverified_users(session):
+    """Delete unverified users after 30 days, from the DB."""
+
+    today = datetime.date.today()
+
+    session.query(models.User) \
+        .filter(today > models.User.registration_date + datetime.timedelta(days=30)) \
+        .delete()
+
+    db_calls.commit(session)
+
+
 def search_show_information(session: sqlalchemy.orm.Session, search_text: str, is_movie: bool, language: str,
                             show_adult: bool) -> Tuple[bool, List[dict]]:
     """

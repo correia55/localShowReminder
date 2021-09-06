@@ -372,6 +372,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     verified = Column(Boolean)
     account_type = Column(String(20))
+    registration_date = Column(Date)
 
     # Necessary
     email = Column(String(255), unique=True, nullable=False)
@@ -385,6 +386,7 @@ class User(Base):
                  verified: bool = False):
         self.verified = verified
         self.account_type = account_type.name
+        self.registration_date = datetime.date.today()
 
         self.email = email
         self.password = password
