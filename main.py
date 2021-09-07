@@ -669,13 +669,19 @@ class ShowsEP(fr.Resource):
                 user = db_calls.get_user_id(session, user_id)
                 search_adult = user.show_adult if user is not None else False
 
+            if search_text[0] == '"' and search_text[-1] == '"':
+                search_text = search_text[1:-1]
+                exact_name = True
+            else:
+                exact_name = False
+
             more_results, shows = processing.search_show_information(session, search_text, is_movie, language,
-                                                                     search_adult)
+                                                                     search_adult, exact_name)
 
             response_dict = {'show_list': shows}
 
             # Add a remark when there are more results than those on the response
-            if more_results:
+            if more_results and not exact_name:
                 response_dict['remark'] = 'Incomplete List'
 
             return flask.make_response(flask.jsonify(response_dict), 200)

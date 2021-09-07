@@ -87,7 +87,7 @@ def clear_unverified_users(session):
 
 
 def search_show_information(session: sqlalchemy.orm.Session, search_text: str, is_movie: bool, language: str,
-                            show_adult: bool) -> Tuple[bool, List[dict]]:
+                            show_adult: bool, exact_name: bool) -> Tuple[bool, List[dict]]:
     """
     Uses tmdb to search for shows, of a given type, using a given search text.
 
@@ -96,6 +96,7 @@ def search_show_information(session: sqlalchemy.orm.Session, search_text: str, i
     :param is_movie: if the show is a movie.
     :param language: the language of interest.
     :param show_adult: whether to show adult results or not.
+    :param exact_name: only get results whose name is an exact match to the search (ignoring case).
     :return: a tuple with a boolean (whether there are more results or not) and the list of results.
     """
 
@@ -138,6 +139,11 @@ def search_show_information(session: sqlalchemy.orm.Session, search_text: str, i
                         show_dict['show_title'] = transl.title
 
                     break
+
+        # If exact_name is true, ignore non matching shows
+        if exact_name:
+            if s.title != search_text and show_dict['show_title'] != search_text:
+                continue
 
         results.append(show_dict)
 
