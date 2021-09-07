@@ -79,7 +79,7 @@ def clear_unverified_users(session):
     today = datetime.date.today()
 
     session.query(models.User) \
-        .filter(models.User.verified == False)\
+        .filter(models.User.verified == False) \
         .filter(today > models.User.registration_date + datetime.timedelta(days=30)) \
         .delete()
 
@@ -106,24 +106,24 @@ def search_show_information(session: sqlalchemy.orm.Session, search_text: str, i
 
     results = []
 
-    # Search Trakt using the text
-    trakt_shows = []
+    # Search a DB using text
+    tmdb_shows = []
     pages = 1
     i = 1
     total_nb_pages = 1
 
     # Combine the results from all the pages
     while i < (pages + 1):
-        total_nb_pages, trakt_shows_page = tmdb_calls.search_shows_by_text(session, search_text, is_movie=is_movie,
-                                                                           page=i, show_adult=show_adult)
+        total_nb_pages, tmdb_shows_page = tmdb_calls.search_shows_by_text(session, search_text, is_movie=is_movie,
+                                                                          page=i, show_adult=show_adult)
 
         # Get the new total of pages
         pages = min(configuration.tmdb_max_mb_pages, total_nb_pages)
 
-        trakt_shows.extend(trakt_shows_page)
+        tmdb_shows.extend(tmdb_shows_page)
         i += 1
 
-    for s in trakt_shows:
+    for s in tmdb_shows:
         show_dict = s.to_dict()
 
         # Get the translations of the overview and title

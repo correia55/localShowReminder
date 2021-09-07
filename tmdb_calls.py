@@ -83,6 +83,13 @@ def search_shows_by_text(session: sqlalchemy.orm.Session, search_text: str, lang
             tmdb_show.fill_from_dict(entry, is_movie)
 
             tmdb_shows.append(tmdb_show)
+        elif entry['media_type'] == 'person':
+            # Get the "known for" entries in the people found
+            for show in entry['known_for']:
+                tmdb_show = TmdbShow()
+                tmdb_show.fill_from_dict(show, is_movie, entry['known_for_department'])
+
+                tmdb_shows.append(tmdb_show)
 
     return response_dict['total_pages'], tmdb_shows
 

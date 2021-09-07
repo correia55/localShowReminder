@@ -276,6 +276,7 @@ class TmdbShow(object):
     is_movie: bool
     adult: bool
     genres: List[str]
+    match_reason: str  # The matching reason, whether it is direct search, acting, directing...
 
     poster_path: Optional[str]
     origin_country: Optional[str]
@@ -289,8 +290,9 @@ class TmdbShow(object):
         self.adult = False
         self.genres = []
         self.creators = []
+        self.popularity = None
 
-    def fill_from_dict(self, show_dict: dict, is_movie: bool = None):
+    def fill_from_dict(self, show_dict: dict, is_movie: bool = None, match_reason: str = 'Name'):
         if is_movie is not None:
             self.is_movie = is_movie
         else:
@@ -313,11 +315,14 @@ class TmdbShow(object):
             self.origin_country = show_dict['origin_country']
 
         self.id = int(show_dict['id'])
-        self.popularity = show_dict['popularity']
         self.vote_average = show_dict['vote_average']
         self.vote_count = show_dict['vote_count']
         self.original_language = show_dict['original_language']
         self.overview = show_dict['overview']
+        self.match_reason = match_reason
+
+        if 'popularity' in show_dict:
+            self.popularity = show_dict['popularity']
 
         if 'genres' in show_dict:
             for g in show_dict['genres']:
@@ -342,7 +347,11 @@ class TmdbShow(object):
 
         show_dict = {'is_movie': self.is_movie, 'show_title': self.title, 'show_year': self.year, 'trakt_id': self.id,
                      'show_overview': self.overview, 'language': self.original_language,
-                     'vote_average': self.vote_average, 'vote_count': self.vote_count, 'popularity': self.popularity}
+                     'vote_average': self.vote_average, 'vote_count': self.vote_count,
+                     'match_reason': self.match_reason}
+
+        if self.popularity:
+            show_dict['popularity'] = self.popularity
 
         if self.poster_path:
             show_dict['show_image'] = self.poster_path
