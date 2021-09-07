@@ -79,7 +79,7 @@ def clear_unverified_users(session):
     today = datetime.date.today()
 
     session.query(models.User) \
-        .filter(not models.User.verified)\
+        .filter(models.User.verified == False)\
         .filter(today > models.User.registration_date + datetime.timedelta(days=30)) \
         .delete()
 
