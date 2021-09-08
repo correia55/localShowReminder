@@ -103,6 +103,7 @@ class LocalShowResult:
     # Technical
     id: int
     type: LocalShowResultType  # TV or Streaming
+    match_reason: str  # Either id or name
 
     # Common to both types
     show_name: str
@@ -197,6 +198,9 @@ class LocalShowResult:
 
         if self.extended_cut is not None:
             local_show_dict['extended_cut'] = self.extended_cut
+
+        if self.match_reason is not None:
+            local_show_dict['match_reason'] = self.match_reason
 
         # TV
         if self.type == LocalShowResultType.TV:

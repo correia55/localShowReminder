@@ -186,14 +186,10 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
         excluded_channels = db_calls.get_user_excluded_channels(session, user_id)
 
     for search_text in search_list:
-        print('Original search text: %s' % search_text)
-
         if complete_title:
             search_pattern = auxiliary.make_searchable_title(search_text)
         else:
             search_pattern = auxiliary.make_search_pattern(search_text)
-
-        print('Search pattern: %s' % search_pattern)
 
         db_shows = db_calls.search_show_sessions_data(session, search_pattern, is_movie, show_season, show_episode,
                                                       search_adult, complete_title, below_datetime=below_datetime,
@@ -205,6 +201,8 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
                 continue
 
             show = response_models.LocalShowResult.create_from_show_session(s[0], s[1], s[2])
+            show.match_reason = 'NAME'
+
             results[show.id] = show
 
     # Create a list from the dictionary of results
@@ -256,6 +254,8 @@ def search_sessions_db_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: in
             continue
 
         show = response_models.LocalShowResult.create_from_show_session(s[0], s[1], s[2])
+        show.match_reason = 'ID'
+
         results[show.id] = show
 
     # Create a list from the dictionary of results
