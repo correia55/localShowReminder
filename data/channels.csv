@@ -25,10 +25,8 @@ Nat Geo Wild;False;WILD;False
 História;False;HIST;True
 Travel Channel;False;TRAV;True
 Disney Channel;False;DISNY;False
-SET Asia;False;SETAS;True
 Q;False;Q;True
 FOX Life;False;FLIFE;False
-SET MAX;False;MAX;True
 SyFy;False;SYFY;True
 TVI24;False;TVI24;True
 BBC Entertainment;False;BBC E;True
@@ -41,8 +39,6 @@ TVI Ficção;False;TVIFIC;True
 CBS Reality;False;CBSR;True
 SIC K;False;SICK;True
 Disney Junior;False;DISNYJ;False
-ZEE TV;False;ZEETV;True
-ZEE CINEMA;False;ZEECIN;True
 Cinemundo;False;CINE;False
 TV Record;False;TVREC;True
 AMC;False;AMC;True
