@@ -764,27 +764,24 @@ class LocalShowsEP(fr.Resource):
                                                       search_adult=search_adult,
                                                       ignore_with_tmdb_id=ignore_with_tmdb_id)
 
-            if len(db_shows) != 0:
-                response_dict = {'show_list': auxiliary.list_to_json(db_shows)}
+            response_dict = {'show_list': auxiliary.list_to_json(db_shows)}
 
-                show_dict = {}
+            show_dict = {}
 
-                # If it is a search by id, add information on the premiere of the show
-                if show_id is not None:
-                    show = db_calls.get_show_data_by_tmdb_id(session, show_id, is_movie)
+            # If it is a search by id, add information on the premiere of the show
+            if show_id is not None:
+                show = db_calls.get_show_data_by_tmdb_id(session, show_id, is_movie)
 
-                    if show is not None:
-                        if show.premiere_date is not None:
-                            show_dict['premiere_date'] = show.premiere_date
+                if show is not None:
+                    if show.premiere_date is not None:
+                        show_dict['premiere_date'] = show.premiere_date
 
-                            if show.season_premiere is not None:
-                                show_dict['season_premiere'] = show.season_premiere
+                        if show.season_premiere is not None:
+                            show_dict['season_premiere'] = show.season_premiere
 
-                response_dict['show'] = show_dict
+            response_dict['show'] = show_dict
 
-                return flask.make_response(flask.jsonify(response_dict), 200)
-
-            return flask.make_response('Not Found', 404)
+            return flask.make_response(flask.jsonify(response_dict), 200)
 
 
 class UsersEP(fr.Resource):
