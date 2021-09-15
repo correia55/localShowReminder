@@ -209,7 +209,14 @@ class GenericXlsx(get_file_data.ChannelInsertion):
             else:
                 if file_format == '.xls':
                     date = xlrd.xldate_as_datetime(row[fields['date'].position].value, book.datemode)
-                    time = xlrd.xldate_as_datetime(row[fields['time'].position].value, book.datemode)
+
+                    try:
+                        #  If the time comes in the time format
+                        time = xlrd.xldate_as_datetime(row[fields['time'].position].value, book.datemode)
+                    except TypeError:
+                        # If the time comes as text
+                        time = datetime.datetime.strptime(row[fields['time'].position].value,
+                                                          fields['time'].field_format)
                 else:
                     try:
                         date = datetime.datetime.strptime(row[fields['date'].position].value,
