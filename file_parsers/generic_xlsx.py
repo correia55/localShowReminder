@@ -31,7 +31,8 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                      'FOX Comedy': ('FOX Comedy', 'fox.csv'), 'FOX Crime': ('FOX Crime', 'fox_crime.csv'),
                      'FOX Movies': ('FOX Movies', 'fox_movies.csv'),
                      'Disney Junior': ('Disney Junior', 'disney_junior.csv'),
-                     'Disney Channel': ('Disney Channel', 'disney_junior.csv')}
+                     'Disney Channel': ('Disney Channel', 'disney_junior.csv'),
+                     '(New) FOX Crime': ('FOX Crime', 'fox.csv')}
     channels = list(channels_file.keys())
 
     @staticmethod
