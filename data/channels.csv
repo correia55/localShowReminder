@@ -1,68 +1,48 @@
 name;adult;acronym;search_epg
 RTP 1;False;RTP1;True
 RTP 2;False;RTP2;True
-SIC;False;SIC;True
-TVI;False;TVI;True
-SIC Mulher;False;SICM;True
-SIC Radical;False;SICR;True
+RTP 3;False;RTP3;True
 RTP Memória;False;RTPM;True
 RTP África;False;RTPA;True
+SIC;False;SIC;True
+SIC Mulher;False;SICM;True
+SIC Radical;False;SICR;True
+SIC K;False;SICK;True
+SIC Caras;False;SICC;True
+TVI;False;TVI;True
+TVI24;False;TVI24;True
+TVI Ficção;False;TVIFIC;True
 Cartoon Network;False;CART;True
+Cartoon Network Premium;False;CNPREM;True
 Panda;False;PANDA;True
+Panda Biggs;False;BIGGS;True
+Disney Channel;False;DISNY;False
+Disney Junior;False;DISNYJ;False
+Nickelodeon;False;NICKELO;True
 TVCine Top;False;TVCTOP;False
 TVCine Edition;False;TVCED;False
 TVCine Emotion;False;TVCEM;False
 TVCine Action;False;TVCA;False
 Hollywood;False;HOLLW;True
+Cinemundo;False;CINE;False
 AXN;False;AXN;True
+AXN Movies;False;AXNM;True
+AXN White;False;AXNWH;True
 FOX;False;FOX;False
 FOX Crime;False;FOXCR;False
-Eurochannel;False;EURCH;False
+FOX Life;False;FLIFE;False
+FOX Movies;False;FOXM;False
+FOX Comedy;False;FOXCOM;False
+Eurochannel;False;EURCH;True
 Discovery Channel;False;DISCV;True
 Odisseia;False;ODISS;False
 National Geographic;False;NGC;False
 Nat Geo Wild;False;WILD;False
 História;False;HIST;True
 Travel Channel;False;TRAV;True
-Disney Channel;False;DISNY;False
-Q;False;Q;True
-FOX Life;False;FLIFE;False
 SyFy;False;SYFY;True
-TVI24;False;TVI24;True
-BBC Entertainment;False;BBC E;True
-AXN Movies;False;AXNM;True
-FOX Movies;False;FOXM;False
-TLC;False;TLC;True
-AXN White;False;AXNWH;True
-Panda Biggs;False;BIGGS;True
-TVI Ficção;False;TVIFIC;True
 CBS Reality;False;CBSR;True
-SIC K;False;SICK;True
-Disney Junior;False;DISNYJ;False
-Cinemundo;False;CINE;False
-TV Record;False;TVREC;True
 AMC;False;AMC;True
-RTP 3;False;RTP3;True
-FOX Comedy;False;FOXCOM;False
-SIC Caras;False;SICC;True
-CANAL 180;False;C180;True
-Cartoon Network Premium;False;CNPREM;True
-RAI1;False;RAI1;True
-RAI2;False;RAI2;True
-RAI3;False;RAI3;True
-Globo;False;GLOB;True
-Globo Premium;False;GNOWHD;True
-BVN;False;BVN;True
-Arte;False;ARTEHD;True
-BNT 4;False;BNT4;True
-CGTN Documentary;False;CGTNDHD;True
-TVI Reality;False;TVIBB;True
 Blaze;False;BLAZEHD;True
 Crime + Investigation;False;CI;True
-Nickelodeon;False;NICKELO;True
-Luxe TV;False;LUXHD;False
-A3Series;False;A3SERIE;True
-A3Cine;False;A3CINE;True
-FRANCE 2;False;FR2HD;True
-FRANCE 3;False;FR3HD;True
-FRANCE 5;False;FR5HD;True
+BBC Entertainment;False;BBC E;True
