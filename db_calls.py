@@ -1185,12 +1185,19 @@ def search_channel_show_data_correction(session: sqlalchemy.orm.Session, channel
     if subgenre is not None:
         query = query.filter(models.ChannelShowData.subgenre == subgenre)
 
-    # Checking if there's more than one match
-    results = query.all()
+    results: List[models.ChannelShowData] = query.all()
 
+    # Checking if there's more than one match
     if len(results) > 0:
+        # Print a warning, if the entries represent different shows
         if len(results) > 1:
-            print('Warning: There were multiple matches for search_channel_show_data_correction: ' + repr(results[0]))
+            show_id = results[0].show_id
+
+            for r in results:
+                if r.show_id != show_id:
+                    print('Warning: There were multiple different matches for search_channel_show_data_correction: '
+                          + repr(results[0]))
+                    break
 
         return results[0]
 
