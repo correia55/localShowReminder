@@ -136,14 +136,16 @@ def search_show_information(session: sqlalchemy.orm.Session, search_text: str, i
                     show_dict['show_overview'] = transl.overview
 
                     if transl.title != '':
-                        show_dict['show_title'] = transl.title
+                        show_dict['translated_title'] = transl.title
 
                     break
 
         # If exact_name is true, ignore non matching shows
         if exact_name:
             if s.title.capitalize() != search_text.capitalize() \
-                    and show_dict['show_title'].capitalize() != search_text.capitalize():
+                    and show_dict['show_title'].capitalize() != search_text.capitalize() \
+                    and ('translated_title' not in show_dict or
+                         show_dict['translated_title'].capitalize() != search_text.capitalize()):
                 continue
 
         results.append(show_dict)
