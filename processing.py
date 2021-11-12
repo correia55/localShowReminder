@@ -1150,6 +1150,10 @@ def get_response_highlights_week(db_session: sqlalchemy.orm.Session, year: int, 
             if db_show is None:
                 continue
 
+            if tmdb_show is None:
+                print('WARNING: SOMETHING IS WRONG WITH THIS ENTRY: ' + str(db_show.id))
+                continue
+
             show_dict = tmdb_show.to_dict()
             show_dict['show_overview'] = db_show.synopsis
             show_dict['show_title'] = db_show.portuguese_title
