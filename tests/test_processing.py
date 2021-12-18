@@ -529,18 +529,21 @@ class TestProcessing(unittest.TestCase):
         show_3.tmdb_id = 3792
         show_3.synopsis = "Synopsis 3"
         show_3.is_movie = True
+        show_3.original_title = "Show 3"
 
         show_1 = models.ShowData("_Programa_1_", "Programa 1")
         show_1.id = 1
         show_1.tmdb_id = 84
         show_1.synopsis = "Synopsis 1"
         show_1.is_movie = False
+        show_1.original_title = "Show 1"
 
         show_2 = models.ShowData("_Programa_2_", "Programa 2")
         show_2.id = 2
         show_2.tmdb_id = 1111
         show_2.synopsis = "Synopsis 2"
         show_2.is_movie = False
+        show_2.original_title = "Show 2"
 
         db_calls_mock.get_show_data_id.side_effect = [show_3, show_1, show_2]
 
@@ -608,9 +611,10 @@ class TestProcessing(unittest.TestCase):
         self.assertEqual(2021, actual_result[0].year)
         self.assertEqual(2, actual_result[0].week)
 
-        expected_show_3 = {'is_movie': True, 'show_title': 'Programa 3', 'show_year': None, 'trakt_id': 3792,
+        expected_show_3 = {'is_movie': True, 'show_title': 'Show 3', 'show_year': None, 'trakt_id': 3792,
                            'show_overview': "Synopsis 3", 'language': "en", 'vote_average': 5.5, 'vote_count': 25,
-                           'popularity': 123, 'show_image': 'N/A', 'match_reason': 'Name'}
+                           'popularity': 123, 'show_image': 'N/A', 'match_reason': 'Name',
+                           'translated_title': 'Programa 3'}
 
         self.assertEqual(1, len(actual_result[0].show_list))
         self.assertEqual(expected_show_3, actual_result[0].show_list[0])
@@ -621,14 +625,16 @@ class TestProcessing(unittest.TestCase):
 
         self.assertEqual(2, len(actual_result[1].show_list))
 
-        expected_show_1 = {'is_movie': False, 'show_title': 'Programa 1', 'show_year': None, 'trakt_id': 84,
-                           'show_overview': "Synopsis 1", 'language': "en", 'vote_average': 7, 'vote_count': 50,
-                           'popularity': 100, 'show_image': 'N/A', 'match_reason': 'Name'}
+        expected_show_1 = {'is_movie': False, 'show_title': 'Show 1', 'translated_title': 'Programa 1',
+                           'show_year': None, 'trakt_id': 84, 'show_overview': "Synopsis 1", 'language': "en",
+                           'vote_average': 7, 'vote_count': 50, 'popularity': 100, 'show_image': 'N/A',
+                           'match_reason': 'Name'}
 
         self.assertEqual(expected_show_1, actual_result[1].show_list[0])
 
-        expected_show_2 = {'is_movie': False, 'show_title': 'Programa 2', 'show_year': None, 'trakt_id': 1111,
-                           'show_overview': "Synopsis 2", 'language': "en", 'vote_average': 5, 'vote_count': 33,
-                           'popularity': 34, 'show_image': 'N/A', 'season_premiere': 10, 'match_reason': 'Name'}
+        expected_show_2 = {'is_movie': False, 'show_title': 'Show 2', 'translated_title': 'Programa 2',
+                           'show_year': None, 'trakt_id': 1111, 'show_overview': "Synopsis 2", 'language': "en",
+                           'vote_average': 5, 'vote_count': 33, 'popularity': 34, 'show_image': 'N/A',
+                           'season_premiere': 10, 'match_reason': 'Name'}
 
         self.assertEqual(expected_show_2, actual_result[1].show_list[1])
