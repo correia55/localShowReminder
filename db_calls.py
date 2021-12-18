@@ -1361,7 +1361,7 @@ def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: s
 
         query = session.query(models.ShowSession, models.Channel, models.ShowData) \
             .filter(models.ShowData.search_title.op(regex_operation)(search_pattern)) \
-            .order_by(models.ShowSession.date_time)
+            .order_by(models.ShowSession.date_time.asc())
 
     if is_movie:
         query = query.filter(sqlalchemy.or_(models.ShowData.is_movie.is_(None), models.ShowData.is_movie.is_(True)))
