@@ -1156,7 +1156,8 @@ def get_response_highlights_week(db_session: sqlalchemy.orm.Session, year: int, 
 
             show_dict = tmdb_show.to_dict()
             show_dict['show_overview'] = db_show.synopsis
-            show_dict['show_title'] = db_show.portuguese_title
+            show_dict['show_title'] = db_show.original_title
+            show_dict['translated_title'] = db_show.portuguese_title
 
             if season_list is not None and season_list[i] != '-1':
                 show_dict['season_premiere'] = int(season_list[i])
