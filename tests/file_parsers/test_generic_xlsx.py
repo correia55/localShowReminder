@@ -1380,3 +1380,134 @@ class TestGenericXlsx(unittest.TestCase):
                                 extended_cut=False, should_commit=False),
              unittest.mock.call(self.session, None, None, datetime.datetime(2021, 8, 1, 6, 35), 8373, 7912,
                                 audio_language=None, extended_cut=False, should_commit=False)])
+
+    @unittest.mock.patch('get_file_data.tmdb_calls')
+    def test_add_file_data_new_fox_movies(self, tmdb_calls_mock) -> None:
+        """ Test the function GenericXlsx.add_file_data with a sample from the new format of a FOX Movies file. """
+
+        # Prepare the mocks
+        # Replace datetime class with a utility class with a fixed datetime
+        datetime.datetime = NewDatetime
+
+        # Prepare the call to get_channel_name
+        channel_data = models.Channel('FOXM', 'FOX Movies')
+        channel_data.id = 8373
+
+        db_calls_mock.get_channel_name.return_value = channel_data
+
+        # Treatment of the entries
+        # ----------------------------
+        # Prepare the calls to search_channel_show_data
+        db_calls_mock.search_channel_show_data_correction.side_effect = [None, None]
+
+        # Prepare the calls to search_channel_show_data
+        show_data = models.ShowData('_Die_Hard_A_Vingança_', 'Die Hard: A Vingança')
+        show_data.id = 7503
+        show_data.original_title = 'Die Hard: With a Vengeance'
+        show_data.year = 1995
+        show_data.synopsis = 'John McClane vê-se em Nova Iorque sem emprego, sem a mulher e acompanhado pelo ' \
+                             'alcoolismo. Os dias difíceis do agente suspenso prometem piorar porque com a ressaca ' \
+                             'vem um bombista que quer negociar com a polícia, mas só através do herói que salvou o ' \
+                             'dia no aeroporto de Dulles e no Edifício Nakatomi - respectivamente o segundo e o ' \
+                             'primeiro filme da trilogia. Depois de ter sido mandado para Harlem pelo bombista ' \
+                             'atreito a enxaquecas que se apelida de "Simon", conhece Zeus (Samuel L. Jackson), que ' \
+                             'o acompanha até ao fim desta aventura. E em "Die Hard - A Vingança", Bruce Willis luta ' \
+                             'contra um inimigo que lhe é familiar...'
+        show_data.genre = 'Movie'
+        show_data.is_movie = True
+        show_data.age_classification = '12+'
+
+        show_data_2 = models.ShowData('_Die_Hard_4.0_Viver_ou_Morrer_', 'Die Hard 4.0 - Viver ou Morrer')
+        show_data_2.id = 7912
+        show_data_2.original_title = 'Live Free or Die Hard'
+        show_data_2.year = 2007
+        show_data_2.synopsis = 'O mundo mudou e o terrorismo também, mas há personagens intemporais. A tecnologia ' \
+                               'domina o mundo actual, mas quando a tecnologia é feita refém, graças às novas formas ' \
+                               'de terrorismo, apenas o detective John McClane (Bruce Willis) pode fazer algo para ' \
+                               'impedir a catástrofe. A infra-estrutura computorizada que controla todas as ' \
+                               'comunicações, transportes e energia é levada a uma paragem devastadora. O cérebro ' \
+                               'por detrás do esquema teve em conta todos os pormenores. Mas não contou com McClane, ' \
+                               'um polícia da velha guarda que sabe uma ou duas coisas sobre como impedir planos ' \
+                               'terroristas.'
+        show_data_2.genre = 'Movie'
+        show_data_2.is_movie = True
+        show_data_2.age_classification = '12+'
+
+        db_calls_mock.insert_if_missing_show_data.side_effect = [(True, show_data), (True, show_data_2)]
+
+        # Prepare the calls to search_shows_by_text
+        tmdb_calls_mock.search_shows_by_text.side_effect = [(0, []), (0, []), (0, []), (0, [])]
+
+        # Prepare the calls to register_show_session
+        show_session = models.ShowSession(None, None, datetime.datetime(2022, 1, 1, 6), 8373, 7503)
+        show_session_2 = models.ShowSession(None, None, datetime.datetime(2022, 1, 1, 7, 19), 8373, 7912)
+
+        db_calls_mock.register_show_session.side_effect = [show_session, show_session_2]
+
+        # Call the function
+        actual_result = file_parsers.generic_xlsx.GenericXlsx.add_file_data(self.session, base_path + 'data/new_fox_movies_example.xlsx',
+                                                                            '(New) FOX Movies')
+
+        # Get back the datetime.datetime
+        datetime.datetime = self.datetime_backup
+
+        # Verify the result
+        self.assertEqual(datetime.datetime(2022, 1, 1, 5, 55, 0), actual_result.start_datetime)
+        self.assertEqual(datetime.datetime(2022, 1, 1, 7, 24, 0), actual_result.end_datetime)
+        self.assertEqual(2, actual_result.total_nb_sessions_in_file)
+        self.assertEqual(0, actual_result.nb_updated_sessions)
+        self.assertEqual(2, actual_result.nb_added_sessions)
+        self.assertEqual(0, actual_result.nb_deleted_sessions)
+
+        # Verify the calls to the mocks
+        db_calls_mock.get_channel_name.assert_called_with(self.session, 'FOX Movies')
+
+        db_calls_mock.search_channel_show_data_correction.assert_has_calls(
+            [unittest.mock.call(self.session, 8373, True, 'Die Hard: With a Vengeance',
+                                'Die Hard: A Vingança', directors=['John McTiernan'], year=1995, subgenre=None,
+                                creators=None),
+             unittest.mock.call(self.session, 8373, True, 'Live Free or Die Hard', 'Die Hard 4.0 - Viver ou Morrer',
+                                directors=['Len Wiseman'], year=2007, subgenre=None, creators=None)])
+
+        db_calls_mock.insert_if_missing_show_data.assert_has_calls(
+            [unittest.mock.call(self.session, 'Die Hard: A Vingança',
+                                cast='Bruce Willis,Jeremy Irons,Samuel L. Jackson',
+                                original_title='Die Hard: With a Vengeance', duration=79,
+                                synopsis='John McClane vê-se em Nova Iorque sem emprego, sem a mulher e acompanhado '
+                                         'pelo alcoolismo. Os dias difíceis do agente suspenso prometem piorar porque '
+                                         'com a ressaca vem um bombista que quer negociar com a polícia, mas só '
+                                         'através do herói que salvou o dia no aeroporto de Dulles e no Edifício '
+                                         'Nakatomi - respectivamente o segundo e o primeiro filme da trilogia. Depois '
+                                         'de ter sido mandado para Harlem pelo bombista atreito a enxaquecas que se '
+                                         'apelida de "Simon", conhece Zeus (Samuel L. Jackson), que o acompanha até ao '
+                                         'fim desta aventura. E em "Die Hard - A Vingança", Bruce Willis luta contra '
+                                         'um inimigo que lhe é familiar...', year=1995,
+                                genre='Movie', subgenre=None, audio_languages=None, countries=None,
+                                directors=['John McTiernan'], age_classification='12+', is_movie=True, season=None,
+                                creators=None, date_time=datetime.datetime(2022, 1, 1, 6)),
+             unittest.mock.call(self.session, 'Die Hard 4.0 - Viver ou Morrer',
+                                cast='Bruce Willis,Cliff Curtis,Justin Long,Maggie Q,Timothy Olyphant',
+                                original_title='Live Free or Die Hard', duration=121,
+                                synopsis='O mundo mudou e o terrorismo também, mas há personagens intemporais. A '
+                                         'tecnologia domina o mundo actual, mas quando a tecnologia é feita refém, '
+                                         'graças às novas formas de terrorismo, apenas o detective John McClane (Bruce '
+                                         'Willis) pode fazer algo para impedir a catástrofe. A infra-estrutura '
+                                         'computorizada que controla todas as comunicações, transportes e energia é '
+                                         'levada a uma paragem devastadora. O cérebro por detrás do esquema teve em '
+                                         'conta todos os pormenores. Mas não contou com McClane, um polícia da velha '
+                                         'guarda que sabe uma ou duas coisas sobre como impedir planos terroristas.',
+                                year=2007, genre='Movie', subgenre=None, audio_languages=None, countries=None,
+                                directors=['Len Wiseman'], age_classification='12+', is_movie=True, season=None,
+                                creators=None, date_time=datetime.datetime(2022, 1, 1, 7, 19))])
+
+        tmdb_calls_mock.search_shows_by_text.assert_has_calls(
+            [unittest.mock.call(self.session, 'Die Hard: With a Vengeance', is_movie=True, year=1995),
+            unittest.mock.call(self.session, 'Die Hard: With a Vengeance', is_movie=True, year=None),
+             unittest.mock.call(self.session, 'Live Free or Die Hard', is_movie=True, year=2007),
+             unittest.mock.call(self.session, 'Live Free or Die Hard', is_movie=True, year=None)])
+
+        db_calls_mock.register_show_session.assert_has_calls(
+            [unittest.mock.call(self.session, None, None, datetime.datetime(2022, 1, 1, 6), 8373, 7503,
+                                audio_language=None, extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, None, None, datetime.datetime(2022, 1, 1, 7, 19), 8373, 7912,
+                                audio_language=None, extended_cut=False, should_commit=False)])
