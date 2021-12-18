@@ -1360,7 +1360,8 @@ def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: s
         regex_operation = get_regex_operation_dbms()
 
         query = session.query(models.ShowSession, models.Channel, models.ShowData) \
-            .filter(models.ShowData.search_title.op(regex_operation)(search_pattern))
+            .filter(models.ShowData.search_title.op(regex_operation)(search_pattern)) \
+            .order_by(models.ShowSession.date_time)
 
     if is_movie:
         query = query.filter(sqlalchemy.or_(models.ShowData.is_movie.is_(None), models.ShowData.is_movie.is_(True)))
