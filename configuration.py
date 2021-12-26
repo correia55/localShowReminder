@@ -78,11 +78,14 @@ def initialize():
     # Get the database url saved in the environment variable
     database_url = os.environ.get('DATABASE_URL', None)
 
+    # Get the database pool recycle
+    pool_recycle = os.environ.get('DB_POOl_RECYCLE', 280)
+
     if database_url is None:
         print('Warning: Unable to find database url!')
         exit(1)
 
-    engine = create_engine(database_url, encoding='utf-8', pool_recycle=3600, pool_pre_ping=True)
+    engine = create_engine(database_url, encoding='utf-8', pool_recycle=pool_recycle, pool_pre_ping=True)
     Session = sessionmaker(bind=engine)
 
     MIGRATIONS_DIR = os.path.join(base_dir, 'migrations')
