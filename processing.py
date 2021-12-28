@@ -199,7 +199,7 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
 
         for s in db_shows:
             # Skip sessions from excluded channels
-            if s[1].id in excluded_channels:
+            if is_id_in_excluded_channel_list(s[1].id, excluded_channels):
                 continue
 
             show = response_models.LocalShowResult.create_from_show_session(s[0], s[1], s[2])
@@ -214,6 +214,22 @@ def search_sessions_db(session: sqlalchemy.orm.Session, search_list: List[str], 
         final_results.append(r)
 
     return final_results
+
+
+def is_id_in_excluded_channel_list(channel_id: int, excluded_channels: List[models.UserExcludedChannel]):
+    """
+    Check if a given channel id is in the list of the excluded channel list.
+
+    :param channel_id: the id of interest.
+    :param excluded_channels: the list of excluded channels.
+    :return: whether the id is in the list.
+    """
+
+    for excluded_channel in excluded_channels:
+        if channel_id == excluded_channel.channel_id:
+            return True
+
+    return False
 
 
 def search_sessions_db_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: bool,
@@ -252,7 +268,7 @@ def search_sessions_db_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: in
 
     for s in db_shows:
         # Skip sessions from excluded channels
-        if s[1].id in excluded_channels:
+        if is_id_in_excluded_channel_list(s[1].id, excluded_channels):
             continue
 
         show = response_models.LocalShowResult.create_from_show_session(s[0], s[1], s[2])
@@ -908,11 +924,11 @@ def process_excluded_channel_list(session: sqlalchemy.orm.Session, user_id: int,
     if current_excluded_channel_list == excluded_channel_list:
         return
 
-    # Otherwise, delete all of the previous entries
+    # Otherwise, delete all previous entries
     for old_excluded_channel in db_excluded_channel_list:
         session.delete(old_excluded_channel)
 
-    # Otherwise, add all of the new entries
+    # Otherwise, add all new entries
     for excluded_channel in excluded_channel_list:
         db_calls.register_user_excluded_channel(session, user_id, excluded_channel, should_commit=False)
 
