@@ -161,10 +161,8 @@ class GenericXlsx(get_file_data.ChannelInsertion):
         if fields is None:
             return None
 
-        if '_file_format' in fields:
-            file_format = fields['_file_format'].field_format
-        else:
-            file_format = '.xlsx'
+        # Get the extension of the file
+        file_format = filename[filename.rindex('.'):]
 
         if file_format == '.xls':
             book = xlrd.open_workbook(filename)
