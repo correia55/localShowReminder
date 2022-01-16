@@ -1,4 +1,5 @@
 field;column;format
+_file_format;-1;.xlsx
 date;0;%d/%m/%Y
 time;1;%H:%M
 cat_time;2;%H:%M
