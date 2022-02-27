@@ -303,8 +303,12 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                     if file_format == '.xls':
                         duration = xlrd.xldate_as_datetime(row[fields['duration'].position].value, book.datemode)
                     else:
-                        duration = datetime.datetime.strptime(row[fields['duration'].position].value,
-                                                              fields['duration'].field_format)
+                        try:
+                            duration = datetime.datetime.strptime(row[fields['duration'].position].value,
+                                                                  fields['duration'].field_format)
+                        except TypeError:
+                            duration_time: datetime.time = row[fields['duration'].position].value
+                            duration = datetime.datetime(1, 1, 1, duration_time.hour, duration_time.minute)
 
                     duration = duration.hour * 60 + duration.minute
             else:
