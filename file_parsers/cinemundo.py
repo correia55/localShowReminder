@@ -21,7 +21,7 @@ class Cinemundo(get_file_data.ChannelInsertion):
         - VP - for portuguese audio.
 
         :param title: the title as is in the file.
-        :return: a tuple with the clean title, whether or not it is a session with the portuguese voice and the season,
+        :return: a tuple with the clean title, whether it is a session with the portuguese voice and the season,
         when applicable.
         """
 
@@ -86,7 +86,14 @@ class Cinemundo(get_file_data.ChannelInsertion):
             original_title = str(row[2].value)
             localized_title = str(row[3].value)
             synopsis = row[4].value
-            year = int(row[5].value)
+
+            # If there's an invalid year, ignore this entry
+            try:
+                year = int(row[5].value)
+            except ValueError:
+                print('The ' + original_title + ' had an invalid year!')
+                continue
+
             age_classification = row[6].value
             directors = row[7].value
             cast = row[8].value
