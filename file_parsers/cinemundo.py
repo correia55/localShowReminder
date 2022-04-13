@@ -91,7 +91,7 @@ class Cinemundo(get_file_data.ChannelInsertion):
             try:
                 year = int(row[5].value)
             except ValueError:
-                print('The ' + original_title + ' had an invalid year!')
+                print('The \"' + original_title + '\" show had an invalid year!')
                 continue
 
             age_classification = row[6].value
