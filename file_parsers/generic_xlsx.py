@@ -171,7 +171,7 @@ class GenericXlsx(get_file_data.ChannelInsertion):
             sheet = book.sheets()[0]
             rows = sheet.nrows
         else:
-            book = openpyxl.load_workbook(filename)
+            book = openpyxl.load_workbook(filename, read_only=True, data_only=True)
             sheet = book.active
             rows = sheet.max_row
 
