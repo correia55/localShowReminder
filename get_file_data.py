@@ -44,13 +44,13 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
                        session_audio_language: Optional[str] = None, extended_cut: bool = False,
                        creators: List[str] = None) -> Optional[InsertionResult]:
     """
-    Process an entry in the file, inserting all of the needed data.
+    Process an entry in the file, inserting all needed data.
 
     :param db_session: the db session.
     :param insertion_result: the insertion result.
     :param original_title: the original title.
     :param localized_title: the localized title.
-    :param is_movie: whether or not it is a movie.
+    :param is_movie: whether it is a movie.
     :param genre: the type of show (movie, series, documentary, ...).
     :param date_time: the datetime.
     :param channel_id: the id of the channel.
@@ -66,7 +66,7 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
     :param countries: the countries.
     :param age_classification: the age classification.
     :param session_audio_language: the audio language for the current session.
-    :param extended_cut: whether or not this is the extended cut.
+    :param extended_cut: whether this is the extended cut.
     :param creators: the list of creators.
     :return: the updated insertion result, or None if there's a fatal error.
     """

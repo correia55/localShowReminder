@@ -33,7 +33,8 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                      'Disney Junior': ('Disney Junior', 'disney_junior.csv'),
                      'Disney Channel': ('Disney Channel', 'disney_junior.csv'),
                      '(New) FOX Crime': ('FOX Crime', 'fox.csv'),
-                     '(New) FOX Movies': ('FOX Movies', 'new_fox_movies.csv')}
+                     '(New) FOX Movies': ('FOX Movies', 'new_fox_movies.csv'),
+                     'Hollywood': ('Hollywood', 'hollywood.csv')}
     channels = list(channels_file.keys())
 
     @staticmethod
@@ -103,7 +104,7 @@ class GenericXlsx(get_file_data.ChannelInsertion):
 
         :param title: the title as is in the file.
         :param title_format: the format of the title.
-        :param is_movie: whether or not this entry is a movie.
+        :param is_movie: whether this entry is a movie.
         :return: the title.
         """
 
@@ -171,7 +172,8 @@ class GenericXlsx(get_file_data.ChannelInsertion):
             sheet = book.sheets()[0]
             rows = sheet.nrows
         else:
-            book = openpyxl.load_workbook(filename, read_only=True, data_only=True)
+            # Remark: setting the read_only to true, changes the number of rows
+            book = openpyxl.load_workbook(filename, data_only=True)
             sheet = book.active
             rows = sheet.max_row
 
@@ -226,7 +228,12 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                         time = datetime.datetime.strptime(row[fields['time'].position].value,
                                                           fields['time'].field_format)
                     except TypeError:
-                        continue
+                        try:
+                            #  If the date and time come in the time format
+                            date = row[fields['date'].position].value
+                            time = row[fields['time'].position].value
+                        except TypeError:
+                            continue
 
                 # Combine the date with the time
                 date_time = date.replace(hour=time.hour, minute=time.minute)
@@ -324,6 +331,17 @@ class GenericXlsx(get_file_data.ChannelInsertion):
             else:
                 subgenre = None
 
+            # Process the audio language of the session
+            session_audio_language = None
+
+            if 'session_audio_language' in fields:
+                session_audio_language = row[fields['session_audio_language'].position].value
+
+                if session_audio_language == 'VP':
+                    session_audio_language = 'pt'
+                else:
+                    session_audio_language = None
+
             # Get the first event's datetime
             if first_event_datetime is None:
                 first_event_datetime = date_time
@@ -358,7 +376,7 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                 if season == 0:
                     season = None
 
-            # Determine whether or not it is a movie
+            # Determine whether it is a movie
             is_movie = season is None or episode is None
 
             # Make sure the season and episode are None for movies
@@ -382,7 +400,8 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                                                                 year, directors, subgenre, synopsis, season, episode,
                                                                 cast=cast, duration=duration, countries=countries,
                                                                 age_classification=age_classification,
-                                                                creators=creators)
+                                                                creators=creators,
+                                                                session_audio_language=session_audio_language)
 
             if insertion_result is None:
                 return None
