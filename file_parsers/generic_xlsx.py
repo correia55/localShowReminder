@@ -261,10 +261,13 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                 synopsis = None
 
             if 'cast' in fields:
-                cast = row[fields['cast'].position].value.strip()
+                cast = row[fields['cast'].position].value
 
-                if len(cast) == 0:
-                    cast = None
+                if cast is not None:
+                    cast = cast.strip()
+
+                    if len(cast) == 0:
+                        cast = None
             else:
                 cast = None
 
