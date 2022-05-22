@@ -404,10 +404,11 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                 episode = None
 
             # Take care of the localized episode synopsis
-            if 'localized_episode_synopsis' in fields and is_movie:
-                synopsis = str(row[fields['localized_episode_synopsis'].position].value).strip()
-            else:
-                synopsis = None
+            if 'localized_episode_synopsis' in fields:
+                if is_movie:
+                    synopsis = str(row[fields['localized_episode_synopsis'].position].value).strip()
+                else:
+                    synopsis = None
 
             # Genre is movie, series, documentary, news...
             genre = 'Movie' if is_movie else 'Series'

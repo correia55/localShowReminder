@@ -1126,15 +1126,12 @@ class TestGenericXlsx(unittest.TestCase):
 
         db_calls_mock.insert_if_missing_show_data.assert_has_calls(
             [unittest.mock.call(self.session, 'GIGANTOSAURUS', cast=None, original_title='GIGANTOSAURUS', duration=25,
-                                synopsis='Quatro pequenos dinossauros vivem grandes aventuras no mundo pré-histórico '
-                                         'onde o mistério mais entusiasmante é o Gigantosaurus, o maior e mais feroz '
-                                         'dinossauro já visto!',
+                                synopsis=None,
                                 year=2018, genre='Series', subgenre=None, audio_languages=None, countries='França',
                                 directors=['Olivier Lelardoux'], age_classification='T', is_movie=False, season=1,
                                 creators=None, date_time=datetime.datetime(2021, 6, 30, 22, 50)),
              unittest.mock.call(self.session, 'BLUEY', cast=None, original_title='BLUEY', duration=10,
-                                synopsis='Bluey está de volta com a irmã, Bingo, transformando a vida quotidiana em '
-                                         'diversão sem fim!',
+                                synopsis=None,
                                 year=2020, genre='Series', subgenre=None, audio_languages=None, countries='Austrália',
                                 directors=None, age_classification='T', is_movie=False, season=2,
                                 creators=None, date_time=datetime.datetime(2021, 7, 1, 7, 5))])
@@ -1235,10 +1232,7 @@ class TestGenericXlsx(unittest.TestCase):
 
         db_calls_mock.insert_if_missing_show_data.assert_has_calls(
             [unittest.mock.call(self.session, 'CLUBE HOUDINI', cast=None, original_title='CLUB HOUDINI', duration=15,
-                                synopsis='Martina, Andrés e Mateo vão até à casa de Houdini para ver se já voltou da '
-                                         'sua viagem a Nova Iorque. Ao chegar, encontram por acaso um filme antigo e '
-                                         'dirigem-se até ao velho cinema para ver o filme.',
-                                year=2019, genre='Series',
+                                synopsis=None, year=2019, genre='Series',
                                 subgenre=None, audio_languages=None, countries='Espanha',
                                 directors=None, age_classification='T', is_movie=False, season=3,
                                 creators=None, date_time=datetime.datetime(2021, 6, 30, 23, 15)),
