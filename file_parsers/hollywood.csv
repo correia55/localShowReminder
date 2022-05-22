@@ -1,5 +1,6 @@
 field;column;format
 _file_format;-1;.xlsx
+channel_name;0;str
 date;1;%d-%m-%Y
 time;2;%H:%M
 original_title;3;has_year

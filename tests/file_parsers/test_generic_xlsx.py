@@ -1614,3 +1614,104 @@ class TestGenericXlsx(unittest.TestCase):
                                 audio_language='pt', extended_cut=False, should_commit=False),
              unittest.mock.call(self.session, None, None, datetime.datetime(2022, 6, 4, 1), 8373, 7912,
                                 audio_language=None, extended_cut=False, should_commit=False)])
+
+    @unittest.mock.patch('get_file_data.tmdb_calls')
+    def test_add_file_data_bast(self, tmdb_calls_mock) -> None:
+        """ Test the function GenericXlsx.add_file_data with a sample from the new format of a Blast file. """
+
+        # Prepare the mocks
+        # Replace datetime class with a utility class with a fixed datetime
+        datetime.datetime = NewDatetime
+
+        # Prepare the call to get_channel_name
+        channel_data = models.Channel('BLAST', 'Blast')
+        channel_data.id = 8373
+
+        db_calls_mock.get_channel_name.return_value = channel_data
+
+        # Treatment of the entries
+        # ----------------------------
+        # Prepare the calls to search_channel_show_data
+        db_calls_mock.search_channel_show_data_correction.side_effect = [None, None]
+
+        # Prepare the calls to search_channel_show_data
+        show_data = models.ShowData('_Vikings_', 'Vikings')
+        show_data.id = 7503
+        show_data.original_title = 'Vikings'
+        show_data.year = 2015
+        show_data.genre = 'Series'
+        show_data.is_movie = False
+
+        show_data_2 = models.ShowData('_Victor_Frankenstein_', 'Victor Frankenstein')
+        show_data_2.id = 7912
+        show_data_2.original_title = 'Victor Frankenstein'
+        show_data_2.year = 2015
+        show_data_2.genre = 'Movie'
+        show_data_2.is_movie = True
+
+        db_calls_mock.insert_if_missing_show_data.side_effect = [(True, show_data), (True, show_data_2)]
+
+        # Prepare the calls to search_shows_by_text
+        tmdb_calls_mock.search_shows_by_text.side_effect = [(0, []), (0, []), (0, []), (0, [])]
+
+        # Prepare the calls to register_show_session
+        show_session = models.ShowSession(None, None, datetime.datetime(2022, 6, 1, 7), 8373, 7503)
+        show_session_2 = models.ShowSession(None, None, datetime.datetime(2022, 6, 1, 7, 45), 8373, 7912)
+
+        db_calls_mock.register_show_session.side_effect = [show_session, show_session_2]
+
+        # Call the function
+        actual_result = file_parsers.generic_xlsx.GenericXlsx.add_file_data(self.session, base_path +
+                                                                            'data/blast_example.xlsx', 'Blast')
+
+        # Get back the datetime.datetime
+        datetime.datetime = self.datetime_backup
+
+        # Verify the result
+        self.assertEqual(datetime.datetime(2022, 6, 1, 5, 55, 0), actual_result.start_datetime)
+        self.assertEqual(datetime.datetime(2022, 6, 1, 6, 50, 0), actual_result.end_datetime)
+        self.assertEqual(2, actual_result.total_nb_sessions_in_file)
+        self.assertEqual(0, actual_result.nb_updated_sessions)
+        self.assertEqual(2, actual_result.nb_added_sessions)
+        self.assertEqual(0, actual_result.nb_deleted_sessions)
+
+        # Verify the calls to the mocks
+        db_calls_mock.get_channel_name.assert_called_with(self.session, 'Blast')
+
+        db_calls_mock.search_channel_show_data_correction.assert_has_calls(
+            [unittest.mock.call(self.session, 8373, False, 'Vikings', 'Vikings', directors=['Ken Girotti'], year=2015,
+                                subgenre='Ação', creators=None),
+             unittest.mock.call(self.session, 8373, True, 'Victor Frankenstein', 'Victor Frankenstein', directors=['Paul McGuigan'],
+                                year=2015,
+                                subgenre='Terror', creators=None)])
+
+        db_calls_mock.insert_if_missing_show_data.assert_has_calls(
+            [unittest.mock.call(self.session, 'Vikings',
+                                cast='Travis Fimmel, Clive Standen, Katheryn Winnick',
+                                original_title='Vikings', duration=45,
+                                synopsis=None, year=2015, genre='Series', subgenre='Ação', audio_languages=None,
+                                countries='Canada', directors=['Ken Girotti'], age_classification='M/16',
+                                is_movie=False, season=3, creators=None, date_time=datetime.datetime(2022, 6, 1, 6)),
+             unittest.mock.call(self.session, 'Victor Frankenstein',
+                                cast='Daniel Radcliffe, James McAvoy, Jessica Brown Findlay, Bronson Webb, Daniel Mays',
+                                original_title='Victor Frankenstein', duration=110,
+                                synopsis='Contada na perspetiva de Igor, o jovem assistente de Frankenstein, a história'
+                                         ' revela as origens do próprio Igor e do início da sua amizade com o então '
+                                         'jovem estudante de Medicina. Mostra como Frankenstein se tornou no homem e '
+                                         'na lenda que hoje conhecemos.', year=2015, genre='Movie',
+                                subgenre='Terror', audio_languages=None,
+                                countries='United States, United Kingdom, Canada,', directors=['Paul McGuigan'],
+                                age_classification='M/12', is_movie=True, season=None,
+                                creators=None, date_time=datetime.datetime(2022, 6, 1, 6, 45))])
+
+        tmdb_calls_mock.search_shows_by_text.assert_has_calls(
+            [unittest.mock.call(self.session, 'Vikings', is_movie=False, year=2015),
+             unittest.mock.call(self.session, 'Vikings', is_movie=False, year=None),
+             unittest.mock.call(self.session, 'Victor Frankenstein', is_movie=True, year=2015),
+             unittest.mock.call(self.session, 'Victor Frankenstein', is_movie=True, year=None)])
+
+        db_calls_mock.register_show_session.assert_has_calls(
+            [unittest.mock.call(self.session, 3, 8, datetime.datetime(2022, 6, 1, 6), 8373, 7503,
+                                audio_language=None, extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, None, None, datetime.datetime(2022, 6, 1, 6, 45), 8373, 7912,
+                                audio_language=None, extended_cut=False, should_commit=False)])

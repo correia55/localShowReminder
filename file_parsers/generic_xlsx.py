@@ -34,7 +34,7 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                      'Disney Channel': ('Disney Channel', 'disney_junior.csv'),
                      '(New) FOX Crime': ('FOX Crime', 'fox.csv'),
                      '(New) FOX Movies': ('FOX Movies', 'new_fox_movies.csv'),
-                     'Hollywood': ('Hollywood', 'hollywood.csv')}
+                     'Hollywood': ('Hollywood', 'hollywood.csv'), 'Blast': ('Blast', 'blast.csv')}
     channels = list(channels_file.keys())
 
     @staticmethod
@@ -116,6 +116,11 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                     title = title[:series.span(0)[0]]
             elif 'season_at_the_end' in title_format:
                 series = re.search(r'^(.*) [0-9]+$', title.strip())
+
+                if series is not None:
+                    title = series.group(1)
+            elif 'season_and_episode_at_the_end' in title_format:
+                series = re.search(r'^(.*) T[0-9]+, ?[0-9]+$', title.strip())
 
                 if series is not None:
                     title = series.group(1)
@@ -353,20 +358,31 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                 season = None
                 episode = None
             else:
-                try:
-                    season = int(row[fields['season'].position].value)
-                except ValueError:
+                if fields['season'].field_format == 'season_starts_with_T':
+                    season_str = row[fields['season'].position].value
+
+                    if season_str is not None:
+                        season = re.search(r'^T([0-9]+)$', row[fields['season'].position].value.strip())
+
+                        if season is not None:
+                            season = int(season.group(1))
+                    else:
+                        season = None
+                else:
                     try:
-                        # There are entries with a season 2.5, which will be converted to 2
-                        season = int(float(row[fields['season'].position].value))
+                        season = int(row[fields['season'].position].value)
                     except ValueError:
+                        try:
+                            # There are entries with a season 2.5, which will be converted to 2
+                            season = int(float(row[fields['season'].position].value))
+                        except ValueError:
+                            season = None
+
+                    # Some files use 0 as a placeholder
+                    if season == 0:
                         season = None
 
-                # Some files use 0 as a placeholder
-                if season == 0:
-                    season = None
-
-                episode = None
+                    episode = None
 
                 if fields['episode'].field_format == 'int':
                     episode = int(row[fields['episode'].position].value)
@@ -386,6 +402,12 @@ class GenericXlsx(get_file_data.ChannelInsertion):
             if is_movie:
                 season = None
                 episode = None
+
+            # Take care of the localized episode synopsis
+            if 'localized_episode_synopsis' in fields and is_movie:
+                synopsis = str(row[fields['localized_episode_synopsis'].position].value).strip()
+            else:
+                synopsis = None
 
             # Genre is movie, series, documentary, news...
             genre = 'Movie' if is_movie else 'Series'
