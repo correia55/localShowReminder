@@ -362,7 +362,7 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                     season_str = row[fields['season'].position].value
 
                     if season_str is not None:
-                        season = re.search(r'^T([0-9]+)$', row[fields['season'].position].value.strip())
+                        season = re.search(r'^T([0-9]+)$', str(row[fields['season'].position].value).strip())
 
                         if season is not None:
                             season = int(season.group(1))
