@@ -41,9 +41,9 @@ def update_channel_list(session: sqlalchemy.orm.Session):
 
         for row in content:
             channel_name = row[0]
-            channel_adult = row[1] == 'True'
-            channel_acronym = row[2]
-            channel_search_epg = row[3] == 'True'
+            channel_adult = False
+            channel_acronym = row[1]
+            channel_search_epg = row[2] == 'True'
 
             channel = db_calls.get_channel_name(session, channel_name)
 

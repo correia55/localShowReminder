@@ -1,49 +1,49 @@
-name;adult;acronym;search_epg
-RTP 1;False;RTP1;True
-RTP 2;False;RTP2;True
-RTP 3;False;RTP3;True
-RTP Memória;False;RTPM;True
-RTP África;False;RTPA;True
-SIC;False;SIC;True
-SIC Mulher;False;SICM;True
-SIC Radical;False;SICR;True
-SIC K;False;SICK;True
-SIC Caras;False;SICC;True
-TVI;False;TVI;True
-TVI24;False;TVI24;True
-TVI Ficção;False;TVIFIC;True
-Cartoon Network;False;CART;True
-Cartoon Network Premium;False;CNPREM;True
-Panda;False;PANDA;True
-Panda Biggs;False;BIGGS;True
-Disney Channel;False;DISNY;False
-Disney Junior;False;DISNYJ;False
-Nickelodeon;False;NICKELO;True
-TVCine Top;False;TVCTOP;False
-TVCine Edition;False;TVCED;False
-TVCine Emotion;False;TVCEM;False
-TVCine Action;False;TVCA;False
-Hollywood;False;HOLLW;False
-Cinemundo;False;CINE;False
-AXN;False;AXN;True
-AXN Movies;False;AXNM;True
-AXN White;False;AXNWH;True
-FOX;False;FOX;False
-FOX Crime;False;FOXCR;False
-FOX Life;False;FLIFE;False
-FOX Movies;False;FOXM;False
-FOX Comedy;False;FOXCOM;False
-Eurochannel;False;EURCH;True
-Discovery Channel;False;DISCV;True
-Odisseia;False;ODISS;False
-National Geographic;False;NGC;False
-Nat Geo Wild;False;WILD;False
-História;False;HIST;True
-Travel Channel;False;TRAV;True
-SyFy;False;SYFY;True
-CBS Reality;False;CBSR;True
-AMC;False;AMC;True
-Blaze;False;BLAZEHD;True
-Crime + Investigation;False;CI;True
-BBC Entertainment;False;BBC E;True
-Blast;False;BLAST;False
+name;acronym;search_epg
+RTP 1;RTP1;True
+RTP 2;RTP2;True
+RTP 3;RTP3;True
+RTP Memória;RTPM;True
+RTP África;RTPA;True
+SIC;SIC;True
+SIC Mulher;SICM;True
+SIC Radical;SICR;True
+SIC K;SICK;True
+SIC Caras;SICC;True
+TVI;TVI;True
+TVI24;TVI24;True
+TVI Ficção;TVIFIC;True
+Cartoon Network;CART;True
+Cartoon Network Premium;CNPREM;True
+Panda;PANDA;True
+Panda Biggs;BIGGS;True
+Disney Channel;DISNY;False
+Disney Junior;DISNYJ;False
+Nickelodeon;NICKELO;True
+TVCine Top;TVCTOP;False
+TVCine Edition;TVCED;False
+TVCine Emotion;TVCEM;False
+TVCine Action;TVCA;False
+Hollywood;HOLLW;False
+Cinemundo;CINE;False
+AXN;AXN;True
+AXN Movies;AXNM;True
+AXN White;AXNWH;True
+FOX;FOX;False
+FOX Crime;FOXCR;False
+FOX Life;FLIFE;False
+FOX Movies;FOXM;False
+FOX Comedy;FOXCOM;False
+Eurochannel;EURCH;True
+Discovery Channel;DISCV;True
+Odisseia;ODISS;False
+National Geographic;NGC;False
+Nat Geo Wild;WILD;False
+História;HIST;True
+Travel Channel;TRAV;True
+SyFy;SYFY;True
+CBS Reality;CBSR;True
+AMC;AMC;True
+Blaze;BLAZEHD;True
+Crime + Investigation;CI;True
+BBC Entertainment;BBC E;True
+Blast;BLAST;False
