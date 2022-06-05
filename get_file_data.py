@@ -93,7 +93,12 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
         # If it is a new show, search the TMDB
         if new_show:
             insertion_result.nb_new_shows += 1
-            tmdb_show = search_tmdb_match(db_session, show_data)
+
+            # Only search if there's, at least, the original title
+            if original_title is not None:
+                tmdb_show = search_tmdb_match(db_session, show_data)
+            else:
+                tmdb_show = None
 
             # If it found a match in TMDB
             if tmdb_show:
@@ -138,13 +143,13 @@ def process_show_session(db_session: sqlalchemy.orm.Session, insertion_result: I
     :param db_session: the db session.
     :param insertion_result: the insertion result.
     :param show_data: the corresponding show data.
-    :param new_show: whether or not the show data was new.
+    :param new_show: whether the show data was new.
     :param season: the season.
     :param episode: the episode.
     :param date_time: the datetime.
     :param channel_id: the id of the channel.
     :param audio_language: the audio language.
-    :param extended_cut: whether or not this is the extended cut.
+    :param extended_cut: whether this is the extended cut.
     :return: the updated insertion result, or None if there's a fatal error.
     """
 

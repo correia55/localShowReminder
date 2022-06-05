@@ -34,7 +34,8 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                      'Disney Channel': ('Disney Channel', 'disney_junior.csv'),
                      '(New) FOX Crime': ('FOX Crime', 'fox.csv'),
                      '(New) FOX Movies': ('FOX Movies', 'new_fox_movies.csv'),
-                     'Hollywood': ('Hollywood', 'hollywood.csv'), 'Blast': ('Blast', 'blast.csv')}
+                     'Hollywood': ('Hollywood', 'hollywood.csv'), 'Blast': ('Blast', 'blast.csv'),
+                     'História': ('História', 'historia.csv')}
     channels = list(channels_file.keys())
 
     @staticmethod
@@ -60,10 +61,6 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                 fields[row[0]] = GenericField(int(row[1]), row[2])
 
         # Check if the essential fields are present
-        if 'original_title' not in fields:
-            print('%s does not have a definition for \'original_title\'!' % channel_name)
-            return None
-
         if 'date' not in fields and 'date_time' not in fields:
             print('%s does not have a definition for \'date\' nor \'date_time\'!' % channel_name)
             return None
@@ -72,9 +69,11 @@ class GenericXlsx(get_file_data.ChannelInsertion):
             print('%s does not have a definition for \'time\' nor \'date_time\'!' % channel_name)
             return None
 
+        if 'original_title' not in fields:
+            print('%s does not have a definition for \'original_title\'!' % channel_name)
+
         if 'year' not in fields:
             print('%s does not have a definition for \'year\'!' % channel_name)
-            return None
 
         if 'localized_title' not in fields:
             print('%s does not have a definition for \'localized_title\'!\nThe \'original_title\' will be used.'
@@ -148,6 +147,89 @@ class GenericXlsx(get_file_data.ChannelInsertion):
         return re.sub('[´`]', '\'', title.strip())
 
     @staticmethod
+    def process_date(date_value: str, date_field_format: str) -> str:
+        """
+        Process the date, removing unnecessary data.
+
+        :param date_value: the data as is in the file.
+        :param date_field_format: the format of the date, as in the configuration file.
+        :return: the date as string.
+        """
+
+        if date_field_format == 'day_space_date':
+            date_value = date_value.split(' ')[-1]
+        else:
+            print('The date field format: %s is not recognized!' % date_field_format)
+            date_value = None
+
+        return date_value
+
+    @staticmethod
+    def parse_time(time_value, time_format: str, file_format: str, book: xlrd.book.Book) -> Optional[datetime.time]:
+        """
+        Parse the time.
+
+        :param time_value: the time as is in the file.
+        :param time_format: the format of the time, as in the configuration file.
+        :param file_format: the format of the file.
+        :param book: the book, of the file (when it is a .xls file).
+        :return: the parsed time.
+        """
+
+        try:
+            if file_format == '.xls':
+                try:
+                    #  If the time comes in the time format
+                    time = xlrd.xldate_as_datetime(time_value, book.datemode)
+                except TypeError:
+                    # If the time comes as text
+                    time = datetime.datetime.strptime(time_value, time_format)
+            else:
+                try:
+                    time = datetime.datetime.strptime(time_value, time_format)
+                except TypeError:
+                    try:
+                        #  If the time already comes in the time format
+                        time = time_value
+                    except TypeError:
+                        time = None
+        except ValueError:
+            time = None
+
+        return time
+
+    @staticmethod
+    def parse_date(date_value, date_format: str, file_format: str, book: xlrd.book.Book) -> Optional[datetime.date]:
+        """
+        Parse the date.
+
+        :param date_value: the date as is in the file.
+        :param date_format: the format of the date, as in the configuration file.
+        :param file_format: the format of the file.
+        :param book: the book, of the file (when it is a .xls file).
+        :return: the parsed date.
+        """
+
+        if file_format == '.xls':
+            try:
+                #  If the date comes in the date format
+                date = xlrd.xldate_as_datetime(date_value, book.datemode)
+            except TypeError:
+                date = None
+        else:
+            date = None
+
+        if date is None:
+            try:
+                # If the date comes as text
+                date = datetime.datetime.strptime(date_value, date_format)
+            except (TypeError, ValueError):
+                #  If the date already comes in the date format
+                date: datetime.date = date_value
+
+        return date
+
+    @staticmethod
     def add_file_data(db_session: sqlalchemy.orm.Session, filename: str, channel_name: str) \
             -> Optional[get_file_data.InsertionResult]:
         """
@@ -186,10 +268,9 @@ class GenericXlsx(get_file_data.ChannelInsertion):
 
         first_event_datetime = None
         date_time = None
+        date = None
 
         today_00_00 = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-
-        row_skipped = False
 
         for rx in range(rows):
             if file_format == '.xls':
@@ -197,51 +278,58 @@ class GenericXlsx(get_file_data.ChannelInsertion):
             else:
                 row = sheet[rx + 1]
 
-            # Skip row 1, with the headers
-            if not row_skipped:
-                row_skipped = True
-                continue
+            if row[fields['time'].position].value is not None and row[fields['time'].position].value:
+                # Parse time
+                time = GenericXlsx.parse_time(row[fields['time'].position].value, fields['time'].field_format,
+                                              file_format, book)
+            else:
+                time = None
 
-            # Skip the rows in which the year is not a number (header rows)
-            if row[fields['year'].position].value is None:
-                continue
+            # If the date is in a separate row
+            if '_date_separate_line' in fields:
+                # While we don't have a date, skip rows where the date is empty
+                if date is None:
+                    if row[fields['date'].position].value is None or not row[fields['date'].position].value:
+                        continue
 
-            try:
-                year = int(row[fields['year'].position].value)
-            except ValueError:
-                continue
+                # If there's a date, update the current date
+                if row[fields['date'].position].value is not None and row[fields['date'].position].value:
+                    date_value = GenericXlsx.process_date(row[fields['date'].position].value,
+                                                          fields['_date_separate_line'].field_format)
+
+                    # Parse date, and skip the row
+                    date = GenericXlsx.parse_date(date_value, fields['date'].field_format, file_format, book)
+                    continue
 
             # Get the date_time
             if 'date_time' in fields:
                 date_time = datetime.datetime.strptime(row[fields['date_time'].position].value,
                                                        fields['date_time'].field_format)
             else:
-                if file_format == '.xls':
-                    date = xlrd.xldate_as_datetime(row[fields['date'].position].value, book.datemode)
+                if time is None:
+                    continue
 
-                    try:
-                        #  If the time comes in the time format
-                        time = xlrd.xldate_as_datetime(row[fields['time'].position].value, book.datemode)
-                    except TypeError:
-                        # If the time comes as text
-                        time = datetime.datetime.strptime(row[fields['time'].position].value,
-                                                          fields['time'].field_format)
-                else:
-                    try:
-                        date = datetime.datetime.strptime(row[fields['date'].position].value,
-                                                          fields['date'].field_format)
-                        time = datetime.datetime.strptime(row[fields['time'].position].value,
-                                                          fields['time'].field_format)
-                    except TypeError:
-                        try:
-                            #  If the date and time come in the time format
-                            date = row[fields['date'].position].value
-                            time = row[fields['time'].position].value
-                        except TypeError:
-                            continue
+                if '_date_separate_line' not in fields:
+                    date = GenericXlsx.parse_date(row[fields['date'].position].value, fields['date'].field_format,
+                                                  file_format, book)
+
+                if date is None:
+                    continue
 
                 # Combine the date with the time
                 date_time = date.replace(hour=time.hour, minute=time.minute)
+
+            if 'year' in fields:
+                # Skip the rows in which the year is invalid
+                if row[fields['year'].position].value is None:
+                    continue
+
+                try:
+                    year = int(row[fields['year'].position].value)
+                except ValueError:
+                    continue
+            else:
+                year = None
 
             # Add the Lisbon timezone info, then convert it to UTC
             # and then remove the timezone info
@@ -252,7 +340,11 @@ class GenericXlsx(get_file_data.ChannelInsertion):
             if date_time < (today_00_00 - datetime.timedelta(days=configuration.show_sessions_validity_days)):
                 continue
 
-            original_title = str(row[fields['original_title'].position].value)
+            if 'original_title' in fields:
+                original_title = str(row[fields['original_title'].position].value)
+            else:
+                original_title = None
+
             localized_title = str(row[fields['localized_title'].position].value)
 
             # If it is a placeholder show or temporary program
@@ -316,7 +408,11 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                     duration = int(int(row[fields['duration'].position].value) / 60)
                 else:
                     if file_format == '.xls':
-                        duration = xlrd.xldate_as_datetime(row[fields['duration'].position].value, book.datemode)
+                        try:
+                            duration = xlrd.xldate_as_datetime(row[fields['duration'].position].value, book.datemode)
+                        except TypeError:
+                            duration = datetime.datetime.strptime(row[fields['duration'].position].value,
+                                                                  fields['duration'].field_format)
                     else:
                         try:
                             duration = datetime.datetime.strptime(row[fields['duration'].position].value,
@@ -385,7 +481,10 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                     episode = None
 
                 if fields['episode'].field_format == 'int':
-                    episode = int(row[fields['episode'].position].value)
+                    try:
+                        episode = int(row[fields['episode'].position].value)
+                    except ValueError:
+                        episode = None
                 elif 'title_with_Ep.' in fields['episode'].field_format:
                     series = re.search(r'Ep\. [0-9]+', row[fields['episode'].position].value.strip())
 
@@ -413,8 +512,11 @@ class GenericXlsx(get_file_data.ChannelInsertion):
             # Genre is movie, series, documentary, news...
             genre = 'Movie' if is_movie else 'Series'
 
-            # Process the title
-            original_title = GenericXlsx.process_title(original_title, fields['original_title'].field_format, is_movie)
+            # Process the titles
+            if original_title is not None:
+                original_title = GenericXlsx.process_title(original_title, fields['original_title'].field_format,
+                                                           is_movie)
+
             localized_title = GenericXlsx.process_title(localized_title, fields['localized_title'].field_format,
                                                         is_movie)
 

@@ -229,7 +229,7 @@ def get_highest_scored_shows_interval(session: sqlalchemy.orm.Session, start_dat
     :param session: the db session.
     :param start_datetime: the start datetime.
     :param end_datetime: the end datetime.
-    :param is_movie: whether or not it is a movie.
+    :param is_movie: whether it is a movie.
     :return: the list of shows (each represented by a tuple of the show id, the tmdb id and the vote average).
     """
 
@@ -1101,7 +1101,7 @@ def register_user(session, email: str, password_hash: Optional[str], language: s
     :param password_hash: the password's hash.
     :param language: the language of the user.
     :param account_type: the account type of the user.
-    :param verified: whether or not the user is created as verified.
+    :param verified: whether the user is created as verified.
     :return: the created user.
     """
 

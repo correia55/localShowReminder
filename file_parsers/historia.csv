@@ -1,0 +1,14 @@
+field;column;format
+_file_format;-1;.xls
+_date_separate_line;-1;day_space_date
+date;0;%d/%m/%Y
+time;3;%H:%M:%S
+version;6;int
+localized_title;10;str
+localized_episode_title;13;str
+season;14;int
+episode;15;int
+program_id;18;int
+duration;19;%H:%M:%S
+type;20;str
+age_classification;23;str
