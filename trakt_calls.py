@@ -11,7 +11,7 @@ import db_calls
 
 
 class SimpleTraktShow(object):
-    """The class that will represent the data in the response from a search to trakt, using text."""
+    """The class that will represent the config in the response from a search to trakt, using text."""
 
     id: int
     imdb_id: str
@@ -34,7 +34,7 @@ class SimpleTraktShow(object):
 
 
 class TraktShow(SimpleTraktShow):
-    """The class that will represent the data in the response from a search to trakt, using a trakt id."""
+    """The class that will represent the config in the response from a search to trakt, using a trakt id."""
 
     overview: str
     language: str

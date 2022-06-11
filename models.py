@@ -172,7 +172,7 @@ class Highlights(Base):
 
 
 class LastUpdate(Base):
-    """Used to store the data from the last update."""
+    """Used to store the config from the last update."""
 
     __tablename__ = 'LastUpdate'
 
@@ -206,7 +206,7 @@ class Reminder(Base):
 
 @auxiliary.auto_repr
 class ShowData(Base):
-    """Used to store all the data associated with a show."""
+    """Used to store all the config associated with a show."""
 
     __tablename__ = 'ShowData'
     __table_args__ = (
@@ -325,7 +325,7 @@ class StreamingServiceShow(Base):
     prev_first_season_available = Column(Integer)  # Used to store the previous first season, needed for the alarms
     prev_last_season_available = Column(Integer)  # Used to store the previous last season, needed for the alarms
 
-    # Most important data
+    # Most important config
     first_season_available = Column(Integer)
     last_season_available = Column(Integer)
     last_season_number_episodes = Column(Integer)

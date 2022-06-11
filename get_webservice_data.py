@@ -15,7 +15,7 @@ import models
 
 def update_channel_list(session: sqlalchemy.orm.Session):
     """
-    Parse the file with the channel data and update the DB.
+    Parse the file with the channel config and update the DB.
 
     :param session: the db session.
     """
@@ -33,7 +33,7 @@ def update_channel_list(session: sqlalchemy.orm.Session):
 
     db_calls.commit(session)
 
-    with open(os.path.join(configuration.base_dir, 'data', 'channels.csv'), newline='') as csvfile:
+    with open(os.path.join(configuration.base_dir, 'config', 'channels.csv'), newline='') as csvfile:
         content = csv.reader(csvfile, delimiter=';')
 
         # Skip the headers

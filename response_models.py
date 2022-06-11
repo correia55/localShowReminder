@@ -131,7 +131,7 @@ class LocalShowResult:
 
         :param show_session: the corresponding session.
         :param channel: the corresponding channel.
-        :param show_data: the corresponding show data.
+        :param show_data: the corresponding show config.
         :return: the local show result.
         """
 
@@ -161,7 +161,7 @@ class LocalShowResult:
 
         :param ss_show: the corresponding streaming service show.
         :param streaming_service: the corresponding stream service.
-        :param show_data: the corresponding show data.
+        :param show_data: the corresponding show config.
         :return: the local show result.
         """
 
@@ -267,7 +267,7 @@ class HighlightResponse:
 
 @auxiliary.auto_repr
 class TmdbShow(object):
-    """The class that will represent the data in the response from a search to tmdb."""
+    """The class that will represent the config in the response from a search to tmdb."""
 
     id: int
     original_title: str
@@ -382,7 +382,7 @@ class TmdbTranslation(object):
         self.language_country = '%s-%s' % (
             translation_dict['iso_639_1'], translation_dict['iso_3166_1'])  # pt-PT, en-US...
 
-        data: dict = translation_dict['data']
+        data: dict = translation_dict['config']
 
         self.overview = data['overview']
 

@@ -31,8 +31,22 @@ class InsertionResult:
         self.nb_new_shows = 0
 
 
-class ChannelInsertion:
+class ChannelParser:
     channels: str
+
+    @staticmethod
+    def add_file_data(db_session: sqlalchemy.orm.Session, filename: str, channel_name: str) \
+            -> Optional[InsertionResult]:
+        """
+        Add the config, in the file, to the DB.
+
+        :param db_session: the DB session.
+        :param filename: the path to the file.
+        :param channel_name: the name of the channel.
+        :return: the InsertionResult.
+        """
+
+        pass
 
 
 def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: InsertionResult, original_title: str,
@@ -44,7 +58,7 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
                        session_audio_language: Optional[str] = None, extended_cut: bool = False,
                        creators: List[str] = None) -> Optional[InsertionResult]:
     """
-    Process an entry in the file, inserting all needed data.
+    Process an entry in the file, inserting all needed config.
 
     :param db_session: the db session.
     :param insertion_result: the insertion result.
@@ -115,7 +129,7 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
                 else:
                     update_show_data_with_tmdb(show_data, tmdb_show)
 
-                # If there are differences between the data from the TMDB and the one in the file
+                # If there are differences between the config from the TMDB and the one in the file
                 if correction_needed:
                     db_calls.register_channel_show_data_correction(db_session, channel_id, show_data.id, is_movie,
                                                                    original_title, localized_title,
@@ -142,8 +156,8 @@ def process_show_session(db_session: sqlalchemy.orm.Session, insertion_result: I
 
     :param db_session: the db session.
     :param insertion_result: the insertion result.
-    :param show_data: the corresponding show data.
-    :param new_show: whether the show data was new.
+    :param show_data: the corresponding show config.
+    :param new_show: whether the show config was new.
     :param season: the season.
     :param episode: the episode.
     :param date_time: the datetime.
@@ -257,7 +271,7 @@ def search_tmdb_match(db_session: sqlalchemy.orm.Session, show_data: models.Show
     Search for a TMDB match.
 
     :param db_session: the DB session.
-    :param show_data: the data of the show.
+    :param show_data: the config of the show.
     :param use_year: whether to use the year in the search or not.
     :return: the TMDB show that matches.
     """
@@ -345,9 +359,9 @@ def search_tmdb_match(db_session: sqlalchemy.orm.Session, show_data: models.Show
 
 def update_show_data_with_tmdb(show_data: models.ShowData, tmdb_show: response_models.TmdbShow):
     """
-    Update a show data with the data from TMDB.
+    Update a show config with the config from TMDB.
 
-    :param show_data: the show data in the DB.
+    :param show_data: the show config in the DB.
     :param tmdb_show: the corresponding TMDB show.
     """
 
@@ -375,9 +389,9 @@ def update_show_data_with_tmdb(show_data: models.ShowData, tmdb_show: response_m
 
 def is_correction_needed(show_data: models.ShowData, tmdb_show: response_models.TmdbShow):
     """
-    Compare the data in the DB with the one from TMDB to check if a correction is needed.
+    Compare the config in the DB with the one from TMDB to check if a correction is needed.
 
-    :param show_data: the show data in the DB.
+    :param show_data: the show config in the DB.
     :param tmdb_show: the corresponding TMDB show.
     """
 

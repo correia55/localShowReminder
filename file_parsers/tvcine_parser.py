@@ -11,7 +11,7 @@ import db_calls
 import get_file_data
 
 
-class TVCine(get_file_data.ChannelInsertion):
+class TVCineParser(get_file_data.ChannelParser):
     channels = ['TVCine Top', 'TVCine Edition', 'TVCine Emotion', 'TVCine Action']
 
     @staticmethod
@@ -89,13 +89,13 @@ class TVCine(get_file_data.ChannelInsertion):
             # Remove the parenthesis and its context
             title = title[:search_result[0][i]] + title[search_result[1][i] + 1:]
 
-        return TVCine.fix_title_order(title).strip(), vp, extended_cut
+        return TVCineParser.fix_title_order(title).strip(), vp, extended_cut
 
     @staticmethod
     def add_file_data(db_session: sqlalchemy.orm.Session, filename: str, channel_name: str) \
             -> Optional[get_file_data.InsertionResult]:
         """
-        Add the data, in the file, to the DB.
+        Add the config, in the file, to the DB.
 
         :param db_session: the DB session.
         :param filename: the path to the file.
@@ -122,7 +122,7 @@ class TVCine(get_file_data.ChannelInsertion):
             if not isinstance(row[4].value, int):
                 continue
 
-            # Get the data
+            # Get the config
             channel_name = row[0].value
             date = row[1].value
             time = row[2].value
@@ -162,7 +162,7 @@ class TVCine(get_file_data.ChannelInsertion):
             # Check if it matches the regex of a series
             series = re.search('(.+) T([0-9]+),[ ]+([0-9]+)', localized_title.strip())
 
-            # If it is a series, extract it's season and episode
+            # If it is a series, extract its season and episode
             if series:
                 localized_title = series.group(1)
                 is_movie = False
@@ -185,10 +185,10 @@ class TVCine(get_file_data.ChannelInsertion):
                 is_movie = True
 
             # Process the titles
-            localized_title, vp, extended_cut = TVCine.process_title(localized_title)
+            localized_title, vp, extended_cut = TVCineParser.process_title(localized_title)
             audio_language = 'pt' if vp else None
 
-            original_title, _, _ = TVCine.process_title(original_title)
+            original_title, _, _ = TVCineParser.process_title(original_title)
 
             # Sometimes the cast is switched with the director
             if cast is not None and directors is not None:
@@ -239,7 +239,7 @@ class TVCine(get_file_data.ChannelInsertion):
             file_end_datetime = date_time + datetime.timedelta(minutes=5)
 
             nb_deleted_sessions = get_file_data.delete_old_sessions(db_session, file_start_datetime, file_end_datetime,
-                                                                    TVCine.channels)
+                                                                    TVCineParser.channels)
 
             # Set the remaining information
             insertion_result.nb_deleted_sessions = nb_deleted_sessions

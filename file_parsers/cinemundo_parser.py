@@ -11,7 +11,7 @@ import db_calls
 import get_file_data
 
 
-class Cinemundo(get_file_data.ChannelInsertion):
+class CinemundoParser(get_file_data.ChannelParser):
     channels = ['Cinemundo']
 
     @staticmethod
@@ -57,7 +57,7 @@ class Cinemundo(get_file_data.ChannelInsertion):
     def add_file_data(db_session: sqlalchemy.orm.Session, filename: str, channel_name: str) \
             -> Optional[get_file_data.InsertionResult]:
         """
-        Add the data, in the file, to the DB.
+        Add the config, in the file, to the DB.
 
         :param db_session: the DB session.
         :param filename: the path to the file.
@@ -80,7 +80,7 @@ class Cinemundo(get_file_data.ChannelInsertion):
             if row[0].value is None:
                 continue
 
-            # Get the data
+            # Get the config
             date = datetime.datetime.strptime(str(row[0].value), '%Y%m%d')
             time = row[1].value
             original_title = str(row[2].value)
@@ -116,10 +116,10 @@ class Cinemundo(get_file_data.ChannelInsertion):
                 first_event_datetime = date_time
 
             # Process the titles
-            localized_title, vp, _ = Cinemundo.process_title(localized_title)
+            localized_title, vp, _ = CinemundoParser.process_title(localized_title)
             audio_language = 'pt' if vp else None
 
-            original_title, _, season = Cinemundo.process_title(original_title)
+            original_title, _, season = CinemundoParser.process_title(original_title)
 
             if season is not None:
                 is_movie = False
@@ -155,7 +155,7 @@ class Cinemundo(get_file_data.ChannelInsertion):
             file_end_datetime = date_time + datetime.timedelta(minutes=5)
 
             nb_deleted_sessions = get_file_data.delete_old_sessions(db_session, file_start_datetime, file_end_datetime,
-                                                                    Cinemundo.channels)
+                                                                    CinemundoParser.channels)
 
             # Set the remaining information
             insertion_result.nb_deleted_sessions = nb_deleted_sessions

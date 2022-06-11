@@ -1,6 +1,6 @@
 import unittest.mock
 
-import file_parsers.cinemundo
+import file_parsers.cinemundo_parser
 
 
 class TestCinemundo(unittest.TestCase):
@@ -11,7 +11,7 @@ class TestCinemundo(unittest.TestCase):
         expected_result = ('Mortadela e Salamão: Missão Não Possível', True, None)
 
         # Call the function
-        actual_result = file_parsers.cinemundo.Cinemundo.process_title('Mortadela e Salamão: Missão Não Possível VP')
+        actual_result = file_parsers.cinemundo_parser.CinemundoParser.process_title('Mortadela e Salamão: Missão Não Possível VP')
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -23,7 +23,7 @@ class TestCinemundo(unittest.TestCase):
         expected_result = ('Je m\'appelle Bernadette', False, None)
 
         # Call the function
-        actual_result = file_parsers.cinemundo.Cinemundo.process_title('Je m´appelle Bernadette')
+        actual_result = file_parsers.cinemundo_parser.CinemundoParser.process_title('Je m´appelle Bernadette')
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -35,7 +35,7 @@ class TestCinemundo(unittest.TestCase):
         expected_result = ('True Justice', False, 2)
 
         # Call the function
-        actual_result = file_parsers.cinemundo.Cinemundo.process_title('True Justice S2: Vengeance is Mine')
+        actual_result = file_parsers.cinemundo_parser.CinemundoParser.process_title('True Justice S2: Vengeance is Mine')
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)

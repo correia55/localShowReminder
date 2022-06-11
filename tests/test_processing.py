@@ -445,7 +445,7 @@ class TestProcessing(unittest.TestCase):
 
         db_calls_mock.get_shows_interval.side_effect = [[show_data, show_data_2, show_data_3, show_data_4]]
 
-        # Calls to obtain the TMDB data for each of the shows
+        # Calls to obtain the TMDB config for each of the shows
         tmdb_show = response_models.TmdbShow()
         tmdb_show.vote_average = 7
         tmdb_show.popularity = 100
@@ -547,7 +547,7 @@ class TestProcessing(unittest.TestCase):
 
         db_calls_mock.get_show_data_id.side_effect = [show_3, show_1, show_2]
 
-        # Calls to obtain the TMDB data for each of the shows
+        # Calls to obtain the TMDB config for each of the shows
         tmdb_show_3 = response_models.TmdbShow()
         tmdb_show_3.id = 3792
         tmdb_show_3.vote_average = 5.5

@@ -23,7 +23,7 @@ class GenericField:
         self.field_format = field_format
 
 
-class GenericXlsx(get_file_data.ChannelInsertion):
+class GenericSpreadsheetParser(get_file_data.ChannelParser):
     channels_file = {'(New) Nat Geo Wild': ('Nat Geo Wild', 'new_nat_geo_wild.csv'),
                      'Nat Geo Wild': ('Nat Geo Wild', 'nat_geo_wild.csv'),
                      'National Geographic': ('National Geographic', 'national_geographic.csv'),
@@ -34,8 +34,7 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                      'Disney Channel': ('Disney Channel', 'disney_junior.csv'),
                      '(New) FOX Crime': ('FOX Crime', 'fox.csv'),
                      '(New) FOX Movies': ('FOX Movies', 'new_fox_movies.csv'),
-                     'Hollywood': ('Hollywood', 'hollywood.csv'), 'Blast': ('Blast', 'blast.csv'),
-                     'História': ('História', 'historia.csv')}
+                     'Hollywood': ('Hollywood', 'hollywood.csv'), 'Blast': ('Blast', 'blast.csv')}
     channels = list(channels_file.keys())
 
     @staticmethod
@@ -47,11 +46,11 @@ class GenericXlsx(get_file_data.ChannelInsertion):
         :return: a dictionary with the fields of interest, or None if invalid.
         """
 
-        file_name = GenericXlsx.channels_file[channel_name][1]
+        file_name = GenericSpreadsheetParser.channels_file[channel_name][1]
 
         fields = dict()
 
-        with open(os.path.join(configuration.base_dir, 'file_parsers', file_name)) as csvfile:
+        with open(os.path.join(configuration.base_dir, 'file_parsers/channel_config', file_name)) as csvfile:
             content = csv.reader(csvfile, delimiter=';')
 
             # Skip the headers
@@ -149,9 +148,9 @@ class GenericXlsx(get_file_data.ChannelInsertion):
     @staticmethod
     def process_date(date_value: str, date_field_format: str) -> str:
         """
-        Process the date, removing unnecessary data.
+        Process the date, removing unnecessary config.
 
-        :param date_value: the data as is in the file.
+        :param date_value: the config as is in the file.
         :param date_field_format: the format of the date, as in the configuration file.
         :return: the date as string.
         """
@@ -225,7 +224,8 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                 date = datetime.datetime.strptime(date_value, date_format)
             except (TypeError, ValueError):
                 #  If the date already comes in the date format
-                date: datetime.date = date_value
+                if isinstance(date_value, datetime.date):
+                    date: datetime.date = date_value
 
         return date
 
@@ -233,7 +233,7 @@ class GenericXlsx(get_file_data.ChannelInsertion):
     def add_file_data(db_session: sqlalchemy.orm.Session, filename: str, channel_name: str) \
             -> Optional[get_file_data.InsertionResult]:
         """
-        Add the data, in the file, to the DB.
+        Add the config, in the file, to the DB.
 
         :param db_session: the DB session.
         :param filename: the path to the file.
@@ -242,8 +242,8 @@ class GenericXlsx(get_file_data.ChannelInsertion):
         """
 
         # Get the position and format of the fields for this channel
-        fields = GenericXlsx.process_configuration(channel_name)
-        channel_name = GenericXlsx.channels_file[channel_name][0]
+        fields = GenericSpreadsheetParser.process_configuration(channel_name)
+        channel_name = GenericSpreadsheetParser.channels_file[channel_name][0]
 
         # If it is invalid
         if fields is None:
@@ -280,8 +280,8 @@ class GenericXlsx(get_file_data.ChannelInsertion):
 
             if row[fields['time'].position].value is not None and row[fields['time'].position].value:
                 # Parse time
-                time = GenericXlsx.parse_time(row[fields['time'].position].value, fields['time'].field_format,
-                                              file_format, book)
+                time = GenericSpreadsheetParser.parse_time(row[fields['time'].position].value, fields['time'].field_format,
+                                                           file_format, book)
             else:
                 time = None
 
@@ -294,11 +294,11 @@ class GenericXlsx(get_file_data.ChannelInsertion):
 
                 # If there's a date, update the current date
                 if row[fields['date'].position].value is not None and row[fields['date'].position].value:
-                    date_value = GenericXlsx.process_date(row[fields['date'].position].value,
-                                                          fields['_date_separate_line'].field_format)
+                    date_value = GenericSpreadsheetParser.process_date(row[fields['date'].position].value,
+                                                                       fields['_date_separate_line'].field_format)
 
                     # Parse date, and skip the row
-                    date = GenericXlsx.parse_date(date_value, fields['date'].field_format, file_format, book)
+                    date = GenericSpreadsheetParser.parse_date(date_value, fields['date'].field_format, file_format, book)
                     continue
 
             # Get the date_time
@@ -310,8 +310,8 @@ class GenericXlsx(get_file_data.ChannelInsertion):
                     continue
 
                 if '_date_separate_line' not in fields:
-                    date = GenericXlsx.parse_date(row[fields['date'].position].value, fields['date'].field_format,
-                                                  file_format, book)
+                    date = GenericSpreadsheetParser.parse_date(row[fields['date'].position].value, fields['date'].field_format,
+                                                               file_format, book)
 
                 if date is None:
                     continue
@@ -514,11 +514,11 @@ class GenericXlsx(get_file_data.ChannelInsertion):
 
             # Process the titles
             if original_title is not None:
-                original_title = GenericXlsx.process_title(original_title, fields['original_title'].field_format,
-                                                           is_movie)
+                original_title = GenericSpreadsheetParser.process_title(original_title, fields['original_title'].field_format,
+                                                                        is_movie)
 
-            localized_title = GenericXlsx.process_title(localized_title, fields['localized_title'].field_format,
-                                                        is_movie)
+            localized_title = GenericSpreadsheetParser.process_title(localized_title, fields['localized_title'].field_format,
+                                                                     is_movie)
 
             channel_id = db_calls.get_channel_name(db_session, channel_name).id
 

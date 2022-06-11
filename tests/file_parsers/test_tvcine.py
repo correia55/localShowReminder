@@ -1,6 +1,6 @@
 import unittest.mock
 
-import file_parsers.tvcine
+import file_parsers.tvcine_parser
 
 
 class TestTvCine(unittest.TestCase):
@@ -11,7 +11,7 @@ class TestTvCine(unittest.TestCase):
         expected_result = ('The Angry Birds Movie 2', False, False)
 
         # Call the function
-        actual_result = file_parsers.tvcine.TVCine.process_title('Angry Birds Movie 2, The (VO)')
+        actual_result = file_parsers.tvcine_parser.TVCineParser.process_title('Angry Birds Movie 2, The (VO)')
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -23,7 +23,7 @@ class TestTvCine(unittest.TestCase):
         expected_result = ('The Angry Birds Movie 2', True, False)
 
         # Call the function
-        actual_result = file_parsers.tvcine.TVCine.process_title('Angry Birds Movie 2, The (VP)')
+        actual_result = file_parsers.tvcine_parser.TVCineParser.process_title('Angry Birds Movie 2, The (VP)')
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -35,7 +35,7 @@ class TestTvCine(unittest.TestCase):
         expected_result = ('Endings, Beginnings', False, False)
 
         # Call the function
-        actual_result = file_parsers.tvcine.TVCine.process_title('Endings, Beginnings (2019)')
+        actual_result = file_parsers.tvcine_parser.TVCineParser.process_title('Endings, Beginnings (2019)')
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -47,7 +47,7 @@ class TestTvCine(unittest.TestCase):
         expected_result = ('A Beautiful Day In The Neighborhood', False, False)
 
         # Call the function
-        actual_result = file_parsers.tvcine.TVCine.process_title('Beautiful Day In The Neighborhood, A')
+        actual_result = file_parsers.tvcine_parser.TVCineParser.process_title('Beautiful Day In The Neighborhood, A')
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -59,7 +59,7 @@ class TestTvCine(unittest.TestCase):
         expected_result = ('Abominable', False, False)
 
         # Call the function
-        actual_result = file_parsers.tvcine.TVCine.process_title('Abominable (2019) (VO)')
+        actual_result = file_parsers.tvcine_parser.TVCineParser.process_title('Abominable (2019) (VO)')
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -71,7 +71,7 @@ class TestTvCine(unittest.TestCase):
         expected_result = ('Abominable', True, False)
 
         # Call the function
-        actual_result = file_parsers.tvcine.TVCine.process_title('Abominable (2019) (VP)')
+        actual_result = file_parsers.tvcine_parser.TVCineParser.process_title('Abominable (2019) (VP)')
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -83,7 +83,7 @@ class TestTvCine(unittest.TestCase):
         expected_result = ('The Addams Family', True, False)
 
         # Call the function
-        actual_result = file_parsers.tvcine.TVCine.process_title('Addams Family, The (2019) (VP)')
+        actual_result = file_parsers.tvcine_parser.TVCineParser.process_title('Addams Family, The (2019) (VP)')
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -95,7 +95,7 @@ class TestTvCine(unittest.TestCase):
         expected_result = ('Furious 7', False, True)
 
         # Call the function
-        actual_result = file_parsers.tvcine.TVCine.process_title('Furious 7 (extended cut)')
+        actual_result = file_parsers.tvcine_parser.TVCineParser.process_title('Furious 7 (extended cut)')
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -107,7 +107,7 @@ class TestTvCine(unittest.TestCase):
         expected_result = ('Child\'s Play', False, False)
 
         # Call the function
-        actual_result = file_parsers.tvcine.TVCine.process_title('Child`s Play (2019)')
+        actual_result = file_parsers.tvcine_parser.TVCineParser.process_title('Child`s Play (2019)')
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -119,7 +119,7 @@ class TestTvCine(unittest.TestCase):
         expected_result = ('Birds Of Prey (And The Fantabulous Emancipation Of One Harley Quinn)', False, False)
 
         # Call the function
-        actual_result = file_parsers.tvcine.TVCine.process_title(
+        actual_result = file_parsers.tvcine_parser.TVCineParser.process_title(
             'Birds Of Prey (And The Fantabulous Emancipation Of One Harley Quinn)')
 
         # Verify the result
@@ -132,7 +132,7 @@ class TestTvCine(unittest.TestCase):
         expected_result = ('The Lost World : Jurassic Park', False, False)
 
         # Call the function
-        actual_result = file_parsers.tvcine.TVCine.process_title('Lost World, The: Jurassic Park')
+        actual_result = file_parsers.tvcine_parser.TVCineParser.process_title('Lost World, The: Jurassic Park')
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -144,7 +144,7 @@ class TestTvCine(unittest.TestCase):
         expected_result = ('Le Ninfee di Monet - Un Incantesimo di Acqua e Luce', False, False)
 
         # Call the function
-        actual_result = file_parsers.tvcine.TVCine.process_title(
+        actual_result = file_parsers.tvcine_parser.TVCineParser.process_title(
             'Ninfee di Monet, Le - Un Incantesimo di Acqua e Luce')
 
         # Verify the result

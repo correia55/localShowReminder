@@ -416,7 +416,7 @@ def get_show_titles(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: boo
 
 def update_alarm(session, alarm_id: int, show_season: int, show_episode: int, user_id: int):
     """
-    Update a alarm with the given data.
+    Update a alarm with the given config.
     This only matters when the show is not a movie, so we can update the season and/or episode.
 
     :param session: the db session.
@@ -997,7 +997,7 @@ def calculate_new_highlights_week(session: sqlalchemy.orm.Session, year: int, we
 
 def update_tmdb_data_week(session: sqlalchemy.orm.Session, year: int, week: int) -> None:
     """
-    Update the ShowData entries in a week with data from TMDB.
+    Update the ShowData entries in a week with config from TMDB.
 
     :param session: the db session.
     :param year: the year.

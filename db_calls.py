@@ -371,12 +371,12 @@ def get_sessions_reminders(session: sqlalchemy.orm.Session) -> List[Tuple[models
 def get_show_data_by_tmdb_id(session: sqlalchemy.orm.Session, tmdb_id: int, is_movie: bool) \
         -> Optional[models.ShowData]:
     """
-    Get the show data with a given tmdb id.
+    Get the show config with a given tmdb id.
 
     :param session: the db session.
     :param tmdb_id: the TMDB id.
     :param is_movie: whether it is a movie
-    :return: the show data with that data.
+    :return: the show config with that config.
     """
 
     return session.query(models.ShowData) \
@@ -416,11 +416,11 @@ def get_show_session(session: sqlalchemy.orm.Session, show_id: int) -> Optional[
 def get_show_session_complete(session: sqlalchemy.orm.Session, show_id: int) \
         -> Optional[Tuple[models.ShowSession, models.Channel, models.ShowData]]:
     """
-    Get the show session, and all associated data, with a given id.
+    Get the show session, and all associated config, with a given id.
 
     :param session: the db session.
     :param show_id: the id of the show session.
-    :return: the show session, and all associated data, with a given id.
+    :return: the show session, and all associated config, with a given id.
     """
 
     query = session.query(models.ShowSession, models.Channel, models.ShowData).filter(models.ShowSession.id == show_id)
@@ -428,7 +428,7 @@ def get_show_session_complete(session: sqlalchemy.orm.Session, show_id: int) \
     # Join channels
     query = query.join(models.Channel)
 
-    # Join show data
+    # Join show config
     query = query.join(models.ShowData)
 
     return query.first()
@@ -546,7 +546,7 @@ def get_unmatched_show_data(session: sqlalchemy.orm.Session, limit: int) -> List
 
     :param session: the db session.
     :param limit: the limit for the number of shows.
-    :return: the list of show data.
+    :return: the list of show config.
     """
 
     query = session.query(models.ShowData) \
@@ -577,7 +577,7 @@ def get_user_excluded_channels(session: sqlalchemy.orm.Session, user_id: int) ->
 
     :param session: the db session.
     :param user_id: the id of the user.
-    :return: the list of show data.
+    :return: the list of show config.
     """
 
     query = session.query(models.UserExcludedChannel) \
@@ -643,10 +643,10 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, localized_title
     :param age_classification: the age classification.
     :param subgenre: the subgenre of the show (Comedy, thriller, ...).
     :param is_movie: True if it is a movie, False if it is TV.
-    :param season: the season of the session from which the data comes from.
+    :param season: the season of the session from which the config comes from.
     :param creators: the list of creators.
     :param date_time: the date and time of the session.
-    :return: a boolean for whether it is a new show or not and the corresponding show data.
+    :return: a boolean for whether it is a new show or not and the corresponding show config.
     """
 
     # Check if there's already an entry with this information
@@ -682,7 +682,7 @@ def register_alarm(session: sqlalchemy.orm.Session, show_name: str, trakt_id: in
                    alarm_type: response_models.AlarmType, show_season, show_episode, user_id) \
         -> Optional[models.Alarm]:
     """
-    Create an alarm for the given data.
+    Create an alarm for the given config.
 
     :param session: the db session.
     :param show_name: the name of the show.
@@ -784,7 +784,7 @@ def register_channel_show_data_correction(session: sqlalchemy.orm.Session, chann
     :param directors: the directors of the show.
     :param subgenre: the subgenre.
     :param creators: the list of creators.
-    :return: a boolean for whether it is a new show or not and the corresponding show data.
+    :return: a boolean for whether it is a new show or not and the corresponding show config.
     """
 
     channel_show_data = models.ChannelShowData(channel_id, show_id, is_movie, original_title, localized_title)
@@ -890,7 +890,7 @@ def register_show_data(session: sqlalchemy.orm.Session, portuguese_title: str, o
     :param creators: the list of creators separated by comma.
     :param season: the season of the session.
     :param date_time: the date and time of the session.
-    :return: the created show data.
+    :return: the created show config.
     """
 
     search_title = auxiliary.make_searchable_title(portuguese_title.strip())
@@ -965,10 +965,10 @@ def register_show_session(session: sqlalchemy.orm.Session, season: Optional[int]
     :param episode: the episode of the show session.
     :param date_time: the date and time of the show session.
     :param channel_id: the id of the channel where the show session will take place.
-    :param show_id: the id of the corresponding show data (technical).
+    :param show_id: the id of the corresponding show config (technical).
     :param audio_language: the audio language, None when it is the original one.
     :param extended_cut: whether or not this is the extended cut.
-    :param should_commit: True it the data should be committed right away.
+    :param should_commit: True it the config should be committed right away.
     :return: the created show session.
     """
 
@@ -1042,9 +1042,9 @@ def register_streaming_service_show(session: sqlalchemy.orm.Session, first_seaso
     :param last_season_available: the last season available in the streaming service.
     :param original: if this show is original to this streaming service.
     :param streaming_service_id: the id of the streaming service.
-    :param show_id: the id of the corresponding show data (technical).
+    :param show_id: the id of the corresponding show config (technical).
     :param last_season_number_episodes: the number of episodes available in the streaming service.
-    :param should_commit: True it the data should be committed right away.
+    :param should_commit: True it the config should be committed right away.
     :return: the created streaming service show.
     """
 
@@ -1128,7 +1128,7 @@ def register_user_excluded_channel(session: sqlalchemy.orm.Session, user_id: int
     :param session: the db session.
     :param user_id: the id of the user.
     :param channel_id: the id of the channel.
-    :param should_commit: True it the data should be committed right away.
+    :param should_commit: True it the config should be committed right away.
     :return: the created object.
     """
 
@@ -1209,14 +1209,14 @@ def search_existing_session(session: sqlalchemy.orm.Session, season: Optional[in
                             date_time: datetime.datetime, channel_id: int, show_id: int) \
         -> Optional[models.ShowSession]:
     """
-    Search if there's already a show session with the same data but whose schedule changed slightly.
+    Search if there's already a show session with the same config but whose schedule changed slightly.
 
     :param session: the db session.
     :param season: the season of the show session.
     :param episode: the episode of the show session.
     :param date_time: the date and time of the show session.
     :param channel_id: the id of the channel where the show session will take place.
-    :param show_id: the id of the corresponding show data (technical).
+    :param show_id: the id of the corresponding show config (technical).
     :return: the existing session.
     """
 
@@ -1271,7 +1271,7 @@ def search_show_data_by_original_title(session: sqlalchemy.orm.Session, original
                                        directors: List[str] = None, year: int = None, genre: str = None,
                                        creators: List[str] = None) -> Optional[models.ShowData]:
     """
-    Search for the show data with the same original title and other parameters.
+    Search for the show config with the same original title and other parameters.
 
     :param session: the db session.
     :param original_title: the original title of the show.
@@ -1280,7 +1280,7 @@ def search_show_data_by_original_title(session: sqlalchemy.orm.Session, original
     :param year: the year of the show.
     :param genre: the genre of the show.
     :param creators: the creators of the show.
-    :return: the show data with that data.
+    :return: the show config with that config.
     """
 
     query = session.query(models.ShowData) \
@@ -1316,11 +1316,11 @@ def search_show_data_by_original_title(session: sqlalchemy.orm.Session, original
 def search_show_data_by_search_title_and_everything_else_empty(session: sqlalchemy.orm.Session, portuguese_title: str) \
         -> Optional[models.ShowData]:
     """
-    Search for the show data with the same search title and every other field empty.
+    Search for the show config with the same search title and every other field empty.
 
     :param session: the db session.
     :param portuguese_title: the portuguese title.
-    :return: the show data with that data.
+    :return: the show config with that config.
     """
 
     search_title = auxiliary.make_searchable_title(portuguese_title.strip())
@@ -1339,7 +1339,7 @@ def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: s
                               below_datetime: Optional[datetime.datetime] = None, ignore_with_tmdb_id: bool = False) \
         -> List[Tuple[models.ShowSession, models.Channel, models.ShowData]]:
     """
-    Get the show sessions, and all associated data, that match a given search pattern and criteria.
+    Get the show sessions, and all associated config, that match a given search pattern and criteria.
 
     :param session: the db session.
     :param search_pattern: the search pattern.
@@ -1389,7 +1389,7 @@ def search_show_sessions_data(session: sqlalchemy.orm.Session, search_pattern: s
     # Join channels
     query = query.join(models.Channel)
 
-    # Join show data
+    # Join show config
     query = query.join(models.ShowData)
 
     return query.all()
@@ -1400,7 +1400,7 @@ def search_show_sessions_data_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb
                                            below_datetime: Optional[datetime.datetime] = None) \
         -> List[Tuple[models.ShowSession, models.Channel, models.ShowData]]:
     """
-    Search the show sessions, and all associated data, that match a tmdb_id.
+    Search the show sessions, and all associated config, that match a tmdb_id.
 
     :param session: the db session.
     :param tmdb_id: the TMDB id.
@@ -1428,7 +1428,7 @@ def search_show_sessions_data_with_tmdb_id(session: sqlalchemy.orm.Session, tmdb
     # Join channels
     query = query.join(models.Channel)
 
-    # Join show data
+    # Join show config
     query = query.join(models.ShowData)
 
     return query.all()
@@ -1440,7 +1440,7 @@ def search_streaming_service_shows_data(session: sqlalchemy.orm.Session, search_
                                         ignore_with_tmdb_id: bool = False) \
         -> List[Tuple[models.ShowSession, models.StreamingService, models.ShowData]]:
     """
-    Get the streaming services' shows, and all associated data, that match a given search pattern and criteria.
+    Get the streaming services' shows, and all associated config, that match a given search pattern and criteria.
 
     :param session: the db session.
     :param search_pattern: the search pattern.
@@ -1492,7 +1492,7 @@ def search_streaming_service_shows_data(session: sqlalchemy.orm.Session, search_
     # Join channels
     query = query.join(models.StreamingService)
 
-    # Join show data
+    # Join show config
     query = query.join(models.ShowData)
 
     return query.all()
@@ -1503,7 +1503,7 @@ def search_streaming_service_shows_data_with_tmdb_id(session: sqlalchemy.orm.Ses
                                                      below_datetime: Optional[datetime.datetime] = None) \
         -> List[Tuple[models.ShowSession, models.StreamingService, models.ShowData]]:
     """
-    Search the streaming services' shows, and all associated data, that match a given TMDB id.
+    Search the streaming services' shows, and all associated config, that match a given TMDB id.
 
     :param session: the db session.
     :param tmdb_id: the TMDB id.
@@ -1534,7 +1534,7 @@ def search_streaming_service_shows_data_with_tmdb_id(session: sqlalchemy.orm.Ses
     # Join channels
     query = query.join(models.StreamingService)
 
-    # Join show data
+    # Join show config
     query = query.join(models.ShowData)
 
     return query.all()
@@ -1594,7 +1594,7 @@ def update_streaming_service_show(session: sqlalchemy.orm.Session, ss_show_id: i
     :param ss_show_id: the id of the streaming service show to be updated.
     :param first_season_available: the first season available in the streaming service.
     :param last_season_available: the last season available in the streaming service.
-    :param should_commit: True it the data should be committed right away.
+    :param should_commit: True it the config should be committed right away.
     :return: True if the operation was a success.
     """
 

@@ -9,12 +9,14 @@ import get_file_data
 import models
 import process_emails
 import tmdb_calls
-from file_parsers.cinemundo import Cinemundo
-from file_parsers.generic_xlsx import GenericXlsx
-from file_parsers.odisseia import Odisseia
-from file_parsers.tvcine import TVCine
+from file_parsers.cinemundo_parser import CinemundoParser
+from file_parsers.generic_spreadsheet_parser import GenericSpreadsheetParser
+from file_parsers.generic_spreadsheet_merged_cells_parser import GenericSpreadsheetMergedCellsParser
+from file_parsers.odisseia_parser import OdisseiaParser
+from file_parsers.tvcine_parser import TVCineParser
 
-channel_insertion_list = [Cinemundo, Odisseia, TVCine, GenericXlsx]
+channel_insertion_list: [get_file_data.ChannelParser] = [CinemundoParser, OdisseiaParser, TVCineParser,
+                                                         GenericSpreadsheetParser, GenericSpreadsheetMergedCellsParser]
 
 
 def insert_file_data(db_session: sqlalchemy.orm.Session, channel_set: int, filename: str, channel_name: str) -> ():
@@ -24,7 +26,7 @@ def insert_file_data(db_session: sqlalchemy.orm.Session, channel_set: int, filen
     :param db_session: the DB session.
     :param channel_set: the set of channels of the file.
     :param filename: the name of the file.
-    :param filename: the name of the channel.
+    :param channel_name: the name of the channel.
     """
 
     print('Processing file...')
@@ -44,12 +46,12 @@ def insert_file_data(db_session: sqlalchemy.orm.Session, channel_set: int, filen
 
 def insert_file_data_submenu(db_session: sqlalchemy.orm.Session):
     """
-    Execute a data insertion.
+    Execute a config insertion.
 
     :param db_session: the DB session.
     """
 
-    question = 'Choose one channel set for the data being inserted:\n'
+    question = 'Choose one channel set for the config being inserted:\n'
 
     for i in range(len(channel_insertion_list)):
         question += '%d - %s\n' % (i, channel_insertion_list[i].channels)
@@ -57,8 +59,8 @@ def insert_file_data_submenu(db_session: sqlalchemy.orm.Session):
     input_channel_set = int(input(question))
 
     if len(channel_insertion_list[input_channel_set].channels) > 1 \
-            and channel_insertion_list[input_channel_set] != TVCine:
-        question = 'Choose one channel for the data being inserted:\n'
+            and channel_insertion_list[input_channel_set] != TVCineParser:
+        question = 'Choose one channel for the config being inserted:\n'
 
         for i in range(len(channel_insertion_list[input_channel_set].channels)):
             question += '%d - %s\n' % (i, channel_insertion_list[input_channel_set].channels[i])
@@ -129,10 +131,10 @@ def set_tmdb_match(db_session: sqlalchemy.orm.Session, show_id: int, tmdb_id: in
         # Get show sessions
         show_sessions = db_calls.get_show_sessions_show_id(db_session, show_id)
 
-        # Get the data from TMDB
+        # Get the config from TMDB
         tmdb_show = tmdb_calls.get_show_using_id(db_session, tmdb_id, is_movie)
 
-        # - update the show data with the correct data
+        # - update the show config with the correct config
         get_file_data.update_show_data_with_tmdb(show, tmdb_show)
 
     # If there are sessions
@@ -260,7 +262,7 @@ def menu():
     """ Menu for choosing the utility function being run. """
 
     question = 'Choose one utility function:\n'
-    question += '0 - Get data from file\n\n'
+    question += '0 - Get config from file\n\n'
     question += '1 - Update search title\n'
     question += '2 - Set tmdb match\n'
     question += '3 - Search tmdb match (for verification)\n'

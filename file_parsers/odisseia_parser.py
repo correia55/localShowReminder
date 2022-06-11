@@ -11,7 +11,7 @@ import db_calls
 import get_file_data
 
 
-class Odisseia(get_file_data.ChannelInsertion):
+class OdisseiaParser(get_file_data.ChannelParser):
     channels = ['Odisseia']
 
     @staticmethod
@@ -25,7 +25,7 @@ class Odisseia(get_file_data.ChannelInsertion):
     def add_file_data(db_session: sqlalchemy.orm.Session, filename: str, channel_name: str) \
             -> Optional[get_file_data.InsertionResult]:
         """
-        Add the data, in the file, to the DB.
+        Add the config, in the file, to the DB.
 
         :param db_session: the DB session.
         :param filename: the path to the file.
@@ -140,8 +140,8 @@ class Odisseia(get_file_data.ChannelInsertion):
             channel_id = db_calls.get_channel_name(db_session, 'Odisseia').id
 
             # Process titles
-            original_title = Odisseia.process_title(original_title)
-            localized_title = Odisseia.process_title(localized_title)
+            original_title = OdisseiaParser.process_title(original_title)
+            localized_title = OdisseiaParser.process_title(localized_title)
 
             # Process the directors
             if directors is not None:
@@ -175,7 +175,7 @@ class Odisseia(get_file_data.ChannelInsertion):
         file_end_datetime = date_time + datetime.timedelta(minutes=5)
 
         nb_deleted_sessions = get_file_data.delete_old_sessions(db_session, file_start_datetime, file_end_datetime,
-                                                                Odisseia.channels)
+                                                                OdisseiaParser.channels)
 
         # Set the remaining information
         insertion_result.nb_deleted_sessions = nb_deleted_sessions

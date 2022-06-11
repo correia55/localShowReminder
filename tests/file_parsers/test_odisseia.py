@@ -8,13 +8,13 @@ import sqlalchemy.orm
 
 import configuration
 import db_calls
-import file_parsers.odisseia
+import file_parsers.odisseia_parser
 import models
 
 # Prepare the mock variables for the modules
 db_calls_mock = unittest.mock.MagicMock()
 
-# To ensure the tests find the data folder no matter where it runs
+# To ensure the tests find the config folder no matter where it runs
 if 'tests' in os.getcwd():
     base_path = '../'
 else:
@@ -66,7 +66,7 @@ class TestOdisseia(unittest.TestCase):
         expected_result = 'Attack and Defend'
 
         # Call the function
-        actual_result = file_parsers.odisseia.Odisseia.process_title('Attack and Defend')
+        actual_result = file_parsers.odisseia_parser.OdisseiaParser.process_title('Attack and Defend')
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -78,7 +78,7 @@ class TestOdisseia(unittest.TestCase):
         expected_result = 'History\'s Greatest Lies'
 
         # Call the function
-        actual_result = file_parsers.odisseia.Odisseia.process_title('History´s Greatest Lies')
+        actual_result = file_parsers.odisseia_parser.OdisseiaParser.process_title('History´s Greatest Lies')
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -123,8 +123,8 @@ class TestOdisseia(unittest.TestCase):
         db_calls_mock.search_old_sessions.return_value = []
 
         # Call the function
-        actual_result = file_parsers.odisseia.Odisseia.add_file_data(self.session,
-                                                                     base_path + 'data/odisseia_example.xml',
+        actual_result = file_parsers.odisseia_parser.OdisseiaParser.add_file_data(self.session,
+                                                                           base_path + 'data/odisseia_example.xml',
                                                                      'Odisseia')
 
         # Get back the datetime.datetime

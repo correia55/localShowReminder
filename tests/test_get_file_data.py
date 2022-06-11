@@ -15,7 +15,7 @@ import response_models
 db_calls_mock = unittest.mock.MagicMock()
 process_emails_mock = unittest.mock.MagicMock()
 
-# To ensure the tests find the data folder no matter where it runs
+# To ensure the tests find the config folder no matter where it runs
 if 'tests' in os.getcwd():
     base_path = ''
 else:

@@ -9,7 +9,7 @@ import configuration
 import db_calls
 import tmdb_calls
 
-# To ensure the tests find the data folder no matter where it runs
+# To ensure the tests find the config folder no matter where it runs
 if 'tests' in os.getcwd():
     base_path = ''
 else:
@@ -53,7 +53,7 @@ class TestTmdbCalls(unittest.TestCase):
         db_calls_mock.get_cache.return_value = None
 
         # Prepare the call to TMDB
-        tmdb_response_file = open(base_path + "data/tmdb_show_74806.json", "r")
+        tmdb_response_file = open(base_path + "config/tmdb_show_74806.json", "r")
         tmdb_response = tmdb_response_file.read().encode()
         tmdb_response_file.close()
 
