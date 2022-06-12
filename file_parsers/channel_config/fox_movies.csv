@@ -1,41 +1,41 @@
-field;column;format
-_file_format;-1;.xlsx
-_temporary_program;-1;FECHO DE EMISSÃO
-date;0;%d/%m/%Y
-time;1;%H:%M
-cat_time;2;%H:%M
-cat_time_2;3;%H:%M
-original_title;4;has_year
-localized_title;5;str
-age_classification;6;str
-censorship_codes;7;
-website_synopsis;8;str
-localized_synopsis;9;str
-mobile_synopsis;10;str
-original_episode_title;11;str
-localized_episode_title;12;str
-episode;13;int
-season;14;int
-total_episodes;15;int
-start_of_season;16;
-end_of_season;17;
-theme;18;
-live;19;
-year;20;int
-cast;21;str
-directors;22;str
-creators;23;str
-awards;24;str
-hi_subtitles;25;str
-subtitles;26;str
-premiere;27;str
-highlight;28;str
-change_alert;29;str
-format;30;str
-high_definition;31;str
-dolby_digital;32;str
-stereo;33;bool
-surround_sound;34;str
-series_code;35;str
-duration;36;%H:%M
-series_alt_title;37;str
+field;header;format
+_min_num_fields;-;10
+_temporary_program;-;FECHO DE EMISSÃO
+date;DATE;%d/%m/%Y
+time;START TIME;%H:%M
+cat_time;CAT TIME;%H:%M
+cat_time_2;CAT TIME2;%H:%M
+original_title;PROGRAMME TITLE;has_year
+localized_title;PORTUGUESE TITLE;str
+age_classification;AGE RESTRICTION;str
+censorship_codes;CENSORSHIP CODES;
+website_synopsis;WEBSITE SYNOPSIS;str
+localized_synopsis;EPG SYNOPSIS;str
+mobile_synopsis;MOBILE SYNOPSIS;str
+original_episode_title;EPISODE TITLE;str
+localized_episode_title;PORTUGUESE EP TITLE;str
+episode;EPISODE NUMBER;int
+season;SEASON NUMBER;int
+total_episodes;EP NUM IN SEASON;int
+start_of_season;START OF SEASON;
+end_of_season;END OF SEASON;
+theme;THEME;
+live;LIVE;
+year;YEAR OF RELEASE;int
+cast;ACTORS;str
+directors;DIRECTORS;str
+creators;CREATORS;str
+awards;AWARDS;str
+hi_subtitles;HI SUBTITLES;str
+subtitles;SUBTITLES;str
+premiere;PREMIERE;str
+highlight;HIGHLIGHT;str
+change_alert;CHANGE ALERT;str
+format;FORMAT 16 9;str
+high_definition;HIGH DEFINITION;str
+dolby_digital;DOLBY DIGITAL;str
+stereo;STEREO;bool
+surround_sound;SURROUND SOUND;str
+series_code;SERIES CODE;str
+duration;SLOT;%H:%M
+series_alt_title;SERIES ALT TITLE;str

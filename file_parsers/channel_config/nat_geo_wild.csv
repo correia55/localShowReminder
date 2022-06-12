@@ -1,19 +1,28 @@
-field;column;format
-_file_format;-1;.xls
-event_code;0;int
-date;1;%d/%m/%Y
-utc_time;2;%H:%M
-time;3;%H:%M
-turkey_time;4;%H:%M
-duration;5;%H:%M
-series_code;6;int
-original_title;7;season_at_the_end
-season;8;int
-episode;9;int
-original_episode_title;10;int
-subgenre_english;11;str
-year;12;int
-countries;13;str
-age_classification;14;str
-synopsis_english;15;str
-premiere;16;Premiere
+field;header;format
+_min_num_fields;-;5
+event_code;Event Code;int
+date;Day of Broadcast;%d/%m/%Y
+utc_time;Portugal;%H:%M
+time;Actual Start Time;%H:%M
+turkey_time;Turkey;%H:%M
+duration;Slot Duration;%H:%M
+series_code;Series Code;int
+original_title;Original Series Name;season_at_the_end
+season;Season;int
+episode;Episode Number;int
+original_episode_title;Original Ep. Title;int
+subgenre_english;Genre;str
+year;Year of Production;int
+countries;Country of Origin;str
+age_classification;Certificate;str
+synopsis_english;Synopsis;str
+premiere;Premiere;Premiere
+date;DATA;%d/%m/%Y
+time;HORA;%H:%M
+original_title;SÉRIE;season_at_the_end
+season;TEMPORADA;int
+episode;N.º EPISÓDIO;int
+original_episode_title;EPISÓDIO;int
+year;ANO;int
+age_classification;PG RATING;str
+synopsis_english;SINOPSE;str

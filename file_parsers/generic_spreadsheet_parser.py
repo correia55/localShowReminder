@@ -2,7 +2,7 @@ import csv
 import datetime
 import os
 import re
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 import openpyxl
 import sqlalchemy.orm
@@ -15,6 +15,15 @@ import get_file_data
 
 
 class GenericField:
+    field_name: str
+    field_format: str
+
+    def __init__(self, field_name: str, field_format: str):
+        self.field_name = field_name
+        self.field_format = field_format
+
+
+class Header:
     position: int
     field_format: str
 
@@ -24,8 +33,7 @@ class GenericField:
 
 
 class GenericSpreadsheetParser(get_file_data.ChannelParser):
-    channels_file = {'(New) Nat Geo Wild': ('Nat Geo Wild', 'new_nat_geo_wild.csv'),
-                     'Nat Geo Wild': ('Nat Geo Wild', 'nat_geo_wild.csv'),
+    channels_file = {'Nat Geo Wild': ('Nat Geo Wild', 'nat_geo_wild.csv'),
                      'National Geographic': ('National Geographic', 'national_geographic.csv'),
                      'FOX': ('FOX', 'fox.csv'), 'FOX Life': ('FOX Life', 'fox.csv'),
                      'FOX Comedy': ('FOX Comedy', 'fox.csv'), 'FOX Crime': ('FOX Crime', 'fox_crime.csv'),
@@ -33,12 +41,12 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
                      'Disney Junior': ('Disney Junior', 'disney_junior.csv'),
                      'Disney Channel': ('Disney Channel', 'disney_junior.csv'),
                      '(New) FOX Crime': ('FOX Crime', 'fox.csv'),
-                     '(New) FOX Movies': ('FOX Movies', 'new_fox_movies.csv'),
-                     'Hollywood': ('Hollywood', 'hollywood.csv'), 'Blast': ('Blast', 'blast.csv')}
+                     'Hollywood': ('Hollywood', 'hollywood.csv'), 'Blast': ('Blast', 'blast.csv'),
+                     'História': ('História', 'historia.csv')}
     channels = list(channels_file.keys())
 
     @staticmethod
-    def process_configuration(channel_name: str) -> Optional[Dict[str, GenericField]]:
+    def process_configuration(channel_name: str) -> (Dict[str, GenericField], Dict[str, GenericField]):
         """
         Process the configurations file corresponding to the channel name in parameter.
 
@@ -49,6 +57,7 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
         file_name = GenericSpreadsheetParser.channels_file[channel_name][1]
 
         fields = dict()
+        config = dict()
 
         with open(os.path.join(configuration.base_dir, 'file_parsers/channel_config', file_name)) as csvfile:
             content = csv.reader(csvfile, delimiter=';')
@@ -57,43 +66,13 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
             next(content, None)
 
             for row in content:
-                fields[row[0]] = GenericField(int(row[1]), row[2])
 
-        # Check if the essential fields are present
-        if 'date' not in fields and 'date_time' not in fields:
-            print('%s does not have a definition for \'date\' nor \'date_time\'!' % channel_name)
-            return None
+                if row[0].startswith('_'):
+                    config[row[0]] = GenericField(row[1], row[2])
+                else:
+                    fields[row[1].lower()] = GenericField(row[0], row[2])
 
-        if 'time' not in fields and 'date_time' not in fields:
-            print('%s does not have a definition for \'time\' nor \'date_time\'!' % channel_name)
-            return None
-
-        if 'original_title' not in fields:
-            print('%s does not have a definition for \'original_title\'!' % channel_name)
-
-        if 'year' not in fields:
-            print('%s does not have a definition for \'year\'!' % channel_name)
-
-        if 'localized_title' not in fields:
-            print('%s does not have a definition for \'localized_title\'!\nThe \'original_title\' will be used.'
-                  % channel_name)
-            fields['localized_title'] = fields['original_title']
-
-        if 'localized_synopsis' not in fields:
-            print('%s does not have a definition for \'localized_synopsis\'!' % channel_name)
-
-            if 'synopsis_english' in fields:
-                print('The \'synopsis_english\' will be used.')
-                fields['localized_synopsis'] = fields['synopsis_english']
-
-        if 'subgenre' not in fields:
-            print('%s does not have a definition for \'subgenre\'!' % channel_name)
-
-            if 'subgenre_english' in fields:
-                print('The \'subgenre_english\' will be used.')
-                fields['subgenre'] = fields['subgenre_english']
-
-        return fields
+        return fields, config
 
     @staticmethod
     def process_title(title: str, title_format: str, is_movie: bool) -> str:
@@ -108,17 +87,17 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
 
         if not is_movie:
             if 'S_season_at_the_end' in title_format:
-                series = re.search(r'S[0-9]+', title.strip())
+                series = re.search(r'S\d+', title.strip())
 
                 if series is not None:
                     title = title[:series.span(0)[0]]
             elif 'season_at_the_end' in title_format:
-                series = re.search(r'^(.*) [0-9]+$', title.strip())
+                series = re.search(r'^(.*) \d+$', title.strip())
 
                 if series is not None:
                     title = series.group(1)
             elif 'season_and_episode_at_the_end' in title_format:
-                series = re.search(r'^(.*) T[0-9]+, ?[0-9]+$', title.strip())
+                series = re.search(r'^(.*) T\d+, ?\d+$', title.strip())
 
                 if series is not None:
                     title = series.group(1)
@@ -134,7 +113,7 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
                 text = title[start_pos + 1:end_pos]
 
                 # Check if it has an year
-                if re.search(r'[0-9]{4}', text.strip()):
+                if re.search(r'\d{4}', text.strip()):
                     pass
                 else:
                     continue
@@ -171,12 +150,12 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
         :param time_value: the time as is in the file.
         :param time_format: the format of the time, as in the configuration file.
         :param file_format: the format of the file.
-        :param book: the book, of the file (when it is a .xls file).
+        :param book: the book, of the file (when it is a xls file).
         :return: the parsed time.
         """
 
         try:
-            if file_format == '.xls':
+            if file_format == 'xls':
                 try:
                     #  If the time comes in the time format
                     time = xlrd.xldate_as_datetime(time_value, book.datemode)
@@ -198,18 +177,18 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
         return time
 
     @staticmethod
-    def parse_date(date_value, date_format: str, file_format: str, book: xlrd.book.Book) -> Optional[datetime.date]:
+    def parse_date(date_value, date_format: str, file_format: str, book: xlrd.book.Book) -> datetime.date or None:
         """
         Parse the date.
 
         :param date_value: the date as is in the file.
         :param date_format: the format of the date, as in the configuration file.
         :param file_format: the format of the file.
-        :param book: the book, of the file (when it is a .xls file).
+        :param book: the book, of the file (when it is a xls file).
         :return: the parsed date.
         """
 
-        if file_format == '.xls':
+        if file_format == 'xls':
             try:
                 #  If the date comes in the date format
                 date = xlrd.xldate_as_datetime(date_value, book.datemode)
@@ -242,19 +221,26 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
         """
 
         # Get the position and format of the fields for this channel
-        fields = GenericSpreadsheetParser.process_configuration(channel_name)
+        data_fields: Dict[str, GenericField]
+        config_fields: Dict[str, GenericField]
+
+        data_fields, config_fields = GenericSpreadsheetParser.process_configuration(channel_name)
         channel_name = GenericSpreadsheetParser.channels_file[channel_name][0]
 
         # If it is invalid
-        if fields is None:
+        if data_fields is None or config_fields is None:
             return None
 
-        if '_file_format' in fields:
-            file_format = fields['_file_format'].field_format
-        else:
-            file_format = '.xlsx'
+        # Get the extension of the file
+        file_format = filename.split('.')[-1]
 
-        if file_format == '.xls':
+        if file_format != 'xls' and file_format != 'xlsx':
+            print('Invalid file format!')
+            return None
+
+        min_num_fields: int = int(config_fields['_min_num_fields'].field_format)
+
+        if file_format == 'xls':
             book = xlrd.open_workbook(filename)
             sheet = book.sheets()[0]
             rows = sheet.nrows
@@ -270,47 +256,109 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
         date_time = None
         date = None
 
+        got_headers = False
+        headers: List[(str, int)]
+        header_map: Dict[str, Header] = dict()
+
         today_00_00 = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
 
         for rx in range(rows):
-            if file_format == '.xls':
+            if file_format == 'xls':
                 row = sheet.row(rx)
             else:
                 row = sheet[rx + 1]
 
-            if row[fields['time'].position].value is not None and row[fields['time'].position].value:
+            # If we haven't found the header row
+            if not got_headers:
+                headers = []
+
+                # Build the headers dict
+                for i in range(len(row)):
+                    cell_value = str(row[i].value).lower().strip()
+
+                    if cell_value and cell_value is not None and cell_value != 'none':
+                        headers.append((cell_value, i))
+
+                # If this is the header row
+                if len(headers) >= min_num_fields:
+                    # Find the correspondence between the fields in the conf and the headers
+                    for h in headers:
+                        name, pos = h
+
+                        if name not in data_fields:
+                            print('Unexpected "%s" field found!' % name)
+                        else:
+                            header_map[data_fields[name].field_name] = Header(pos, data_fields[name].field_format)
+
+                            # Remove the field from the dict
+                            data_fields.pop(name)
+
+                    if len(data_fields) > 0:
+                        for f in data_fields.values():
+                            if f.field_name not in header_map:
+                                print('Expected "%s" field not found!' % f.field_name)
+
+                    # Add fallback fields
+                    if 'localized_title' not in header_map and 'original_title' in header_map:
+                        print('%s does not have a definition for \'localized_title\'!\nThe \'original_title\' will '
+                              'be used.' % channel_name)
+                        header_map['localized_title'] = header_map['original_title']
+
+                    if 'localized_synopsis' not in header_map and 'synopsis_english' in header_map:
+                        print('%s does not have a definition for \'localized_synopsis\'!\nThe \'synopsis_english\' '
+                              'will be used.' % channel_name)
+                        header_map['localized_synopsis'] = header_map['synopsis_english']
+
+                    if 'subgenre' not in header_map and 'subgenre_english' in header_map:
+                        print('%s does not have a definition for \'subgenre\'!\nThe \'subgenre_english\' will '
+                              'be used.' % channel_name)
+                        header_map['subgenre'] = header_map['subgenre_english']
+
+                    got_headers = True
+
+                continue
+
+            # -- Process the data of the row --
+            # ---------------------------------
+            if row[header_map['time'].position].value is not None and row[header_map['time'].position].value:
                 # Parse time
-                time = GenericSpreadsheetParser.parse_time(row[fields['time'].position].value, fields['time'].field_format,
+                time = GenericSpreadsheetParser.parse_time(row[header_map['time'].position].value,
+                                                           header_map['time'].field_format,
                                                            file_format, book)
             else:
                 time = None
 
             # If the date is in a separate row
-            if '_date_separate_line' in fields:
+            if '_date_separate_line' in config_fields:
+                cell_value = str(row[0].value)
+
                 # While we don't have a date, skip rows where the date is empty
                 if date is None:
-                    if row[fields['date'].position].value is None or not row[fields['date'].position].value:
+                    if cell_value is None or not cell_value:
                         continue
 
                 # If there's a date, update the current date
-                if row[fields['date'].position].value is not None and row[fields['date'].position].value:
-                    date_value = GenericSpreadsheetParser.process_date(row[fields['date'].position].value,
-                                                                       fields['_date_separate_line'].field_format)
+                if cell_value is not None and cell_value:
+                    date_value = GenericSpreadsheetParser.process_date(cell_value,
+                                                                       config_fields[
+                                                                           '_date_separate_line'].field_format)
 
                     # Parse date, and skip the row
-                    date = GenericSpreadsheetParser.parse_date(date_value, fields['date'].field_format, file_format, book)
+                    date = GenericSpreadsheetParser.parse_date(date_value, config_fields['_date'].field_format,
+                                                               file_format, book)
                     continue
 
             # Get the date_time
-            if 'date_time' in fields:
-                date_time = datetime.datetime.strptime(row[fields['date_time'].position].value,
-                                                       fields['date_time'].field_format)
+            if 'date_time' in header_map:
+                date_time = datetime.datetime.strptime(row[header_map['date_time'].position].value,
+                                                       header_map['date_time'].field_format)
             else:
                 if time is None:
                     continue
 
-                if '_date_separate_line' not in fields:
-                    date = GenericSpreadsheetParser.parse_date(row[fields['date'].position].value, fields['date'].field_format,
+                if '_date_separate_line' not in config_fields:
+                    date = GenericSpreadsheetParser.parse_date(row[header_map['date'].position].value,
+                                                               header_map['date'].field_format,
                                                                file_format, book)
 
                 if date is None:
@@ -319,13 +367,13 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
                 # Combine the date with the time
                 date_time = date.replace(hour=time.hour, minute=time.minute)
 
-            if 'year' in fields:
+            if 'year' in header_map:
                 # Skip the rows in which the year is invalid
-                if row[fields['year'].position].value is None:
+                if row[header_map['year'].position].value is None:
                     continue
 
                 try:
-                    year = int(row[fields['year'].position].value)
+                    year = int(row[header_map['year'].position].value)
                 except ValueError:
                     continue
             else:
@@ -340,25 +388,25 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
             if date_time < (today_00_00 - datetime.timedelta(days=configuration.show_sessions_validity_days)):
                 continue
 
-            if 'original_title' in fields:
-                original_title = str(row[fields['original_title'].position].value)
+            if 'original_title' in header_map:
+                original_title = str(row[header_map['original_title'].position].value)
             else:
                 original_title = None
 
-            localized_title = str(row[fields['localized_title'].position].value)
+            localized_title = str(row[header_map['localized_title'].position].value)
 
             # If it is a placeholder show or temporary program
-            if '_temporary_program' in fields:
-                if str(fields['_temporary_program'].field_format) in original_title:
+            if '_temporary_program' in config_fields:
+                if str(config_fields['_temporary_program'].field_format) in original_title:
                     continue
 
-            if 'localized_synopsis' in fields:
-                synopsis = str(row[fields['localized_synopsis'].position].value).strip()
+            if 'localized_synopsis' in header_map:
+                synopsis = str(row[header_map['localized_synopsis'].position].value).strip()
             else:
                 synopsis = None
 
-            if 'cast' in fields:
-                cast = row[fields['cast'].position].value
+            if 'cast' in header_map:
+                cast = row[header_map['cast'].position].value
 
                 if cast is not None:
                     cast = cast.strip()
@@ -368,8 +416,8 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
             else:
                 cast = None
 
-            if 'directors' in fields:
-                directors = row[fields['directors'].position].value
+            if 'directors' in header_map:
+                directors = row[header_map['directors'].position].value
 
                 # Process the directors
                 if directors is not None:
@@ -379,14 +427,14 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
                         directors = directors.split(',')
 
                 # If the name of the directors is actually a placeholder
-                if '_ignore_directors' in fields and directors:
-                    if directors[0].strip() == fields['_ignore_directors'].field_format:
+                if '_ignore_directors' in config_fields and directors:
+                    if directors[0].strip() == config_fields['_ignore_directors'].field_format:
                         directors = None
             else:
                 directors = None
 
-            if 'creators' in fields:
-                creators = row[fields['creators'].position].value
+            if 'creators' in header_map:
+                creators = row[header_map['creators'].position].value
 
                 # Process the creators
                 if creators is not None:
@@ -397,49 +445,50 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
             else:
                 creators = None
 
-            if 'countries' in fields:
-                countries = row[fields['countries'].position].value.strip()
+            if 'countries' in header_map:
+                countries = row[header_map['countries'].position].value.strip()
             else:
                 countries = None
 
             # Duration
-            if 'duration' in fields:
-                if fields['duration'].field_format == 'seconds':
-                    duration = int(int(row[fields['duration'].position].value) / 60)
+            if 'duration' in header_map:
+                if header_map['duration'].field_format == 'seconds':
+                    duration = int(int(row[header_map['duration'].position].value) / 60)
                 else:
-                    if file_format == '.xls':
+                    if file_format == 'xls':
                         try:
-                            duration = xlrd.xldate_as_datetime(row[fields['duration'].position].value, book.datemode)
+                            duration = xlrd.xldate_as_datetime(row[header_map['duration'].position].value,
+                                                               book.datemode)
                         except TypeError:
-                            duration = datetime.datetime.strptime(row[fields['duration'].position].value,
-                                                                  fields['duration'].field_format)
+                            duration = datetime.datetime.strptime(row[header_map['duration'].position].value,
+                                                                  header_map['duration'].field_format)
                     else:
                         try:
-                            duration = datetime.datetime.strptime(row[fields['duration'].position].value,
-                                                                  fields['duration'].field_format)
+                            duration = datetime.datetime.strptime(row[header_map['duration'].position].value,
+                                                                  header_map['duration'].field_format)
                         except TypeError:
-                            duration_time: datetime.time = row[fields['duration'].position].value
+                            duration_time: datetime.time = row[header_map['duration'].position].value
                             duration = datetime.datetime(1, 1, 1, duration_time.hour, duration_time.minute)
 
                     duration = duration.hour * 60 + duration.minute
             else:
                 duration = None
 
-            if 'age_classification' in fields:
-                age_classification = str(row[fields['age_classification'].position].value).strip()
+            if 'age_classification' in header_map:
+                age_classification = str(row[header_map['age_classification'].position].value).strip()
             else:
                 age_classification = None
 
-            if 'subgenre' in fields:
-                subgenre = row[fields['subgenre'].position].value.strip()
+            if 'subgenre' in header_map:
+                subgenre = row[header_map['subgenre'].position].value.strip()
             else:
                 subgenre = None
 
             # Process the audio language of the session
             session_audio_language = None
 
-            if 'session_audio_language' in fields:
-                session_audio_language = row[fields['session_audio_language'].position].value
+            if 'session_audio_language' in header_map:
+                session_audio_language = row[header_map['session_audio_language'].position].value
 
                 if session_audio_language == 'VP':
                     session_audio_language = 'pt'
@@ -450,15 +499,15 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
             if first_event_datetime is None:
                 first_event_datetime = date_time
 
-            if 'season' not in fields or 'episode' not in fields:
+            if 'season' not in header_map or 'episode' not in header_map:
                 season = None
                 episode = None
             else:
-                if fields['season'].field_format == 'season_starts_with_T':
-                    season_str = row[fields['season'].position].value
+                if header_map['season'].field_format == 'season_starts_with_T':
+                    season_str = row[header_map['season'].position].value
 
                     if season_str is not None:
-                        season = re.search(r'^T([0-9]+)$', str(row[fields['season'].position].value).strip())
+                        season = re.search(r'^T([0-9]+)$', str(row[header_map['season'].position].value).strip())
 
                         if season is not None:
                             season = int(season.group(1))
@@ -466,11 +515,11 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
                         season = None
                 else:
                     try:
-                        season = int(row[fields['season'].position].value)
+                        season = int(row[header_map['season'].position].value)
                     except ValueError:
                         try:
                             # There are entries with a season 2.5, which will be converted to 2
-                            season = int(float(row[fields['season'].position].value))
+                            season = int(float(row[header_map['season'].position].value))
                         except ValueError:
                             season = None
 
@@ -480,13 +529,13 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
 
                     episode = None
 
-                if fields['episode'].field_format == 'int':
+                if header_map['episode'].field_format == 'int':
                     try:
-                        episode = int(row[fields['episode'].position].value)
+                        episode = int(row[header_map['episode'].position].value)
                     except ValueError:
                         episode = None
-                elif 'title_with_Ep.' in fields['episode'].field_format:
-                    series = re.search(r'Ep\. [0-9]+', row[fields['episode'].position].value.strip())
+                elif 'title_with_Ep.' in header_map['episode'].field_format:
+                    series = re.search(r'Ep\. [0-9]+', row[header_map['episode'].position].value.strip())
 
                     if series is not None:
                         episode = int(series.group(0)[4:])
@@ -503,9 +552,9 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
                 episode = None
 
             # Take care of the localized episode synopsis
-            if 'localized_episode_synopsis' in fields:
+            if 'localized_episode_synopsis' in header_map:
                 if is_movie:
-                    synopsis = str(row[fields['localized_episode_synopsis'].position].value).strip()
+                    synopsis = str(row[header_map['localized_episode_synopsis'].position].value).strip()
                 else:
                     synopsis = None
 
@@ -514,10 +563,12 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
 
             # Process the titles
             if original_title is not None:
-                original_title = GenericSpreadsheetParser.process_title(original_title, fields['original_title'].field_format,
+                original_title = GenericSpreadsheetParser.process_title(original_title,
+                                                                        header_map['original_title'].field_format,
                                                                         is_movie)
 
-            localized_title = GenericSpreadsheetParser.process_title(localized_title, fields['localized_title'].field_format,
+            localized_title = GenericSpreadsheetParser.process_title(localized_title,
+                                                                     header_map['localized_title'].field_format,
                                                                      is_movie)
 
             channel_id = db_calls.get_channel_name(db_session, channel_name).id

@@ -1,23 +1,23 @@
-field;column;format
-_file_format;-1;.xlsx
-channel_name;0;str
-date;1;%d-%m-%Y
-time;2;%H:%M
-original_title;3;has_year_season_and_episode_at_the_end
-session_audio_language;4;str
-year;5;int
-age_classification;6;str
-subgenre;7;str
-duration;8;%H:%M
-audio_languages;9;str
-countries;10;str
-localized_episode_synopsis;11;str
-directors;12;str
-cast;13;str
-localized_title;14;has_year_season_and_episode_at_the_end
-original_episode_title;15;str
-season;16;season_starts_with_T
-episode;17;int
-premiere;18;str
-specials;19;str
-code;20;int
+field;header;format
+_min_num_fields;-;10
+channel_name;Canal;str
+date;Data;%d-%m-%Y
+time;Hora;%H:%M
+original_title;Programa;has_year_season_and_episode_at_the_end
+session_audio_language;VD (VERSÃO DOBRADA) -VO(VERSÃO ORIGINAL) - OP (ORIGINAL EM PT);str
+year;Ano;int
+age_classification;Classificação;str
+subgenre;Genero;str
+duration;Duração;%H:%M
+audio_languages;Idioma;str
+countries;País;str
+localized_episode_synopsis;Sinopse;str
+directors;Realizador;str
+cast;Cast;str
+localized_title;Epg programme name;has_year_season_and_episode_at_the_end
+original_episode_title;Título Episódio;str
+season;Temporada;season_starts_with_T
+episode;Episódio;int
+premiere;Estreia;str
+specials;Especiais;str
+code;Cód. Titulo;int

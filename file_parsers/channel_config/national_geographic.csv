@@ -1,16 +1,16 @@
-field;column;format
-_file_format;-1;.xlsx
-date;0;%d/%m/%Y
-time;1;%H:%M
-localized_title;2;str
-localized_episode_title;3;str
-original_title;4;season_at_the_end
-original_episode_title;5;str
-episode;6;int
-season;7;int
-age_classification;8;str
-localized_synopsis;9;str
-year;10;int
-video_format;11;str
-high_definition;12;str
-stereo;13;str
+field;header;format
+_min_num_fields;-;5
+date;DATE;%d/%m/%Y
+time;START TIME;%H:%M
+localized_title;PORTUGUESE TITLE;str
+localized_episode_title;PORTUGUESE EP TITLE;str
+original_title;PROGRAMME TITLE;season_at_the_end
+original_episode_title;EPISODE TITLE;str
+episode;EPISODE NUMBER;int
+season;SEASON NUMBER;int
+age_classification;AGE RESTRICTION;str
+localized_synopsis;EPG SYNOPSIS;str
+year;YEAR OF RELEASE;int
+video_format;FORMAT 16 9;str
+high_definition;HIGH DEFINITION;str
+stereo;STEREO;str

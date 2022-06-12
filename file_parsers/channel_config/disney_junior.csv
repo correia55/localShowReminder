@@ -1,20 +1,34 @@
-field;column;format
-_file_format;-1;.xls
-_ignore_directors;-1;Various
-date;0;%d/%m/%Y
-time;1;%H:%M:%S
-localized_title;2;str
-original_title;3;S_season_at_the_end
-localized_episode_title;4;str
-localized_synopsis;5;str
-episode;6;title_with_Ep.
-duration;7;seconds
-year;8;int
-age_classification;9;str
-countries;10;str
-directors;11;str
-cast;12;str
-localized_episode_synopsis;13;str
-content_type;14;str
-series_id;15;str
-season;16;int
+field;header;format
+_min_num_fields;-;8
+_ignore_directors;-;Various
+date;Date;%d/%m/%Y
+time;Time;%H:%M:%S
+localized_title;Programme Title;str
+original_title;Original Programme;S_season_at_the_end
+localized_episode_title;Episode Title;str
+localized_synopsis;Synopsis;str
+episode;Ep No;title_with_Ep.
+duration;Duration;seconds
+year;Prod Year;int
+age_classification;Classification;str
+countries;Country;str
+directors;Director;str
+cast;Actors;str
+localized_episode_synopsis;Short Description;str
+content_type;ContentType;str
+series_id;Series ID;str
+season;Season No.;int
+rating;Rating;str
+video_format;Video ScreenFormat;str
+video_language;Video Language;str
+audio_mode;Audio Mode;str
+audio_language;Audio Language;str
+subtitle_language;Subtitle Language;str
+video_color;Video Color;str
+video_definition;Video Definition;str
+producer;Producer;str
+writer;Writer;str
+event_id;Event Id;str
+visual_impaired;Visual Impaired;str
+hearing_impaired;Hearing Impaired;str
+tx;TX Order No.;str

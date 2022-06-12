@@ -1,16 +1,16 @@
-field (order matters);mandatory;format
-_file_format;True;.xls
-_date_separate_line;True;day_space_date
-_date;True;%d/%m/%Y
-unknow_1;False;Y
-unknow_2;False;Y
-time;True;%H:%M:%S
-version;False;0{3}.+
-localized_title;True;str
-localized_episode_title;False;[^0].+
-season;False;^[0-9]{1,5}$
-episode;False;^[0-9]{1,5}$
-program_id;True;0{3}.+
-duration;True;%H:%M:%S
-type;True;str
-age_classification;True;str
+field;header;format
+_min_num_fields;-;7
+_date_separate_line;-;day_space_date
+_date;-;%d/%m/%Y
+unknow_1;E;str
+unknow_2;D;str
+time;Hora;%H:%M:%S
+version;Version;str
+localized_title;Título;str
+localized_episode_title;Título episodio;str
+season;T;int
+episode;Ep;int
+program_id;Prog.ID;str
+duration;Duración;%H:%M:%S
+type;Tipo;str
+age_classification;Rating ESP;str

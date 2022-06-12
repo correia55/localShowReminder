@@ -1,25 +1,35 @@
-field;column;format
-_file_format;-1;.xlsx
-date;0;%d/%m/%Y
-time;1;%H:%M
-cat_time;2;%H:%M
-original_title;3;has_year_season_at_the_end
-localized_title;4;str
-age_classification;5;str
-censorship_codes;6;
-website_synopsis;7;str
-localized_synopsis;8;str
-mobile_synopsis;9;str
-original_episode_title;10;str
-episode;11;int
-season;12;int
-total_episodes;13;int
-start_of_season;14;
-end_of_season;15;
-theme;16;
-live;17;
-year;18;int
-cast;19;str
-directors;20;str
-creators;21;str
-awards;22;str
+field;header;format
+_min_num_fields;-;10
+date;DATE;%d/%m/%Y
+time;Start Time;%H:%M
+cat_time;Cat Time;%H:%M
+original_title;Programme Title;has_year_season_at_the_end
+localized_title;Portuguese Title;str
+age_classification;PG Rating;str
+censorship_codes;Censorship Codes;
+website_synopsis;Website Synopsis;str
+localized_synopsis;EPG Synopsis;str
+mobile_synopsis;Mobile Synopsis;str
+original_episode_title;Episode Title;str
+episode;Episode Number;int
+season;Season Number;int
+total_episodes;Number of episodes in the Season;int
+start_of_season;Start of Season;
+end_of_season;End of Season;
+theme;Theme;
+live;Live;
+year;Year Of Release;int
+cast;Actors;str
+directors;Director/s;str
+creators;Creators;str
+awards;Awards;str
+hi_subtitles;HI Subtitles;str
+subtitles;Subtitles;str
+premiere;Premiere;str
+highlight;Highlight;str
+change_alert;Change Alert;
+format;16:9 Format (widescreen);str
+hd;High Definition;str
+dolby_digital;Dolby Digital;str
+stereo;Stereo;str
+surround;Surround Sound;str

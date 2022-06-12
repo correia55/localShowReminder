@@ -1,20 +1,20 @@
-field;column;format
-_file_format;-1;.xlsx
-channel_name;0;str
-date;1;%d-%m-%Y
-time;2;%H:%M
-original_title;3;has_year
-year;4;int
-age_classification;5;str
-subgenre;6;str
-duration;7;%H:%M
-audio_languages;8;str
-countries;9;str
-localized_synopsis;10;str
-directors;11;str
-cast;12;str
-localized_title;13;str
-session_audio_language;14;str
-premiere;15;str
-specials;16;str
-code;17;int
+field;header;format
+_min_num_fields;-;10
+channel_name;Canal;str
+date;Data;%d-%m-%Y
+time;Hora;%H:%M
+original_title;Programa;has_year
+year;Ano;int
+age_classification;Classificação;str
+subgenre;Genero;str
+duration;Duração;%H:%M
+audio_languages;Idioma;str
+countries;País;str
+localized_synopsis;Sinopse;str
+directors;Realizador;str
+cast;Cast;str
+localized_title;Epg programme name;str
+session_audio_language;VD (VERSÃO DOBRADA) -VO(VERSÃO ORIGINAL) - OP (ORIGINAL EM PT);str
+premiere;Estreia;str
+specials;Especiais;str
+code;Cód. Titulo;int
