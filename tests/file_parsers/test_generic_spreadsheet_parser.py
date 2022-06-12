@@ -68,8 +68,9 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         expected_result = 'Monster Croc Wrangler'
 
         # Call the function
-        actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.process_title('Monster Croc Wrangler 4',
-                                                                            'season_at_the_end', False)
+        actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.process_title(
+            'Monster Croc Wrangler 4',
+            'season_at_the_end', False)
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -81,8 +82,9 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         expected_result = 'Tiger On The Run'
 
         # Call the function
-        actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.process_title('Tiger On The Run', 'season_at_the_end',
-                                                                                         True)
+        actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.process_title(
+            'Tiger On The Run', 'season_at_the_end',
+            True)
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -96,8 +98,9 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         expected_result = 'The Hunger Games: Mockingjay Part 1'
 
         # Call the function
-        actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.process_title('The Hunger Games: Mockingjay Part 1',
-                                                                            'has_year_season_at_the_end', True)
+        actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.process_title(
+            'The Hunger Games: Mockingjay Part 1',
+            'has_year_season_at_the_end', True)
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -110,7 +113,8 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
 
         # Call the function
         actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.process_title('Home By Spring',
-                                                                            'has_year_season_at_the_end', True)
+                                                                                                       'has_year_season_at_the_end',
+                                                                                                       True)
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -122,8 +126,9 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         expected_result = 'Private Practice'
 
         # Call the function
-        actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.process_title('Private Practice 1',
-                                                                            'has_year_season_at_the_end', False)
+        actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.process_title(
+            'Private Practice 1',
+            'has_year_season_at_the_end', False)
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -135,8 +140,9 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         expected_result = 'New Amsterdam'
 
         # Call the function
-        actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.process_title('New Amsterdam (2018) 3',
-                                                                            'has_year_season_at_the_end', False)
+        actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.process_title(
+            'New Amsterdam (2018) 3',
+            'has_year_season_at_the_end', False)
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -148,8 +154,9 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         expected_result = 'Titanic'
 
         # Call the function
-        actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.process_title('Titanic (re-release 2012)',
-                                                                            'has_year_season_at_the_end', True)
+        actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.process_title(
+            'Titanic (re-release 2012)',
+            'has_year_season_at_the_end', True)
 
         # Verify the result
         self.assertEqual(expected_result, actual_result)
@@ -215,8 +222,8 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
 
         # Call the function
         actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.add_file_data(self.session,
-                                                                                         base_path + 'data/nat_geo_wild_example.xls',
-                                                                            'Nat Geo Wild')
+                                                                                                       base_path + 'data/nat_geo_wild_example.xls',
+                                                                                                       'Nat Geo Wild')
 
         # Get back the datetime.datetime
         datetime.datetime = self.datetime_backup
@@ -328,8 +335,8 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
 
         # Call the function
         actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.add_file_data(self.session,
-                                                                                         base_path + 'data/national_geographic_example.xlsx',
-                                                                            'National Geographic')
+                                                                                                       base_path + 'data/national_geographic_example.xlsx',
+                                                                                                       'National Geographic')
 
         # Get back the datetime.datetime
         datetime.datetime = self.datetime_backup
@@ -439,8 +446,8 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
 
         # Call the function
         actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.add_file_data(self.session,
-                                                                                         base_path + 'data/fox_comedy_example.xlsx',
-                                                                            'FOX Comedy')
+                                                                                                       base_path + 'data/fox_comedy_example.xlsx',
+                                                                                                       'FOX Comedy')
 
         # Get back the datetime.datetime
         datetime.datetime = self.datetime_backup
@@ -548,8 +555,8 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
 
         # Call the function
         actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.add_file_data(self.session,
-                                                                                         base_path + 'data/fox_crime_example.xlsx',
-                                                                            'FOX Crime')
+                                                                                                       base_path + 'data/fox_crime_example.xlsx',
+                                                                                                       'FOX Crime')
 
         # Get back the datetime.datetime
         datetime.datetime = self.datetime_backup
@@ -690,8 +697,8 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
 
         # Call the function
         actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.add_file_data(self.session,
-                                                                                         base_path + 'data/fox_life_example.xlsx',
-                                                                            'FOX Life')
+                                                                                                       base_path + 'data/fox_life_example.xlsx',
+                                                                                                       'FOX Life')
 
         # Get back the datetime.datetime
         datetime.datetime = self.datetime_backup
@@ -828,7 +835,8 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
 
         # Call the function
         actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.add_file_data(self.session,
-                                                                                         base_path + 'data/fox_example.xlsx', 'FOX')
+                                                                                                       base_path + 'data/fox_example.xlsx',
+                                                                                                       'FOX')
 
         # Get back the datetime.datetime
         datetime.datetime = self.datetime_backup
@@ -953,8 +961,8 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
 
         # Call the function
         actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.add_file_data(self.session,
-                                                                                         base_path + 'data/fox_movies_example.xlsx',
-                                                                            'FOX Movies')
+                                                                                                       base_path + 'data/fox_movies_example.xlsx',
+                                                                                                       'FOX Movies')
 
         # Get back the datetime.datetime
         datetime.datetime = self.datetime_backup
@@ -1101,8 +1109,8 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
 
         # Call the function
         actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.add_file_data(self.session,
-                                                                                         base_path + 'data/disney_junior_example.xls',
-                                                                            'Disney Junior')
+                                                                                                       base_path + 'data/disney_junior_example.xls',
+                                                                                                       'Disney Junior')
 
         # Get back the datetime.datetime
         datetime.datetime = self.datetime_backup
@@ -1207,8 +1215,8 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
 
         # Call the function
         actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.add_file_data(self.session,
-                                                                                         base_path + 'data/disney_channel_example.xls',
-                                                                            'Disney Channel')
+                                                                                                       base_path + 'data/disney_channel_example.xls',
+                                                                                                       'Disney Channel')
 
         # Get back the datetime.datetime
         datetime.datetime = self.datetime_backup
@@ -1317,8 +1325,8 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
 
         # Call the function
         actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.add_file_data(self.session,
-                                                                                         base_path + 'data/new_nat_geo_wild_example.xls',
-                                                                            'Nat Geo Wild')
+                                                                                                       base_path + 'data/new_nat_geo_wild_example.xls',
+                                                                                                       'Nat Geo Wild')
 
         # Get back the datetime.datetime
         datetime.datetime = self.datetime_backup
@@ -1440,8 +1448,8 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
 
         # Call the function
         actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.add_file_data(self.session,
-                                                                                         base_path + 'data/new_fox_movies_example.xlsx',
-                                                                            'FOX Movies')
+                                                                                                       base_path + 'data/new_fox_movies_example.xlsx',
+                                                                                                       'FOX Movies')
 
         # Get back the datetime.datetime
         datetime.datetime = self.datetime_backup
@@ -1553,8 +1561,10 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         db_calls_mock.register_show_session.side_effect = [show_session, show_session_2]
 
         # Call the function
-        actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.add_file_data(self.session, base_path +
-                                                                            'data/hollywood_example.xlsx', 'Hollywood')
+        actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.add_file_data(self.session,
+                                                                                                       base_path +
+                                                                                                       'data/hollywood_example.xlsx',
+                                                                                                       'Hollywood')
 
         # Get back the datetime.datetime
         datetime.datetime = self.datetime_backup
@@ -1655,8 +1665,10 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         db_calls_mock.register_show_session.side_effect = [show_session, show_session_2]
 
         # Call the function
-        actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.add_file_data(self.session, base_path +
-                                                                            'data/blast_example.xlsx', 'Blast')
+        actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.add_file_data(self.session,
+                                                                                                       base_path +
+                                                                                                       'data/blast_example.xlsx',
+                                                                                                       'Blast')
 
         # Get back the datetime.datetime
         datetime.datetime = self.datetime_backup
@@ -1675,7 +1687,8 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         db_calls_mock.search_channel_show_data_correction.assert_has_calls(
             [unittest.mock.call(self.session, 8373, False, 'Vikings', 'Vikings', directors=['Ken Girotti'], year=2015,
                                 subgenre='Ação', creators=None),
-             unittest.mock.call(self.session, 8373, True, 'Victor Frankenstein', 'Victor Frankenstein', directors=['Paul McGuigan'],
+             unittest.mock.call(self.session, 8373, True, 'Victor Frankenstein', 'Victor Frankenstein',
+                                directors=['Paul McGuigan'],
                                 year=2015,
                                 subgenre='Terror', creators=None)])
 
@@ -1786,4 +1799,107 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
             [unittest.mock.call(self.session, 7, 160, datetime.datetime(2022, 5, 31, 23, 18), 8373, 7503,
                                 audio_language=None, extended_cut=False, should_commit=False),
              unittest.mock.call(self.session, None, None, datetime.datetime(2022, 6, 1, 3, 21), 8373, 7912,
+                                audio_language=None, extended_cut=False, should_commit=False)])
+
+    @unittest.mock.patch('get_file_data.tmdb_calls')
+    def test_add_file_data_new_fox_crime(self, tmdb_calls_mock) -> None:
+        """ Test the function GenericXlsx.add_file_data with a sample from a new FOX Crime file. """
+
+        # Prepare the mocks
+        # Replace datetime class with a utility class with a fixed datetime
+        datetime.datetime = NewDatetime
+
+        # Prepare the call to get_channel_name
+        channel_data = models.Channel('FOXCR', 'FOX Crime')
+        channel_data.id = 8373
+
+        db_calls_mock.get_channel_name.return_value = channel_data
+
+        # Treatment of the entries
+        # ----------------------------
+        # Prepare the calls to search_channel_show_data
+        db_calls_mock.search_channel_show_data_correction.side_effect = [None, None]
+
+        # Prepare the calls to insert_if_missing_show_data
+        # Remark: these values will influence the next request, but they can be anything
+        show_data = models.ShowData('title', 'another_title')
+        show_data.id = 7503
+        show_data.original_title = 'original_title'
+        show_data.genre = 'Movie'
+        show_data.is_movie = True
+
+        show_data_2 = models.ShowData('title2', 'another_title2')
+        show_data_2.id = 7912
+        show_data_2.original_title = 'original_title2'
+        show_data_2.genre = 'Series'
+        show_data_2.is_movie = False
+
+        db_calls_mock.insert_if_missing_show_data.side_effect = [(True, show_data), (True, show_data_2)]
+
+        # Prepare the calls to search_shows_by_text
+        tmdb_calls_mock.search_shows_by_text.side_effect = [(0, []), (0, []), (0, [])]
+
+        # Prepare the calls to register_show_session
+        # Remark: these can be any values
+        show_session = models.ShowSession(None, None, None, None, None)
+        show_session_2 = models.ShowSession(None, None, None, None, None)
+
+        db_calls_mock.register_show_session.side_effect = [show_session, show_session_2]
+
+        # Call the function
+        actual_result = file_parsers.generic_spreadsheet_parser.GenericSpreadsheetParser.add_file_data(self.session,
+                                                                                                       base_path + 'data/new_fox_crime_example.xlsx',
+                                                                                                       'FOX Crime')
+
+        # Get back the datetime.datetime
+        datetime.datetime = self.datetime_backup
+
+        # Verify the result
+        self.assertEqual(datetime.datetime(2022, 7, 1, 5, 0, 0), actual_result.start_datetime)
+        self.assertEqual(datetime.datetime(2022, 7, 1, 7, 56, 0), actual_result.end_datetime)
+        self.assertEqual(2, actual_result.total_nb_sessions_in_file)
+        self.assertEqual(0, actual_result.nb_updated_sessions)
+        self.assertEqual(2, actual_result.nb_added_sessions)
+        self.assertEqual(0, actual_result.nb_deleted_sessions)
+
+        # Verify the calls to the mocks
+        db_calls_mock.get_channel_name.assert_called_with(self.session, 'FOX Crime')
+
+        db_calls_mock.search_channel_show_data_correction.assert_has_calls(
+            [unittest.mock.call(self.session, 8373, False, 'Murder She Wrote',
+                                'Crime, Disse Ela', directors=None, year=1985,
+                                subgenre=None, creators=['Peter S. Fischer', 'Richard Levinson', 'William Link']),
+             unittest.mock.call(self.session, 8373, True, 'L\'inconnu de Brocéliande', 'Assassinato em Brocéliande',
+                                directors=None, year=2016, subgenre=None, creators=None)])
+
+        db_calls_mock.insert_if_missing_show_data.assert_has_calls(
+            [unittest.mock.call(self.session, 'Crime, Disse Ela', cast='Angela Lansbury,Ron Masak,William Windom',
+                                original_title='Murder She Wrote', duration=24,
+                                synopsis='Um antigo aluno de Jessica (Angela Lansbury) fica envolvido num triângulo '
+                                         'amoroso que termina em homicídio.', year=1985, genre='Series',
+                                subgenre=None, audio_languages=None, countries=None,
+                                directors=None, age_classification='12+', is_movie=False, season=2,
+                                creators=['Peter S. Fischer', 'Richard Levinson', 'William Link'],
+                                date_time=datetime.datetime(2022, 7, 1, 5, 5)),
+             unittest.mock.call(self.session, 'Assassinato em Brocéliande', cast='Carole Bianic,Claire Keim,François '
+                                                                                 'Vincentelli',
+                                original_title='L\'inconnu de Brocéliande', duration=95,
+                                synopsis='Um corpo carbonizado é encontrado em Brocéliande Forest. Ao lado do cadáver, '
+                                         'um rapaz de 13 anos em estado de choque. O que estaria ele a fazer ali? De '
+                                         'que forma está envolvido? Dois gendarmes e um pedopsiquiatra pouco '
+                                         'convencional tentam esclarecer o mistério.', year=2016,
+                                genre='Movie', subgenre=None,
+                                audio_languages=None, countries=None,
+                                directors=None, age_classification='12+', is_movie=True, season=None,
+                                creators=None, date_time=datetime.datetime(2022, 7, 1, 7, 51))])
+
+        tmdb_calls_mock.search_shows_by_text.assert_has_calls(
+            [unittest.mock.call(self.session, 'original_title', is_movie=True, year=None),
+             unittest.mock.call(self.session, 'original_title2', is_movie=False, year=None)])
+
+        db_calls_mock.register_show_session.assert_has_calls(
+            [unittest.mock.call(self.session, 2, 12, datetime.datetime(2022, 7, 1, 5, 5), 8373, 7503,
+                                audio_language=None,
+                                extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, None, None, datetime.datetime(2022, 7, 1, 7, 51), 8373, 7912,
                                 audio_language=None, extended_cut=False, should_commit=False)])

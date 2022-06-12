@@ -40,7 +40,6 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
                      'FOX Movies': ('FOX Movies', 'fox_movies.csv'),
                      'Disney Junior': ('Disney Junior', 'disney_junior.csv'),
                      'Disney Channel': ('Disney Channel', 'disney_junior.csv'),
-                     '(New) FOX Crime': ('FOX Crime', 'fox.csv'),
                      'Hollywood': ('Hollywood', 'hollywood.csv'), 'Blast': ('Blast', 'blast.csv'),
                      'História': ('História', 'historia.csv')}
     channels = list(channels_file.keys())

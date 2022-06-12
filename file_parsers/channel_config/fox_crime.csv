@@ -33,3 +33,19 @@ hd;High Definition;str
 dolby_digital;Dolby Digital;str
 stereo;Stereo;str
 surround;Surround Sound;str
+date;Data;%d/%m/%Y
+time;Horário;%H:%M
+localized_title;Programa/Série;str
+original_title;Título Original;has_year_season_at_the_end
+season;Temporada;int
+episode;Nº episódio;int
+total_episodes;Episódio Total Por Temporada;int
+original_episode_title;Título do Episódio;str
+localized_synopsis;Sinopse;str
+year;Ano;int
+cast;Elenco;str
+directors;Realizador;str
+creators;Criador;str
+series_code;Series Code;int
+duration;Slot Duration;%H:%M
+age_classification;Age Restriction;str
