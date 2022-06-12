@@ -11,12 +11,11 @@ import process_emails
 import tmdb_calls
 from file_parsers.cinemundo_parser import CinemundoParser
 from file_parsers.generic_spreadsheet_parser import GenericSpreadsheetParser
-from file_parsers.generic_spreadsheet_merged_cells_parser import GenericSpreadsheetMergedCellsParser
 from file_parsers.odisseia_parser import OdisseiaParser
 from file_parsers.tvcine_parser import TVCineParser
 
 channel_insertion_list: [get_file_data.ChannelParser] = [CinemundoParser, OdisseiaParser, TVCineParser,
-                                                         GenericSpreadsheetParser, GenericSpreadsheetMergedCellsParser]
+                                                         GenericSpreadsheetParser]
 
 
 def insert_file_data(db_session: sqlalchemy.orm.Session, channel_set: int, filename: str, channel_name: str) -> ():
