@@ -382,7 +382,10 @@ class TmdbTranslation(object):
         self.language_country = '%s-%s' % (
             translation_dict['iso_639_1'], translation_dict['iso_3166_1'])  # pt-PT, en-US...
 
-        data: dict = translation_dict['config']
+        if 'config' in translation_dict:
+            data: dict = translation_dict['config']
+        else:
+            data: dict = translation_dict['data']
 
         self.overview = data['overview']
 
