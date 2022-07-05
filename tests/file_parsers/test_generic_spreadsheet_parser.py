@@ -193,6 +193,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         show_data.countries = 'Australia'
         show_data.subgenre = 'Natural History'
         show_data.age_classification = '12+'
+        show_data.year = 2016
 
         show_data_2 = models.ShowData('_Tiger_On_The_Run_', 'Tiger On The Run')
         show_data_2.id = 7912
@@ -212,7 +213,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         db_calls_mock.insert_if_missing_show_data.side_effect = [(True, show_data), (True, show_data_2)]
 
         # Prepare the calls to search_shows_by_text
-        tmdb_calls_mock.search_shows_by_text.side_effect = [(0, []), (0, []), (0, [])]
+        tmdb_calls_mock.search_shows_by_text.side_effect = [(0, []), (0, []), (0, []), (0, [])]
 
         # Prepare the calls to register_show_session
         show_session = models.ShowSession(4, 7, datetime.datetime(2021, 7, 1, 5), 8373, 7503)
@@ -241,7 +242,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
 
         db_calls_mock.search_channel_show_data_correction.assert_has_calls(
             [unittest.mock.call(self.session, 8373, False, 'Monster Croc Wrangler', 'Monster Croc Wrangler',
-                                directors=None, year=2019,
+                                directors=None, year=2016,
                                 subgenre='Natural History', creators=None),
              unittest.mock.call(self.session, 8373, True, 'Tiger On The Run', 'Tiger On The Run',
                                 directors=None, year=2015, subgenre='Natural History', creators=None)])
@@ -252,7 +253,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
                                 synopsis='Managers of Victoria River Downs Ranch; Rusty and Julie haven\'t had trouble'
                                          ' with Crocs for years. But recently a number of big Salties have been '
                                          'spotted in the river. Matt Wright is called in to clear any problem Crocs '
-                                         'and keep the ranch workers and kids safe.', year=2019, genre='Series',
+                                         'and keep the ranch workers and kids safe.', year=2016, genre='Series',
                                 subgenre='Natural History', audio_languages=None, countries='Australia',
                                 directors=None, age_classification='12+', is_movie=False, season=4,
                                 creators=None, date_time=datetime.datetime(2021, 7, 1, 5)),
@@ -268,7 +269,8 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
                                 creators=None, date_time=datetime.datetime(2021, 7, 2, 0, 18))])
 
         tmdb_calls_mock.search_shows_by_text.assert_has_calls(
-            [unittest.mock.call(self.session, 'Monster Croc Wrangler', is_movie=False, year=None),
+            [unittest.mock.call(self.session, 'Monster Croc Wrangler', is_movie=False, year=2016),
+             unittest.mock.call(self.session, 'Monster Croc Wrangler', is_movie=False, year=None),
              unittest.mock.call(self.session, 'Tiger On The Run', is_movie=True, year=2015),
              unittest.mock.call(self.session, 'Tiger On The Run', is_movie=True, year=None)])
 
@@ -422,6 +424,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         show_data.genre = 'Series'
         show_data.is_movie = False
         show_data.age_classification = '12+'
+        show_data.year = 2013
 
         show_data_2 = models.ShowData('_Doidos_à_Solta_de_Novo_', 'Doidos à Solta, de Novo')
         show_data_2.id = 7912
@@ -436,7 +439,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         db_calls_mock.insert_if_missing_show_data.side_effect = [(True, show_data), (True, show_data_2)]
 
         # Prepare the calls to search_shows_by_text
-        tmdb_calls_mock.search_shows_by_text.side_effect = [(0, []), (0, []), (0, [])]
+        tmdb_calls_mock.search_shows_by_text.side_effect = [(0, []), (0, []), (0, []), (0, [])]
 
         # Prepare the calls to register_show_session
         show_session = models.ShowSession(1, 4, datetime.datetime(2021, 6, 1, 5, 6), 8373, 7503)
@@ -464,7 +467,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         db_calls_mock.get_channel_name.assert_called_with(self.session, 'FOX Comedy')
 
         db_calls_mock.search_channel_show_data_correction.assert_has_calls(
-            [unittest.mock.call(self.session, 8373, False, 'Black-ish', 'Black-ish', directors=None, year=2017,
+            [unittest.mock.call(self.session, 8373, False, 'Black-ish', 'Black-ish', directors=None, year=2013,
                                 subgenre=None, creators=['Kenya Barris']),
              unittest.mock.call(self.session, 8373, True, 'Dumb and Dumber To', 'Doidos à Solta, de Novo',
                                 directors=['Bobby Farrelly', 'Peter Farrelly'], year=2014, subgenre=None,
@@ -476,7 +479,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
                                 synopsis='Dre e Bow querem inscrever Kyra na escola Valley Glen Prep, mas ficam '
                                          'furiosos quando a escola os trata como um caso de caridade. Entretanto, '
                                          'Junior quer ir trabalhar como assistente de Josh na Stevens & Lido.',
-                                year=2017, genre='Series',
+                                year=2013, genre='Series',
                                 subgenre=None, audio_languages=None, countries=None,
                                 directors=None, age_classification='12+', is_movie=False, season=5,
                                 creators=['Kenya Barris'], date_time=datetime.datetime(2021, 6, 1, 5, 6)),
@@ -491,7 +494,8 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
                                 creators=None, date_time=datetime.datetime(2021, 6, 27, 20, 8))])
 
         tmdb_calls_mock.search_shows_by_text.assert_has_calls(
-            [unittest.mock.call(self.session, 'Black-ish', is_movie=False, year=None),
+            [unittest.mock.call(self.session, 'Black-ish', is_movie=False, year=2013),
+             unittest.mock.call(self.session, 'Black-ish', is_movie=False, year=None),
              unittest.mock.call(self.session, 'Dumb and Dumber To', is_movie=True, year=2014),
              unittest.mock.call(self.session, 'Dumb and Dumber To', is_movie=True, year=None)])
 
@@ -532,6 +536,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         show_data.genre = 'Series'
         show_data.is_movie = False
         show_data.age_classification = '12+'
+        show_data.year = 2008
 
         show_data_2 = models.ShowData('_Crime_Disse_Ela_', 'Crime, Disse Ela')
         show_data_2.id = 7912
@@ -541,11 +546,12 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         show_data_2.genre = 'Series'
         show_data_2.is_movie = False
         show_data_2.age_classification = '12+'
+        show_data_2.year = 1985
 
         db_calls_mock.insert_if_missing_show_data.side_effect = [(True, show_data), (True, show_data_2)]
 
         # Prepare the calls to search_shows_by_text
-        tmdb_calls_mock.search_shows_by_text.side_effect = [(0, []), (0, []), (0, [])]
+        tmdb_calls_mock.search_shows_by_text.side_effect = [(0, []), (0, []), (0, []), (0, [])]
 
         # Prepare the calls to register_show_session
         show_session = models.ShowSession(1, 4, datetime.datetime(2021, 7, 1, 5), 8373, 7503)
@@ -574,10 +580,10 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
 
         db_calls_mock.search_channel_show_data_correction.assert_has_calls(
             [unittest.mock.call(self.session, 8373, False, 'Lie To Me',
-                                'Lie To Me', directors=None, year=2009,
+                                'Lie To Me', directors=None, year=2008,
                                 subgenre=None, creators=None),
              unittest.mock.call(self.session, 8373, False, 'Murder She Wrote', 'Crime, Disse Ela',
-                                directors=None, year=1993, subgenre=None,
+                                directors=None, year=1985, subgenre=None,
                                 creators=['Peter S. Fischer', 'Richard Levinson', 'William Link'])])
 
         db_calls_mock.insert_if_missing_show_data.assert_has_calls(
@@ -590,14 +596,14 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
                                 synopsis='Um adolescente perturbado crê que foi raptado em bebé e recorre ao Lightman '
                                          'Group para o ajudar a desvendar os segredos do seu passado; Eli investiga '
                                          'a origem de uma debandada letal que ocorreu numa grande superfície '
-                                         'comercial, no dia após o Dia de Ação de Graças.', year=2009, genre='Series',
+                                         'comercial, no dia após o Dia de Ação de Graças.', year=2008, genre='Series',
                                 subgenre=None, audio_languages=None, countries=None,
                                 directors=None, age_classification='12+', is_movie=False, season=2,
                                 creators=None, date_time=datetime.datetime(2021, 7, 1, 5)),
              unittest.mock.call(self.session, 'Crime, Disse Ela', cast='Angela Lansbury,Ron Masak,William Windom',
                                 original_title='Murder She Wrote', duration=None,
                                 synopsis='Será que um florista de Beverly Hills foi morto porque estava a fornecer '
-                                         'mais do que flores a editores de revistas de mexericos?', year=1993,
+                                         'mais do que flores a editores de revistas de mexericos?', year=1985,
                                 genre='Series', subgenre=None,
                                 audio_languages=None, countries=None,
                                 directors=None, age_classification='12+', is_movie=False, season=9,
@@ -605,7 +611,9 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
                                 date_time=datetime.datetime(2021, 7, 1, 5, 34))])
 
         tmdb_calls_mock.search_shows_by_text.assert_has_calls(
-            [unittest.mock.call(self.session, 'Lie To Me', is_movie=False, year=None),
+            [unittest.mock.call(self.session, 'Lie To Me', is_movie=False, year=2008),
+             unittest.mock.call(self.session, 'Lie To Me', is_movie=False, year=None),
+             unittest.mock.call(self.session, 'Murder She Wrote', is_movie=False, year=1985),
              unittest.mock.call(self.session, 'Murder She Wrote', is_movie=False, year=None)])
 
         db_calls_mock.register_show_session.assert_has_calls(
@@ -643,6 +651,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         show_data.creators = 'Jill Kargman'
         show_data.genre = 'Series'
         show_data.is_movie = False
+        show_data.year = 2015
 
         show_data_2 = models.ShowData('_Home_By_Spring_', 'Home By Spring')
         show_data_2.id = 7912
@@ -715,7 +724,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         db_calls_mock.get_channel_name.assert_called_with(self.session, 'FOX Life')
 
         db_calls_mock.search_channel_show_data_correction.assert_has_calls(
-            [unittest.mock.call(self.session, 8373, False, 'Odd Mom Out', 'Odd Mom Out', directors=None, year=2017,
+            [unittest.mock.call(self.session, 8373, False, 'Odd Mom Out', 'Odd Mom Out', directors=None, year=2015,
                                 subgenre=None, creators=['Jill Kargman']),
              unittest.mock.call(self.session, 8373, True, 'Home By Spring', 'Home By Spring',
                                 directors=['Dwight H. Little'], year=2018, subgenre=None, creators=None)])
@@ -726,7 +735,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
                                 synopsis='Jill e Andy estão impressionados com o amadurecimento de Hazel quando a '
                                          'visitam num campo de retiro, onde as vítimas do esquema Ponzi de Ernie '
                                          'Krevitt tentam lidar com a sua nova realidade financeira.',
-                                year=2017, genre='Series', subgenre=None, audio_languages=None, countries=None,
+                                year=2015, genre='Series', subgenre=None, audio_languages=None, countries=None,
                                 directors=None, age_classification='12+', is_movie=False, season=3,
                                 creators=['Jill Kargman'], date_time=datetime.datetime(2021, 6, 1, 5)),
              unittest.mock.call(self.session, 'Home By Spring', cast='Poppy Drayton,Steven R. McQueen',
@@ -741,10 +750,8 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
                                 creators=None, date_time=datetime.datetime(2021, 6, 1, 7, 19))])
 
         tmdb_calls_mock.search_shows_by_text.assert_has_calls(
-            [unittest.mock.call(self.session, 'Odd Mom Out', is_movie=False, year=None),
+            [unittest.mock.call(self.session, 'Odd Mom Out', is_movie=False, year=2015),
              unittest.mock.call(self.session, 'Home By Spring', is_movie=True, year=2018)])
-
-        tmdb_calls_mock.get_show_using_id.assert_called_with(self.session, 1, False)
 
         db_calls_mock.get_show_data_by_tmdb_id.assert_has_calls(
             [unittest.mock.call(self.session, 1, False),
@@ -787,6 +794,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         show_data.cast = 'Lucas Till'
         show_data.genre = 'Series'
         show_data.is_movie = False
+        show_data.year = 2016
 
         show_data_2 = models.ShowData('_Safe_O_Intocavel_', 'Safe - O Intocável')
         show_data_2.id = 7912
@@ -853,7 +861,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         db_calls_mock.get_channel_name.assert_called_with(self.session, 'FOX')
 
         db_calls_mock.search_channel_show_data_correction.assert_has_calls(
-            [unittest.mock.call(self.session, 8373, False, 'MacGyver', 'MacGyver', directors=None, year=2020,
+            [unittest.mock.call(self.session, 8373, False, 'MacGyver', 'MacGyver', directors=None, year=2016,
                                 subgenre=None, creators=None),
              unittest.mock.call(self.session, 8373, True, 'Safe', 'Safe - O Intocável',
                                 directors=['Boaz Yakin'], year=2012, subgenre=None, creators=None)])
@@ -867,7 +875,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
                                          'que está a trabalhar com Andrews, num momento em que eles planeiam matar '
                                          'milhares de pessoas e revelar os segredos mais bem guardados de todos os '
                                          'membros da Phoenix.',
-                                year=2020, genre='Series', subgenre=None, audio_languages=None, countries=None,
+                                year=2016, genre='Series', subgenre=None, audio_languages=None, countries=None,
                                 directors=None, age_classification='12+', is_movie=False, season=5,
                                 creators=None, date_time=datetime.datetime(2021, 6, 1, 21, 15)),
              unittest.mock.call(self.session, 'Safe - O Intocável', cast='Catherine Chan,Chris Sarandon,Jason Statham',
@@ -881,7 +889,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
                                 creators=None, date_time=datetime.datetime(2021, 6, 1, 22, 4))])
 
         tmdb_calls_mock.search_shows_by_text.assert_has_calls(
-            [unittest.mock.call(self.session, 'MacGyver', is_movie=False, year=None),
+            [unittest.mock.call(self.session, 'MacGyver', is_movie=False, year=2016),
              unittest.mock.call(self.session, 'Safe', is_movie=True, year=2012)])
 
         db_calls_mock.get_show_data_by_tmdb_id.assert_has_calls(
@@ -1057,6 +1065,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         show_data.creators = 'Olivier Lelardoux'
         show_data.genre = 'Series'
         show_data.is_movie = False
+        show_data.year = 2018
 
         show_data_2 = models.ShowData('_BLUEY_', 'BLUEY')
         show_data_2.id = 7912
@@ -1065,6 +1074,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
                                'sem fim!'
         show_data_2.genre = 'Series'
         show_data_2.is_movie = False
+        show_data_2.year = 2019
 
         db_calls_mock.insert_if_missing_show_data.side_effect = [(True, show_data), (True, show_data_2)]
 
@@ -1129,7 +1139,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         db_calls_mock.search_channel_show_data_correction.assert_has_calls(
             [unittest.mock.call(self.session, 8373, False, 'GIGANTOSAURUS', 'GIGANTOSAURUS',
                                 directors=['Olivier Lelardoux'], year=2018, subgenre=None, creators=None),
-             unittest.mock.call(self.session, 8373, False, 'BLUEY', 'BLUEY', directors=None, year=2020,
+             unittest.mock.call(self.session, 8373, False, 'BLUEY', 'BLUEY', directors=None, year=2019,
                                 subgenre=None, creators=None)])
 
         db_calls_mock.insert_if_missing_show_data.assert_has_calls(
@@ -1140,15 +1150,13 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
                                 creators=None, date_time=datetime.datetime(2021, 6, 30, 22, 50)),
              unittest.mock.call(self.session, 'BLUEY', cast=None, original_title='BLUEY', duration=10,
                                 synopsis=None,
-                                year=2020, genre='Series', subgenre=None, audio_languages=None, countries='Austrália',
+                                year=2019, genre='Series', subgenre=None, audio_languages=None, countries='Austrália',
                                 directors=None, age_classification='T', is_movie=False, season=2,
                                 creators=None, date_time=datetime.datetime(2021, 7, 1, 7, 5))])
 
         tmdb_calls_mock.search_shows_by_text.assert_has_calls(
-            [unittest.mock.call(self.session, 'GIGANTOSAURUS', is_movie=False, year=None),
-             unittest.mock.call(self.session, 'BLUEY', is_movie=False, year=None)])
-
-        tmdb_calls_mock.get_show_using_id.assert_called_with(self.session, 1, False)
+            [unittest.mock.call(self.session, 'GIGANTOSAURUS', is_movie=False, year=2018),
+             unittest.mock.call(self.session, 'BLUEY', is_movie=False, year=2019)])
 
         db_calls_mock.get_show_data_by_tmdb_id.assert_has_calls(
             [unittest.mock.call(self.session, 1, False),
@@ -1190,6 +1198,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         show_data.genre = 'Series'
         show_data.is_movie = False
         show_data.age_classification = 'T'
+        show_data.year = 2017
 
         show_data_2 = models.ShowData('_MAGIA_AO_CONTRÁRIO_', 'MAGIA AO CONTRÁRIO')
         show_data_2.id = 7912
@@ -1205,7 +1214,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         db_calls_mock.insert_if_missing_show_data.side_effect = [(True, show_data), (True, show_data_2)]
 
         # Prepare the calls to search_shows_by_text
-        tmdb_calls_mock.search_shows_by_text.side_effect = [(0, []), (0, []), (0, [])]
+        tmdb_calls_mock.search_shows_by_text.side_effect = [(0, []), (0, []), (0, []), (0, [])]
 
         # Prepare the calls to register_show_session
         show_session = models.ShowSession(1, 4, datetime.datetime(2021, 6, 30, 23, 15), 8373, 7503)
@@ -1233,14 +1242,14 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         db_calls_mock.get_channel_name.assert_called_with(self.session, 'Disney Channel')
 
         db_calls_mock.search_channel_show_data_correction.assert_has_calls(
-            [unittest.mock.call(self.session, 8373, False, 'CLUB HOUDINI', 'CLUBE HOUDINI', directors=None, year=2019,
+            [unittest.mock.call(self.session, 8373, False, 'CLUB HOUDINI', 'CLUBE HOUDINI', directors=None, year=2017,
                                 subgenre=None, creators=None),
              unittest.mock.call(self.session, 8373, True, 'UPSIDE-DOWN MAGIC', 'MAGIA AO CONTRÁRIO',
                                 directors=['Joe Nussbaum'], year=2020, subgenre=None, creators=None)])
 
         db_calls_mock.insert_if_missing_show_data.assert_has_calls(
             [unittest.mock.call(self.session, 'CLUBE HOUDINI', cast=None, original_title='CLUB HOUDINI', duration=15,
-                                synopsis=None, year=2019, genre='Series',
+                                synopsis=None, year=2017, genre='Series',
                                 subgenre=None, audio_languages=None, countries='Espanha',
                                 directors=None, age_classification='T', is_movie=False, season=3,
                                 creators=None, date_time=datetime.datetime(2021, 6, 30, 23, 15)),
@@ -1256,7 +1265,8 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
                                 season=None, creators=None, date_time=datetime.datetime(2021, 7, 4, 9, 50))])
 
         tmdb_calls_mock.search_shows_by_text.assert_has_calls(
-            [unittest.mock.call(self.session, 'CLUB HOUDINI', is_movie=False, year=None),
+            [unittest.mock.call(self.session, 'CLUB HOUDINI', is_movie=False, year=2017),
+             unittest.mock.call(self.session, 'CLUB HOUDINI', is_movie=False, year=None),
              unittest.mock.call(self.session, 'UPSIDE-DOWN MAGIC', is_movie=True, year=2020),
              unittest.mock.call(self.session, 'UPSIDE-DOWN MAGIC', is_movie=True, year=None)])
 
@@ -1642,7 +1652,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         show_data = models.ShowData('_Vikings_', 'Vikings')
         show_data.id = 7503
         show_data.original_title = 'Vikings'
-        show_data.year = 2015
+        show_data.year = 2013
         show_data.genre = 'Series'
         show_data.is_movie = False
 
@@ -1685,7 +1695,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         db_calls_mock.get_channel_name.assert_called_with(self.session, 'Blast')
 
         db_calls_mock.search_channel_show_data_correction.assert_has_calls(
-            [unittest.mock.call(self.session, 8373, False, 'Vikings', 'Vikings', directors=['Ken Girotti'], year=2015,
+            [unittest.mock.call(self.session, 8373, False, 'Vikings', 'Vikings', directors=['Ken Girotti'], year=2013,
                                 subgenre='Ação', creators=None),
              unittest.mock.call(self.session, 8373, True, 'Victor Frankenstein', 'Victor Frankenstein',
                                 directors=['Paul McGuigan'],
@@ -1696,7 +1706,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
             [unittest.mock.call(self.session, 'Vikings',
                                 cast='Travis Fimmel, Clive Standen, Katheryn Winnick',
                                 original_title='Vikings', duration=45,
-                                synopsis=None, year=2015, genre='Series', subgenre='Ação', audio_languages=None,
+                                synopsis=None, year=2013, genre='Series', subgenre='Ação', audio_languages=None,
                                 countries='Canada', directors=['Ken Girotti'], age_classification='M/16',
                                 is_movie=False, season=3, creators=None, date_time=datetime.datetime(2022, 6, 1, 6)),
              unittest.mock.call(self.session, 'Victor Frankenstein',
@@ -1712,7 +1722,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
                                 creators=None, date_time=datetime.datetime(2022, 6, 1, 6, 45))])
 
         tmdb_calls_mock.search_shows_by_text.assert_has_calls(
-            [unittest.mock.call(self.session, 'Vikings', is_movie=False, year=2015),
+            [unittest.mock.call(self.session, 'Vikings', is_movie=False, year=2013),
              unittest.mock.call(self.session, 'Vikings', is_movie=False, year=None),
              unittest.mock.call(self.session, 'Victor Frankenstein', is_movie=True, year=2015),
              unittest.mock.call(self.session, 'Victor Frankenstein', is_movie=True, year=None)])
@@ -1827,17 +1837,19 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
         show_data.original_title = 'original_title'
         show_data.genre = 'Movie'
         show_data.is_movie = True
+        show_data.year = 1984
 
         show_data_2 = models.ShowData('title2', 'another_title2')
         show_data_2.id = 7912
         show_data_2.original_title = 'original_title2'
         show_data_2.genre = 'Series'
         show_data_2.is_movie = False
+        show_data_2.year = 2016
 
         db_calls_mock.insert_if_missing_show_data.side_effect = [(True, show_data), (True, show_data_2)]
 
         # Prepare the calls to search_shows_by_text
-        tmdb_calls_mock.search_shows_by_text.side_effect = [(0, []), (0, []), (0, [])]
+        tmdb_calls_mock.search_shows_by_text.side_effect = [(0, []), (0, []), (0, []), (0, [])]
 
         # Prepare the calls to register_show_session
         # Remark: these can be any values
@@ -1867,7 +1879,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
 
         db_calls_mock.search_channel_show_data_correction.assert_has_calls(
             [unittest.mock.call(self.session, 8373, False, 'Murder She Wrote',
-                                'Crime, Disse Ela', directors=None, year=1985,
+                                'Crime, Disse Ela', directors=None, year=1984,
                                 subgenre=None, creators=['Peter S. Fischer', 'Richard Levinson', 'William Link']),
              unittest.mock.call(self.session, 8373, True, 'L\'inconnu de Brocéliande', 'Assassinato em Brocéliande',
                                 directors=None, year=2016, subgenre=None, creators=None)])
@@ -1876,7 +1888,7 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
             [unittest.mock.call(self.session, 'Crime, Disse Ela', cast='Angela Lansbury,Ron Masak,William Windom',
                                 original_title='Murder She Wrote', duration=24,
                                 synopsis='Um antigo aluno de Jessica (Angela Lansbury) fica envolvido num triângulo '
-                                         'amoroso que termina em homicídio.', year=1985, genre='Series',
+                                         'amoroso que termina em homicídio.', year=1984, genre='Series',
                                 subgenre=None, audio_languages=None, countries=None,
                                 directors=None, age_classification='12+', is_movie=False, season=2,
                                 creators=['Peter S. Fischer', 'Richard Levinson', 'William Link'],
@@ -1894,7 +1906,9 @@ class TestGenericSpreadsheetParser(unittest.TestCase):
                                 creators=None, date_time=datetime.datetime(2022, 7, 1, 7, 51))])
 
         tmdb_calls_mock.search_shows_by_text.assert_has_calls(
-            [unittest.mock.call(self.session, 'original_title', is_movie=True, year=None),
+            [unittest.mock.call(self.session, 'original_title', is_movie=True, year=1984),
+             unittest.mock.call(self.session, 'original_title', is_movie=True, year=None),
+             unittest.mock.call(self.session, 'original_title2', is_movie=False, year=2016),
              unittest.mock.call(self.session, 'original_title2', is_movie=False, year=None)])
 
         db_calls_mock.register_show_session.assert_has_calls(

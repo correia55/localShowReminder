@@ -667,9 +667,6 @@ def insert_if_missing_show_data(session: sqlalchemy.orm.Session, localized_title
     if creators is not None:
         creators = ','.join(creators)
 
-    if not is_movie and season != 1:
-        year = None
-
     # If not, then add it
     return True, register_show_data(session, localized_title, original_title=original_title, duration=duration,
                                     synopsis=synopsis, year=year, genre=genre, director=director,
@@ -1275,7 +1272,7 @@ def search_show_data_by_original_title(session: sqlalchemy.orm.Session, original
 
     :param session: the db session.
     :param original_title: the original title of the show.
-    :param is_movie: whether or not it is a movie.
+    :param is_movie: whether it is a movie.
     :param directors: the directors of the show.
     :param year: the year of the show.
     :param genre: the genre of the show.
@@ -1310,7 +1307,12 @@ def search_show_data_by_original_title(session: sqlalchemy.orm.Session, original
         return results[0]
 
     else:
-        return None
+        # If it is a TV show, search without the year
+        if not is_movie and year is not None:
+            return search_show_data_by_original_title(session, original_title, is_movie, directors=directors,
+                                                      year=None, genre=genre, creators=creators)
+        else:
+            return None
 
 
 def search_show_data_by_search_title_and_everything_else_empty(session: sqlalchemy.orm.Session, portuguese_title: str) \

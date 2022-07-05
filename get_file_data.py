@@ -87,6 +87,10 @@ def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: Ins
 
     new_show = False
 
+    # When it is a TV show, adjust the year, according to the season
+    if not is_movie and year is not None:
+        year = year - season + 1
+
     # Search the ChannelShowDataCorrection
     channel_show_data = db_calls.search_channel_show_data_correction(db_session, channel_id, is_movie, original_title,
                                                                      localized_title, directors=directors, year=year,
@@ -296,6 +300,10 @@ def search_tmdb_match(db_session: sqlalchemy.orm.Session, show_data: models.Show
     # Iterate over the results from the
     for t in tmdb_shows:
         score = starting_score
+
+        # If it didn't use the year in the search, use it in the score
+        if year is None and show_data.year is not None:
+            score -= abs(t.year - show_data.year)
 
         # If the genre is a match
         if show_data.genre != 'Movie' and show_data.genre != 'Series' and show_data.genre in t.genres:
