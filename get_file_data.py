@@ -302,11 +302,8 @@ def search_tmdb_match(db_session: sqlalchemy.orm.Session, show_data: models.Show
         score = starting_score
 
         # If it didn't use the year in the search, use it in the score
-        if year is None and show_data.year is not None:
-            if t.year is not None:
-                score -= abs(t.year - show_data.year)
-            else:
-                print('Something is wrong with the year: ' + str(t))
+        if year is None and show_data.year is not None and t.year is not None:
+            score -= abs(t.year - show_data.year)
 
         # If the genre is a match
         if show_data.genre != 'Movie' and show_data.genre != 'Series' and show_data.genre in t.genres:
