@@ -237,11 +237,14 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
             print('Invalid file format!')
             return None
 
+        # Get the channel id from the DB
+        channel_id = db_calls.get_channel_name(db_session, channel_name).id
+
         min_num_fields: int = int(config_fields['_min_num_fields'].field_format)
 
         if file_format == 'xls':
-            book = xlrd.open_workbook(filename)
-            sheet = book.sheets()[0]
+            book = xlrd.open_workbook(filename, on_demand=True)
+            sheet = book.sheet_by_index(0)
             rows = sheet.nrows
         else:
             # Remark: setting the read_only to true, changes the number of rows
@@ -569,8 +572,6 @@ class GenericSpreadsheetParser(get_file_data.ChannelParser):
             localized_title = GenericSpreadsheetParser.process_title(localized_title,
                                                                      header_map['localized_title'].field_format,
                                                                      is_movie)
-
-            channel_id = db_calls.get_channel_name(db_session, channel_name).id
 
             # Process file entry
             insertion_result = get_file_data.process_file_entry(db_session, insertion_result, original_title,

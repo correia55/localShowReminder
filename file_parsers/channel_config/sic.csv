@@ -1,0 +1,12 @@
+field;header;format
+_min_num_fields;-;7
+_time_pos;-;0
+_strings_to_ignore;-;DIR,RE,CINEMA,A DEFINIR
+time;time;%H:%M
+monday;segunda;str
+tuesday;terça;str
+wednesday;quarta;str
+thursday;quinta;str
+friday;sexta;str
+saturday;sábado;str
+sunday;domingo;str
