@@ -91,9 +91,9 @@ class TestGenericWeeklySpreadsheetParser(unittest.TestCase):
         show_data_2.original_title = 'ETNIAS'
         show_data_2.is_movie = False
 
-        show_data_3 = models.ShowData('_MARVELS_SPIDERMAN:_MAXIMUM_VENUM_I_', 'MARVELS SPIDERMAN: MAXIMUM VENUM I')
+        show_data_3 = models.ShowData('_MARVELS_SPIDERMAN:_MAXIMUM_VENUM_', 'MARVELS SPIDERMAN: MAXIMUM VENUM')
         show_data_3.id = 82837
-        show_data_3.original_title = 'MARVELS SPIDERMAN: MAXIMUM VENUM I'
+        show_data_3.original_title = 'MARVELS SPIDERMAN: MAXIMUM VENUM'
         show_data_3.is_movie = False
 
         show_data_4 = models.ShowData('_UMA_AVENTURA_', 'UMA AVENTURA')
@@ -149,11 +149,11 @@ class TestGenericWeeklySpreadsheetParser(unittest.TestCase):
         db_calls_mock.search_channel_show_data_correction.assert_has_calls(
             [unittest.mock.call(self.session, 8373, False, 'ETNIAS', 'ETNIAS', directors=None, year=None, subgenre=None,
                                 creators=None),
-             unittest.mock.call(self.session, 8373, False, 'MARVELS SPIDERMAN: MAXIMUM VENUM I',
-                                'MARVELS SPIDERMAN: MAXIMUM VENUM I', directors=None, year=None, subgenre=None,
+             unittest.mock.call(self.session, 8373, False, 'MARVELS SPIDERMAN: MAXIMUM VENUM',
+                                'MARVELS SPIDERMAN: MAXIMUM VENUM', directors=None, year=None, subgenre=None,
                                 creators=None),
-             unittest.mock.call(self.session, 8373, False, 'MARVELS SPIDERMAN: MAXIMUM VENUM I',
-                                'MARVELS SPIDERMAN: MAXIMUM VENUM I', directors=None, year=None, subgenre=None,
+             unittest.mock.call(self.session, 8373, False, 'MARVELS SPIDERMAN: MAXIMUM VENUM',
+                                'MARVELS SPIDERMAN: MAXIMUM VENUM', directors=None, year=None, subgenre=None,
                                 creators=None),
              unittest.mock.call(self.session, 8373, False, 'UMA AVENTURA', 'UMA AVENTURA', directors=None, year=None,
                                 subgenre=None, creators=None),
@@ -175,25 +175,25 @@ class TestGenericWeeklySpreadsheetParser(unittest.TestCase):
                                 subgenre=None, creators=None)])
 
         db_calls_mock.insert_if_missing_show_data.assert_has_calls(
-            [unittest.mock.call(self.session, 'ETNIAS', original_title='ETNIAS', is_movie=False, season=1,
+            [unittest.mock.call(self.session, 'ETNIAS', original_title='ETNIAS', is_movie=False, season=22,
                                 date_time=datetime.datetime(2022, 7, 9, 6), cast=None, duration=None,
                                 synopsis=None, year=None, genre='Series', subgenre=None, audio_languages=None,
                                 countries=None, directors=None, age_classification=None, creators=None),
-             unittest.mock.call(self.session, 'MARVELS SPIDERMAN: MAXIMUM VENUM I',
-                                original_title='MARVELS SPIDERMAN: MAXIMUM VENUM I', is_movie=False, season=1,
+             unittest.mock.call(self.session, 'MARVELS SPIDERMAN: MAXIMUM VENUM',
+                                original_title='MARVELS SPIDERMAN: MAXIMUM VENUM', is_movie=False, season=1,
                                 date_time=datetime.datetime(2022, 7, 10, 6, 30), cast=None, duration=None,
                                 synopsis=None, year=None, genre='Series', subgenre=None, audio_languages=None,
                                 countries=None, directors=None, age_classification=None, creators=None),
-             unittest.mock.call(self.session, 'MARVELS SPIDERMAN: MAXIMUM VENUM I',
-                                original_title='MARVELS SPIDERMAN: MAXIMUM VENUM I', is_movie=False, season=1,
+             unittest.mock.call(self.session, 'MARVELS SPIDERMAN: MAXIMUM VENUM',
+                                original_title='MARVELS SPIDERMAN: MAXIMUM VENUM', is_movie=False, season=1,
                                 date_time=datetime.datetime(2022, 7, 9, 6, 45), cast=None, duration=None,
                                 synopsis=None, year=None, genre='Series', subgenre=None, audio_languages=None,
                                 countries=None, directors=None, age_classification=None, creators=None),
-             unittest.mock.call(self.session, 'UMA AVENTURA', original_title='UMA AVENTURA', is_movie=False, season=1,
+             unittest.mock.call(self.session, 'UMA AVENTURA', original_title='UMA AVENTURA', is_movie=False, season=2,
                                 date_time=datetime.datetime(2022, 7, 9, 7, 15), cast=None, duration=None,
                                 synopsis=None, year=None, genre='Series', subgenre=None, audio_languages=None,
                                 countries=None, directors=None, age_classification=None, creators=None),
-             unittest.mock.call(self.session, 'UMA AVENTURA', original_title='UMA AVENTURA', is_movie=False, season=1,
+             unittest.mock.call(self.session, 'UMA AVENTURA', original_title='UMA AVENTURA', is_movie=False, season=4,
                                 date_time=datetime.datetime(2022, 7, 10, 7), cast=None, duration=None,
                                 synopsis=None, year=None, genre='Series', subgenre=None, audio_languages=None,
                                 countries=None, directors=None, age_classification=None, creators=None),
@@ -228,28 +228,28 @@ class TestGenericWeeklySpreadsheetParser(unittest.TestCase):
                                 synopsis=None, year=None, genre='Series', subgenre=None, audio_languages=None,
                                 countries=None, directors=None, age_classification=None, creators=None),
              unittest.mock.call(self.session, 'UMA AVENTURA',
-                                original_title='UMA AVENTURA', is_movie=False, season=1,
+                                original_title='UMA AVENTURA', is_movie=False, season=4,
                                 date_time=datetime.datetime(2022, 7, 10, 8), cast=None, duration=None,
                                 synopsis=None, year=None, genre='Series', subgenre=None, audio_languages=None,
                                 countries=None, directors=None, age_classification=None, creators=None)])
 
         tmdb_calls_mock.search_shows_by_text.assert_has_calls(
             [unittest.mock.call(self.session, 'ETNIAS', is_movie=False, year=None),
-             unittest.mock.call(self.session, 'MARVELS SPIDERMAN: MAXIMUM VENUM I', is_movie=False, year=None),
+             unittest.mock.call(self.session, 'MARVELS SPIDERMAN: MAXIMUM VENUM', is_movie=False, year=None),
              unittest.mock.call(self.session, 'UMA AVENTURA', is_movie=False, year=None),
              unittest.mock.call(self.session, 'EDIÇÃO DA MANHÃ', is_movie=True, year=None),
              unittest.mock.call(self.session, 'MÉDICO DA CASA', is_movie=False, year=None)])
 
         db_calls_mock.register_show_session.assert_has_calls(
-            [unittest.mock.call(self.session, 1, 28, datetime.datetime(2022, 7, 9, 6), 8373, 7912, audio_language=None,
+            [unittest.mock.call(self.session, 22, 28, datetime.datetime(2022, 7, 9, 6), 8373, 7912, audio_language=None,
                                 extended_cut=False, should_commit=False),
              unittest.mock.call(self.session, 1, 12, datetime.datetime(2022, 7, 10, 6, 30), 8373, 82837,
                                 audio_language=None, extended_cut=False, should_commit=False),
              unittest.mock.call(self.session, 1, 11, datetime.datetime(2022, 7, 9, 6, 45), 8373, 82837,
                                 audio_language=None, extended_cut=False, should_commit=False),
-             unittest.mock.call(self.session, 1, 17, datetime.datetime(2022, 7, 9, 7, 15), 8373, 1233,
+             unittest.mock.call(self.session, 2, 17, datetime.datetime(2022, 7, 9, 7, 15), 8373, 1233,
                                 audio_language=None, extended_cut=False, should_commit=False),
-             unittest.mock.call(self.session, 1, 7, datetime.datetime(2022, 7, 10, 7), 8373, 1233,
+             unittest.mock.call(self.session, 4, 7, datetime.datetime(2022, 7, 10, 7), 8373, 1233,
                                 audio_language=None, extended_cut=False, should_commit=False),
              unittest.mock.call(self.session, None, None, datetime.datetime(2022, 7, 4, 6), 8373, 7503,
                                 audio_language=None, extended_cut=False, should_commit=False),
@@ -263,12 +263,12 @@ class TestGenericWeeklySpreadsheetParser(unittest.TestCase):
                                 audio_language=None, extended_cut=False, should_commit=False),
              unittest.mock.call(self.session, 1, 21, datetime.datetime(2022, 7, 9, 8), 8373, 3444,
                                 audio_language=None, extended_cut=False, should_commit=False),
-             unittest.mock.call(self.session, 1, 8, datetime.datetime(2022, 7, 10, 8), 8373, 1233,
+             unittest.mock.call(self.session, 4, 8, datetime.datetime(2022, 7, 10, 8), 8373, 1233,
                                 audio_language=None, extended_cut=False, should_commit=False)])
 
         db_calls_mock.search_existing_session.assert_has_calls(
             [unittest.mock.call(self.session, 1, 11, datetime.datetime(2022, 7, 9, 6, 45), 8373, 82837),
-             unittest.mock.call(self.session, 1, 7, datetime.datetime(2022, 7, 10, 7), 8373, 1233),
+             unittest.mock.call(self.session, 4, 7, datetime.datetime(2022, 7, 10, 7), 8373, 1233),
              unittest.mock.call(self.session, None, None, datetime.datetime(2022, 7, 5, 6), 8373, 7503),
              unittest.mock.call(self.session, None, None, datetime.datetime(2022, 7, 6, 6), 8373, 7503),
              unittest.mock.call(self.session, None, None, datetime.datetime(2022, 7, 7, 6), 8373, 7503),

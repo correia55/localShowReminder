@@ -6,17 +6,36 @@ import openpyxl
 import sqlalchemy.orm
 import xlrd as xlrd
 
-import auxiliary
 import db_calls
 import get_file_data
 from file_parsers.abstract_channel_file_parser import InsertionResult, GenericField
 from file_parsers.abstract_spreadsheet_parser import AbstractSpreadsheetParser, Header
+
+roman_dict = {'M': 1000, 'D': 500, 'C': 100, 'L': 50, 'X': 10, 'V': 5, 'I': 1}
+
+
+def roman_to_int(roman_text: str):
+    """
+    Convert a roman string into integer.
+    Used to convert the season.
+
+    :param roman_text: the roman text.
+    :return: the converted integer.
+    """
+
+    res, p = 0, 'I'
+
+    for c in roman_text[::-1]:
+        res, p = res - roman_dict[c] if roman_dict[c] < roman_dict[p] else res + roman_dict[c], c
+
+    return res
 
 
 class FileSession:
     date_time: datetime.datetime or None
     name: str or None
     translation: str or None
+    season: int or None
     episode: int or None
     localized_episode_title: str or None
 
@@ -25,6 +44,7 @@ class FileSession:
         self.name = None
         self.translation = None
         self.episode = None
+        self.season = None
         self.localized_episode_title = None
 
     def add_info(self, config_fields: Dict[str, GenericField], book: xlrd.Book, cell, cell_value):
@@ -50,21 +70,23 @@ class FileSession:
             self.translation = cell_value
         # If it is bold
         elif book.font_list[book.xf_list[cell.xf_index].font_index].weight == 700:
-            series = re.search(r'^(.*) - Ep\. ([0-9]+).*$', cell_value)
+            series = re.search(r'^(.*) ([MDCLXVI]*) - Ep\. ([0-9]+).*$', cell_value)
 
             if series is not None:
                 self.name = series.group(1)
-                self.episode = int(series.group(2))
+                self.season = roman_to_int(series.group(2))
+                self.episode = int(series.group(3))
             else:
                 if self.name is None:
                     self.name = cell_value
                 else:
                     self.name = self.name + ' ' + cell_value
         else:
-            series = re.search(r'^.*Ep\. ([0-9]+).*$', cell_value)
+            series = re.search(r'^([MDCLXVI]*) ?-? ?Ep\. ([0-9]+).*$', cell_value)
 
             if series is not None:
-                self.episode = int(series.group(1))
+                self.season = roman_to_int(series.group(1))
+                self.episode = int(series.group(2))
             else:
                 self.localized_episode_title = cell_value
 
@@ -122,8 +144,12 @@ class GenericWeeklySpreadsheetParser(AbstractSpreadsheetParser):
         # The remaining information
         localized_title = file_session.name
         is_movie = file_session.episode is None
-        season = 1 if file_session.episode is not None else None
         genre = 'Movie' if is_movie else 'Series'
+
+        if file_session.episode is not None:
+            season = file_session.season
+        else:
+            season = None
 
         # Process file entry
         insertion_result = get_file_data.process_file_entry(db_session, insertion_result, original_title,
