@@ -4,6 +4,8 @@ _week_from_header;-;0
 _time_pos;-;0
 _time_format;time;%H:%M
 _strings_to_ignore;-;DIR,RE,CINEMA,A DEFINIR
+_translations;-;italic
+time;time;%H:%M
 monday;segunda;str
 tuesday;terça;str
 wednesday;quarta;str

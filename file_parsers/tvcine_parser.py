@@ -9,9 +9,12 @@ import auxiliary
 import configuration
 import db_calls
 import get_file_data
+from abstract_channel_file_parser import AbstractChannelFileParser, InsertionResult
+
+unordered_words = ['the', 'a', 'an', 'i', 'un', 'le', 'la', 'les', 'um', 'o', 'el', 'as', 'os']
 
 
-class TVCineParser(get_file_data.ChannelParser):
+class TVCineParser(AbstractChannelFileParser):
     channels = ['TVCine Top', 'TVCine Edition', 'TVCine Emotion', 'TVCine Action']
 
     @staticmethod
@@ -34,11 +37,11 @@ class TVCineParser(get_file_data.ChannelParser):
                 if re.match('[0-9a-zA-Z ]', title[i]) is None:
                     building = False
 
-                    if title[start + 1:i].strip().lower() in get_file_data.unordered_words:
+                    if title[start + 1:i].strip().lower() in unordered_words:
                         title = (' '.join([title[start + 1:i].strip(), title[:start].strip(), title[i:].strip()]))
                         break
 
-        if building and title[start + 1:].strip().lower() in get_file_data.unordered_words:
+        if building and title[start + 1:].strip().lower() in unordered_words:
             title = (' '.join([title[start + 1:].strip(), title[:start].strip()]))
 
         return title
@@ -93,7 +96,7 @@ class TVCineParser(get_file_data.ChannelParser):
 
     @staticmethod
     def add_file_data(db_session: sqlalchemy.orm.Session, filename: str, channel_name: str) \
-            -> Optional[get_file_data.InsertionResult]:
+            -> Optional[InsertionResult]:
         """
         Add the config, in the file, to the DB.
 
@@ -105,7 +108,7 @@ class TVCineParser(get_file_data.ChannelParser):
 
         wb = openpyxl.load_workbook(filename)
 
-        insertion_result = get_file_data.InsertionResult()
+        insertion_result = InsertionResult()
 
         first_event_datetime = None
         date_time = None

@@ -9,9 +9,10 @@ import auxiliary
 import configuration
 import db_calls
 import get_file_data
+from abstract_channel_file_parser import AbstractChannelFileParser
 
 
-class OdisseiaParser(get_file_data.ChannelParser):
+class OdisseiaParser(AbstractChannelFileParser):
     channels = ['Odisseia']
 
     @staticmethod

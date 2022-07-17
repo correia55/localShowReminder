@@ -8,45 +8,7 @@ import models
 import process_emails
 import response_models
 import tmdb_calls
-
-unordered_words = ['the', 'a', 'an', 'i', 'un', 'le', 'la', 'les', 'um', 'o', 'el', 'as', 'os']
-
-
-class InsertionResult:
-    """To store the results of an insertion from a file."""
-
-    start_datetime: datetime.datetime
-    end_datetime: datetime.datetime
-    total_nb_sessions_in_file: int
-    nb_updated_sessions: int
-    nb_added_sessions: int
-    nb_deleted_sessions: int
-    nb_new_shows: int
-
-    def __init__(self):
-        self.total_nb_sessions_in_file = 0
-        self.nb_updated_sessions = 0
-        self.nb_added_sessions = 0
-        self.nb_deleted_sessions = 0
-        self.nb_new_shows = 0
-
-
-class ChannelParser:
-    channels: str
-
-    @staticmethod
-    def add_file_data(db_session: sqlalchemy.orm.Session, filename: str, channel_name: str) \
-            -> Optional[InsertionResult]:
-        """
-        Add the config, in the file, to the DB.
-
-        :param db_session: the DB session.
-        :param filename: the path to the file.
-        :param channel_name: the name of the channel.
-        :return: the InsertionResult.
-        """
-
-        pass
+from file_parsers.abstract_channel_file_parser import InsertionResult
 
 
 def process_file_entry(db_session: sqlalchemy.orm.Session, insertion_result: InsertionResult, original_title: str,

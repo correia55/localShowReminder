@@ -9,9 +9,10 @@ import auxiliary
 import configuration
 import db_calls
 import get_file_data
+from abstract_channel_file_parser import AbstractChannelFileParser, InsertionResult
 
 
-class CinemundoParser(get_file_data.ChannelParser):
+class CinemundoParser(AbstractChannelFileParser):
     channels = ['Cinemundo']
 
     @staticmethod
@@ -55,22 +56,14 @@ class CinemundoParser(get_file_data.ChannelParser):
 
     @staticmethod
     def add_file_data(db_session: sqlalchemy.orm.Session, filename: str, channel_name: str) \
-            -> Optional[get_file_data.InsertionResult]:
-        """
-        Add the config, in the file, to the DB.
-
-        :param db_session: the DB session.
-        :param filename: the path to the file.
-        :param channel_name: the name of the channel.
-        :return: the InsertionResult.
-        """
+            -> Optional[InsertionResult]:
 
         wb = openpyxl.load_workbook(filename)
 
         first_event_datetime = None
         date_time = None
 
-        insertion_result = get_file_data.InsertionResult()
+        insertion_result = InsertionResult()
 
         today_00_00 = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
 

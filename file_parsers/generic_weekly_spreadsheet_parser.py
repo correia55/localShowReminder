@@ -1,35 +1,16 @@
-import csv
 import datetime
-import os
 import re
-from typing import Optional, Dict, List
+from typing import Optional, Dict
 
 import openpyxl
 import sqlalchemy.orm
 import xlrd as xlrd
 
 import auxiliary
-import configuration
 import db_calls
 import get_file_data
-
-
-class GenericField:
-    field_name: str
-    field_format: str
-
-    def __init__(self, field_name: str, field_format: str):
-        self.field_name = field_name
-        self.field_format = field_format
-
-
-class Header:
-    position: int
-    field_format: str
-
-    def __init__(self, position: int, field_format: str):
-        self.position = position
-        self.field_format = field_format
+from abstract_channel_file_parser import InsertionResult, GenericField
+from abstract_spreadsheet_parser import AbstractSpreadsheetParser, Header
 
 
 class FileSession:
@@ -88,175 +69,36 @@ class FileSession:
                 self.localized_episode_title = cell_value
 
 
-class GenericWeeklySpreadsheetParser(get_file_data.ChannelParser):
+class GenericWeeklySpreadsheetParser(AbstractSpreadsheetParser):
     channels_file = {'SIC': ('SIC', 'sic.csv')}
     channels = list(channels_file.keys())
 
     @staticmethod
-    def process_configuration(channel_name: str) -> (Dict[str, GenericField], Dict[str, GenericField]):
-        """
-        Process the configurations file corresponding to the channel name in parameter.
+    def parse_headers_row(config_fields: Dict[str, GenericField], data_fields: Dict[str, GenericField],
+                          channel_name: str, row) -> (bool, Dict[str, Header]):
 
-        :param channel_name: the name of the channel in parameter.
-        :return: a dictionary with the fields of interest, or None if invalid.
-        """
+        got_headers, headers_map = AbstractSpreadsheetParser.parse_headers_row(config_fields, data_fields,
+                                                                               channel_name, row)
 
-        file_name = GenericWeeklySpreadsheetParser.channels_file[channel_name][1]
+        # If something failed, just return it
+        if not got_headers:
+            return got_headers, headers_map
 
-        fields = dict()
-        config = dict()
+        # Add the time header
+        header = headers_map['Unknown %d' % int(config_fields['_time_pos'].field_format)]
 
-        with open(os.path.join(configuration.base_dir, 'file_parsers/channel_config', file_name)) as csvfile:
-            content = csv.reader(csvfile, delimiter=';')
+        headers_map['time'] = Header(header.position, config_fields['_time_format'].field_format)
 
-            # Skip the headers
-            next(content, None)
+        # Add the week header
+        if '_week_from_header' in config_fields:
+            header = headers_map['Unknown %d' % int(config_fields['_week_from_header'].field_format)]
 
-            for row in content:
+            headers_map['week'] = Header(header.position, header.field_format)
 
-                if row[0].startswith('_'):
-                    config[row[0]] = GenericField(row[1], row[2])
-                else:
-                    fields[row[1].lower()] = GenericField(row[0], row[2])
-
-        return fields, config
+        return True, headers_map
 
     @staticmethod
-    def process_title(title: str, title_format: str, is_movie: bool) -> str:
-        """
-        Process the title, removing the year.
-
-        :param title: the title as is in the file.
-        :param title_format: the format of the title.
-        :param is_movie: whether this entry is a movie.
-        :return: the title.
-        """
-
-        if not is_movie:
-            if 'S_season_at_the_end' in title_format:
-                series = re.search(r'S\d+', title.strip())
-
-                if series is not None:
-                    title = title[:series.span(0)[0]]
-            elif 'season_at_the_end' in title_format:
-                series = re.search(r'^(.*) \d+$', title.strip())
-
-                if series is not None:
-                    title = series.group(1)
-            elif 'season_and_episode_at_the_end' in title_format:
-                series = re.search(r'^(.*) T\d+, ?\d+$', title.strip())
-
-                if series is not None:
-                    title = series.group(1)
-
-        if 'has_year' in title_format:
-            # From the last position of the parenthesis
-            search_result = auxiliary.search_chars(title, ['(', ')'])
-
-            for i in range(len(search_result[0]) - 1, -1, -1):
-                start_pos = search_result[0][i]
-                end_pos = search_result[1][i]
-
-                text = title[start_pos + 1:end_pos]
-
-                # Check if it has an year
-                if re.search(r'\d{4}', text.strip()):
-                    pass
-                else:
-                    continue
-
-                # Remove the parenthesis and its context
-                title = title[:search_result[0][i]] + title[search_result[1][i] + 1:]
-
-        # Replace all quotation marks for the same quotation mark
-        return re.sub('[´`]', '\'', title.strip())
-
-    @staticmethod
-    def process_date(date_value: str, date_field_format: str) -> str:
-        """
-        Process the date, removing unnecessary config.
-
-        :param date_value: the config as is in the file.
-        :param date_field_format: the format of the date, as in the configuration file.
-        :return: the date as string.
-        """
-
-        if date_field_format == 'day_space_date':
-            date_value = date_value.split(' ')[-1]
-        else:
-            print('The date field format: %s is not recognized!' % date_field_format)
-            date_value = None
-
-        return date_value
-
-    @staticmethod
-    def parse_time(time_value, time_format: str, file_format: str, book: xlrd.book.Book) -> Optional[datetime.time]:
-        """
-        Parse the time.
-
-        :param time_value: the time as is in the file.
-        :param time_format: the format of the time, as in the configuration file.
-        :param file_format: the format of the file.
-        :param book: the book, of the file (when it is a xls file).
-        :return: the parsed time.
-        """
-
-        try:
-            if file_format == 'xls':
-                try:
-                    #  If the time comes in the time format
-                    time = xlrd.xldate_as_datetime(time_value, book.datemode)
-                except TypeError:
-                    # If the time comes as text
-                    time = datetime.datetime.strptime(time_value, time_format)
-            else:
-                try:
-                    time = datetime.datetime.strptime(time_value, time_format)
-                except TypeError:
-                    try:
-                        #  If the time already comes in the time format
-                        time = time_value
-                    except TypeError:
-                        time = None
-        except ValueError:
-            time = None
-
-        return time
-
-    @staticmethod
-    def parse_date(date_value, date_format: str, file_format: str, book: xlrd.book.Book) -> datetime.date or None:
-        """
-        Parse the date.
-
-        :param date_value: the date as is in the file.
-        :param date_format: the format of the date, as in the configuration file.
-        :param file_format: the format of the file.
-        :param book: the book, of the file (when it is a xls file).
-        :return: the parsed date.
-        """
-
-        if file_format == 'xls':
-            try:
-                #  If the date comes in the date format
-                date = xlrd.xldate_as_datetime(date_value, book.datemode)
-            except TypeError:
-                date = None
-        else:
-            date = None
-
-        if date is None:
-            try:
-                # If the date comes as text
-                date = datetime.datetime.strptime(date_value, date_format)
-            except (TypeError, ValueError):
-                #  If the date already comes in the date format
-                if isinstance(date_value, datetime.date):
-                    date: datetime.date = date_value
-
-        return date
-
-    @staticmethod
-    def process_session(db_session: sqlalchemy.orm.Session, insertion_result: get_file_data.InsertionResult,
+    def process_session(db_session: sqlalchemy.orm.Session, insertion_result: InsertionResult,
                         channel_id: int, file_session: FileSession):
         """
         Process a session, inserting it into the DB.
@@ -294,7 +136,7 @@ class GenericWeeklySpreadsheetParser(get_file_data.ChannelParser):
 
     @staticmethod
     def add_file_data(db_session: sqlalchemy.orm.Session, filename: str, channel_name: str) \
-            -> Optional[get_file_data.InsertionResult]:
+            -> Optional[InsertionResult]:
         """
         Add the config, in the file, to the DB.
 
@@ -304,29 +146,34 @@ class GenericWeeklySpreadsheetParser(get_file_data.ChannelParser):
         :return: the InsertionResult.
         """
 
+        # Channel information
+        channel_info = GenericWeeklySpreadsheetParser.channels_file[channel_name]
+
+        channel_name = channel_info[0]
+        channel_file = channel_info[1]
+
         # Get the position and format of the fields for this channel
         data_fields: Dict[str, GenericField]
         config_fields: Dict[str, GenericField]
 
-        data_fields, config_fields = GenericWeeklySpreadsheetParser.process_configuration(channel_name)
-        channel_name = GenericWeeklySpreadsheetParser.channels_file[channel_name][0]
+        data_fields, config_fields = GenericWeeklySpreadsheetParser.process_configuration(channel_file)
 
         # If it is invalid
         if data_fields is None or config_fields is None:
             return None
 
+        # _time_pos is a mandatory field in the conf
+        if '_time_pos' not in config_fields or '_time_format' not in config_fields:
+            return None
+
         # Get the extension of the file
         file_format = filename.split('.')[-1]
 
-        if file_format != 'xls' and file_format != 'xlsx':
-            print('Invalid file format!')
+        if file_format != 'xls':
+            print('Invalid file format: %s!' % file_format)
             return None
 
-        # Get the channel id from the DB
-        channel_id = db_calls.get_channel_name(db_session, channel_name).id
-
-        min_num_fields: int = int(config_fields['_min_num_fields'].field_format)
-
+        # Prepare for reading, according to the file extension
         if file_format == 'xls':
             book = xlrd.open_workbook(filename, on_demand=True, formatting_info=True)
             sheet = book.sheet_by_index(0)
@@ -337,21 +184,22 @@ class GenericWeeklySpreadsheetParser(get_file_data.ChannelParser):
             sheet = book.active
             rows = sheet.max_row
 
-        insertion_result = get_file_data.InsertionResult()
+        # Get the channel id from the DB
+        channel_id = db_calls.get_channel_name(db_session, channel_name).id
+
+        # Initialize variables
+        insertion_result = InsertionResult()
 
         first_event_datetime = None
         date_time = None
 
         got_headers = False
-        headers: List[(str, int)]
-        header_map: Dict[str, Header] = dict()
+        headers_map: Dict[str, Header] = dict()
 
         today_00_00 = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
         current_week = int(today_00_00.isocalendar()[1])
 
         bottom_border_style = 0
-
-        file_session_day = {}
 
         # Get the strings to ignore
         if '_strings_to_ignore' in config_fields:
@@ -359,6 +207,14 @@ class GenericWeeklySpreadsheetParser(get_file_data.ChannelParser):
         else:
             strings_to_ignore = []
 
+        # Initialize the file sessions for each day
+        file_session_weekday = {'monday': FileSession(None), 'tuesday': FileSession(None),
+                                'wednesday': FileSession(None), 'thursday': FileSession(None),
+                                'friday': FileSession(None), 'saturday': FileSession(None), 'sunday': FileSession(None)}
+
+        date_weekday = {}
+
+        # Iterating over the rows of the file
         for rx in range(rows):
             if file_format == 'xls':
                 row = sheet.row(rx)
@@ -367,61 +223,13 @@ class GenericWeeklySpreadsheetParser(get_file_data.ChannelParser):
 
             # If we haven't found the header row
             if not got_headers:
-                headers = []
+                got_headers, headers_map = GenericWeeklySpreadsheetParser.parse_headers_row(config_fields, data_fields,
+                                                                                            channel_name, row)
 
-                # Build the headers dict
-                for i in range(len(row)):
-                    cell_value = str(row[i].value).lower().strip()
-
-                    if cell_value and cell_value is not None and cell_value != 'none':
-                        headers.append((cell_value, i))
-
-                # If this is the header row
-                if len(headers) >= min_num_fields:
-                    # Find the correspondence between the fields in the conf and the headers
-                    for h in headers:
-                        name, pos = h
-
-                        # Assumes the time is the first header
-                        if len(header_map) == 0:
-                            header_map['time'] = Header(pos, data_fields['time'].field_format)
-                            header_map['week'] = Header(pos, name)
-                        else:
-
-                            if name not in data_fields:
-                                print('Unexpected "%s" field found!' % name)
-                            else:
-                                header_map[data_fields[name].field_name] = Header(pos, data_fields[name].field_format)
-
-                                # Remove the field from the dict
-                                data_fields.pop(name)
-
-                    if len(data_fields) > 0:
-                        for f in data_fields.values():
-                            if f.field_name not in header_map:
-                                print('Expected "%s" field not found!' % f.field_name)
-
-                    # Add fallback fields
-                    if 'localized_title' not in header_map and 'original_title' in header_map:
-                        print('%s does not have a definition for \'localized_title\'!\nThe \'original_title\' will '
-                              'be used.' % channel_name)
-                        header_map['localized_title'] = header_map['original_title']
-
-                    if 'localized_synopsis' not in header_map and 'synopsis_english' in header_map:
-                        print('%s does not have a definition for \'localized_synopsis\'!\nThe \'synopsis_english\' '
-                              'will be used.' % channel_name)
-                        header_map['localized_synopsis'] = header_map['synopsis_english']
-
-                    if 'subgenre' not in header_map and 'subgenre_english' in header_map:
-                        print('%s does not have a definition for \'subgenre\'!\nThe \'subgenre_english\' will '
-                              'be used.' % channel_name)
-                        header_map['subgenre'] = header_map['subgenre_english']
-
-                    for h in header_map.keys():
-                        file_session_day[h] = FileSession(None)
-
+                # If the week comes from the headers
+                if got_headers and 'week' in headers_map:
                     # Get the week of the data
-                    data_week = int(float(header_map['week'].field_format))
+                    data_week = int(float(headers_map['week'].field_format))
 
                     # Get the year of the data
                     if data_week > current_week + 10:
@@ -429,16 +237,14 @@ class GenericWeeklySpreadsheetParser(get_file_data.ChannelParser):
                     else:
                         year = today_00_00.year
 
-                    got_headers = True
-
                 continue
 
             # -- Process the data of the row --
             # ---------------------------------
-            if row[header_map['time'].position].value is not None and row[header_map['time'].position].value:
+            if row[headers_map['time'].position].value is not None and row[headers_map['time'].position].value:
                 # Parse time
-                time = GenericWeeklySpreadsheetParser.parse_time(row[header_map['time'].position].value,
-                                                                 header_map['time'].field_format, file_format, book)
+                time = GenericWeeklySpreadsheetParser.parse_time(row[headers_map['time'].position].value,
+                                                                 headers_map['time'].field_format, file_format, book)
             else:
                 time = None
 
@@ -446,34 +252,35 @@ class GenericWeeklySpreadsheetParser(get_file_data.ChannelParser):
             if time is None:
                 continue
 
-            for h_name in header_map:
-                h_value = header_map[h_name]
+            # Process each weekday's column
+            for h_name in headers_map:
+                if 'week' in headers_map and h_name not in date_weekday:
+                    # Get the correct index according to the day
+                    index = -1
 
-                if h_name == 'time' or h_name == 'week':
-                    continue
+                    if h_name == 'monday':
+                        index = 1
+                    elif h_name == 'tuesday':
+                        index = 2
+                    elif h_name == 'wednesday':
+                        index = 3
+                    elif h_name == 'thursday':
+                        index = 4
+                    elif h_name == 'friday':
+                        index = 5
+                    elif h_name == 'saturday':
+                        index = 6
+                    elif h_name == 'sunday':
+                        index = 7
 
-                # Get the correct index according to the day
-                index = -1
+                    if index == -1:
+                        continue
 
-                if h_name == 'monday':
-                    index = 1
-                elif h_name == 'tuesday':
-                    index = 2
-                elif h_name == 'wednesday':
-                    index = 3
-                elif h_name == 'thursday':
-                    index = 4
-                elif h_name == 'friday':
-                    index = 5
-                elif h_name == 'saturday':
-                    index = 6
-                elif h_name == 'sunday':
-                    index = 7
-
-                # Get the date
-                date = datetime.date.fromisocalendar(year, data_week, index)
+                    # Get the date
+                    date_weekday[h_name] = datetime.date.fromisocalendar(year, data_week, index)
 
                 # Combine the date with the time
+                date = date_weekday[h_name]
                 date_time = time.replace(day=date.day, month=date.month, year=date.year)
 
                 # Get the first event's datetime
@@ -481,9 +288,9 @@ class GenericWeeklySpreadsheetParser(get_file_data.ChannelParser):
                     first_event_datetime = date_time
 
                 # Get the cell
-                cell = row[h_value.position]
+                cell = row[headers_map[h_name].position]
 
-                # Get the value, or ignore if invalid
+                # Get the value, or ignore it if invalid
                 if cell.value is not None and cell.value and cell.value not in strings_to_ignore:
                     cell_value = cell.value
                 else:
@@ -498,25 +305,27 @@ class GenericWeeklySpreadsheetParser(get_file_data.ChannelParser):
                 bottom_border_style = book.xf_list[cell.xf_index].border.bottom_line_style
 
                 # Set the date time if it is still missing
-                if file_session_day[h_name].date_time is None:
-                    file_session_day[h_name].date_time = date_time
+                if file_session_weekday[h_name].date_time is None:
+                    file_session_weekday[h_name].date_time = date_time
 
+                # Add the new info to the session
                 if bottom_border_style != 0:
-                    file_session_day[h_name].add_info(config_fields, book, cell, cell_value)
+                    file_session_weekday[h_name].add_info(config_fields, book, cell, cell_value)
 
                     GenericWeeklySpreadsheetParser.process_session(db_session, insertion_result, channel_id,
-                                                                   file_session_day[h_name])
+                                                                   file_session_weekday[h_name])
 
-                    file_session_day[h_name] = FileSession(None)
+                    file_session_weekday[h_name] = FileSession(None)
                 elif top_border_style != 0:
                     GenericWeeklySpreadsheetParser.process_session(db_session, insertion_result, channel_id,
-                                                                   file_session_day[h_name])
+                                                                   file_session_weekday[h_name])
 
-                    file_session_day[h_name] = FileSession(date_time)
-                    file_session_day[h_name].add_info(config_fields, book, cell, cell_value)
+                    file_session_weekday[h_name] = FileSession(date_time)
+                    file_session_weekday[h_name].add_info(config_fields, book, cell, cell_value)
                 else:
-                    file_session_day[h_name].add_info(config_fields, book, cell, cell_value)
+                    file_session_weekday[h_name].add_info(config_fields, book, cell, cell_value)
 
+        # Assess the final result
         if insertion_result.total_nb_sessions_in_file != 0:
             db_calls.commit(db_session)
 
