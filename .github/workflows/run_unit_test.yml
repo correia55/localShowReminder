@@ -35,6 +35,9 @@ jobs:
         
       - name: Create a conftest (for pytest to be able to import modules)
         run: touch conftest.py
+        
+      - name: Add PYTHONPATH
+        run: echo "PYTHONPATH=.:./file_parsers/" >> $GITHUB_ENV
     
       - name: Run tests with pytest
         run: pytest --cov=. --cov-report=xml
