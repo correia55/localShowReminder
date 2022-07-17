@@ -9,7 +9,7 @@ import get_file_data
 import models
 import process_emails
 import tmdb_calls
-from abstract_channel_file_parser import AbstractChannelFileParser
+from file_parsers.abstract_channel_file_parser import AbstractChannelFileParser
 from file_parsers.cinemundo_parser import CinemundoParser
 from file_parsers.generic_list_spreadsheet_parser import GenericListSpreadsheetParser
 from file_parsers.generic_weekly_spreadsheet_parser import GenericWeeklySpreadsheetParser

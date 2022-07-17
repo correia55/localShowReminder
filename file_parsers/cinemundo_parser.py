@@ -140,6 +140,7 @@ class CinemundoParser(AbstractChannelFileParser):
             if insertion_result is None:
                 return None
 
+        # Assess the final result
         if insertion_result.total_nb_sessions_in_file != 0:
             db_calls.commit(db_session)
 
