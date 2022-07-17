@@ -273,4 +273,4 @@ class TestGenericWeeklySpreadsheetParser(unittest.TestCase):
              unittest.mock.call(self.session, None, None, datetime.datetime(2022, 7, 6, 6), 8373, 7503),
              unittest.mock.call(self.session, None, None, datetime.datetime(2022, 7, 7, 6), 8373, 7503),
              unittest.mock.call(self.session, None, None, datetime.datetime(2022, 7, 8, 6), 8373, 7503),
-             unittest.mock.call(self.session, 1, 8, datetime.datetime(2022, 7, 10, 8), 8373, 1233)])
+             unittest.mock.call(self.session, 4, 8, datetime.datetime(2022, 7, 10, 8), 8373, 1233)])
