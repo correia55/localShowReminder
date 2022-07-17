@@ -11,7 +11,7 @@ import configuration
 import db_calls
 import get_file_data
 from file_parsers.abstract_channel_file_parser import InsertionResult, GenericField
-from abstract_spreadsheet_parser import AbstractSpreadsheetParser, Header
+from file_parsers.abstract_spreadsheet_parser import AbstractSpreadsheetParser, Header
 
 
 class GenericListSpreadsheetParser(AbstractSpreadsheetParser):
