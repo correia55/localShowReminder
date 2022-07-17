@@ -19,6 +19,8 @@ def roman_to_int(roman_text: str):
     Convert a roman string into integer.
     Used to convert the season.
 
+    Source: https://stackoverflow.com/questions/61719161/roman-to-integer-python
+
     :param roman_text: the roman text.
     :return: the converted integer.
     """
@@ -60,7 +62,10 @@ class FileSession:
         if cell_value is None:
             return
 
-        if '_translation' in config_fields and config_fields['_translation'].field_format == 'italic':
+        # Remove leading and trailing spaces
+        cell_value = cell_value.strip()
+
+        if '_translations' in config_fields and config_fields['_translations'].field_format == 'italic':
             italic_translation = True
         else:
             italic_translation = False
@@ -73,7 +78,7 @@ class FileSession:
             series = re.search(r'^(.*) ([MDCLXVI]*) - Ep\. ([0-9]+).*$', cell_value)
 
             if series is not None:
-                self.name = series.group(1)
+                self.name = series.group(1).strip()
                 self.season = roman_to_int(series.group(2))
                 self.episode = int(series.group(3))
             else:
@@ -92,7 +97,7 @@ class FileSession:
 
 
 class GenericWeeklySpreadsheetParser(AbstractSpreadsheetParser):
-    channels_file = {'SIC': ('SIC', 'sic.csv')}
+    channels_file = {'SIC': ('SIC', 'sic.csv'), 'SIC Caras': ('SIC Caras', 'sic_caras.csv')}
     channels = list(channels_file.keys())
 
     @staticmethod

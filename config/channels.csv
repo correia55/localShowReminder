@@ -4,11 +4,11 @@ RTP 2;RTP2;True
 RTP 3;RTP3;True
 RTP Memória;RTPM;True
 RTP África;RTPA;True
-SIC;SIC;True
+SIC;SIC;False
 SIC Mulher;SICM;True
 SIC Radical;SICR;True
 SIC K;SICK;True
-SIC Caras;SICC;True
+SIC Caras;SICC;False
 TVI;TVI;True
 TVI24;TVI24;True
 TVI Ficção;TVIFIC;True

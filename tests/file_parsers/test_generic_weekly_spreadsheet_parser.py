@@ -274,3 +274,230 @@ class TestGenericWeeklySpreadsheetParser(unittest.TestCase):
              unittest.mock.call(self.session, None, None, datetime.datetime(2022, 7, 7, 6), 8373, 7503),
              unittest.mock.call(self.session, None, None, datetime.datetime(2022, 7, 8, 6), 8373, 7503),
              unittest.mock.call(self.session, 4, 8, datetime.datetime(2022, 7, 10, 8), 8373, 1233)])
+
+    @unittest.mock.patch('get_file_data.tmdb_calls')
+    def test_add_file_data_sic_caras(self, tmdb_calls_mock) -> None:
+        """ Test the function GenericXlsx.add_file_data with a sample from a Sic Caras file. """
+
+        # Prepare the mocks
+        # Replace datetime class with a utility class with a fixed datetime
+        datetime.datetime = NewDatetime
+
+        # Prepare the call to get_channel_name
+        channel_data = models.Channel('SICC', 'SIC Caras')
+        channel_data.id = 8373
+
+        db_calls_mock.get_channel_name.return_value = channel_data
+
+        # Treatment of the entries
+        # ----------------------------
+        # Prepare the calls to search_channel_show_data
+        db_calls_mock.search_channel_show_data_correction.side_effect = [None, None, None, None, None, None, None, None,
+                                                                         None, None, None, None, None, None]
+
+        # Prepare the calls to search_channel_show_data
+        show_data = models.ShowData('_PASSADEIRA_VERMELHA_', 'PASSADEIRA VERMELHA')
+        show_data.id = 7503
+        show_data.original_title = 'PASSADEIRA VERMELHA'
+        show_data.is_movie = False
+
+        show_data_2 = models.ShowData('_ELLEN_', 'ELLEN')
+        show_data_2.id = 7912
+        show_data_2.original_title = 'ELLEN DEGENER\'S SHOW'
+        show_data_2.is_movie = False
+
+        show_data_3 = models.ShowData('_POSSO_ENTRAR_', 'POSSO ENTRAR?')
+        show_data_3.id = 82837
+        show_data_3.original_title = 'POSSO ENTRAR?'
+        show_data_3.is_movie = False
+
+        show_data_4 = models.ShowData('_SCOTT_E_AS_CASAS_DE_FERIAS_', 'SCOTT E AS CASAS DE FÉRIAS')
+        show_data_4.id = 3444
+        show_data_4.original_title = 'SCOTTS VACATION HOUSE RULES'
+        show_data_4.is_movie = False
+
+        db_calls_mock.insert_if_missing_show_data.side_effect = [(True, show_data_2), (False, show_data_2),
+                                                                 (True, show_data), (False, show_data),
+                                                                 (False, show_data), (False, show_data),
+                                                                 (False, show_data), (True, show_data_3),
+                                                                 (False, show_data_2), (True, show_data_4),
+                                                                 (False, show_data_4), (False, show_data_4),
+                                                                 (False, show_data_4), (False, show_data_4)]
+
+        # Prepare the calls to search_shows_by_text
+        tmdb_calls_mock.search_shows_by_text.side_effect = [(0, []), (0, []), (0, []), (0, [])]
+
+        # Prepare the calls to register_show_session
+        show_session = models.ShowSession(None, None, None, None, None)
+
+        db_calls_mock.register_show_session.side_effect = [show_session, show_session, show_session, show_session,
+                                                           show_session, show_session, show_session, show_session,
+                                                           show_session, show_session, show_session, show_session,
+                                                           show_session, show_session]
+
+        # Prepare the calls to search_existing_session
+        db_calls_mock.search_existing_session.side_effect = [None, None, None, None, None, None, None, None, None, None]
+
+        # Call the function
+        actual_result = file_parsers.generic_weekly_spreadsheet_parser.GenericWeeklySpreadsheetParser.add_file_data(
+            self.session, base_path + 'data/sic_caras_example.xls', 'SIC Caras')
+
+        # Get back the datetime.datetime
+        datetime.datetime = self.datetime_backup
+
+        # Verify the result
+        self.assertEqual(datetime.datetime(2022, 7, 11, 7, 55, 0), actual_result.start_datetime)
+        self.assertEqual(datetime.datetime(2022, 7, 17, 9, 50, 0), actual_result.end_datetime)
+        self.assertEqual(14, actual_result.total_nb_sessions_in_file)
+        self.assertEqual(0, actual_result.nb_updated_sessions)
+        self.assertEqual(14, actual_result.nb_added_sessions)
+        self.assertEqual(0, actual_result.nb_deleted_sessions)
+
+        # Verify the calls to the mocks
+        db_calls_mock.get_channel_name.assert_called_with(self.session, 'SIC Caras')
+
+        db_calls_mock.search_channel_show_data_correction.assert_has_calls(
+            [unittest.mock.call(self.session, 8373, False, 'ELLEN DEGENER\'S SHOW', 'ELLEN', directors=None, year=None,
+                                subgenre=None, creators=None),
+             unittest.mock.call(self.session, 8373, False, 'ELLEN DEGENER\'S SHOW', 'ELLEN', directors=None, year=None,
+                                subgenre=None, creators=None),
+             unittest.mock.call(self.session, 8373, False, 'PASSADEIRA VERMELHA', 'PASSADEIRA VERMELHA', directors=None,
+                                year=None, subgenre=None, creators=None),
+             unittest.mock.call(self.session, 8373, False, 'PASSADEIRA VERMELHA', 'PASSADEIRA VERMELHA', directors=None,
+                                year=None, subgenre=None, creators=None),
+             unittest.mock.call(self.session, 8373, False, 'PASSADEIRA VERMELHA', 'PASSADEIRA VERMELHA', directors=None,
+                                year=None, subgenre=None, creators=None),
+             unittest.mock.call(self.session, 8373, False, 'PASSADEIRA VERMELHA', 'PASSADEIRA VERMELHA', directors=None,
+                                year=None, subgenre=None, creators=None),
+             unittest.mock.call(self.session, 8373, False, 'PASSADEIRA VERMELHA', 'PASSADEIRA VERMELHA', directors=None,
+                                year=None, subgenre=None, creators=None),
+             unittest.mock.call(self.session, 8373, False, 'POSSO ENTRAR?', 'POSSO ENTRAR?', directors=None,
+                                year=None, subgenre=None, creators=None),
+             unittest.mock.call(self.session, 8373, False, 'ELLEN DEGENER\'S SHOW', 'ELLEN', directors=None, year=None,
+                                subgenre=None, creators=None),
+             unittest.mock.call(self.session, 8373, False, 'SCOTTS VACATION HOUSE RULES', 'SCOTT E AS CASAS DE FÉRIAS',
+                                directors=None, year=None, subgenre=None, creators=None),
+             unittest.mock.call(self.session, 8373, False, 'SCOTTS VACATION HOUSE RULES', 'SCOTT E AS CASAS DE FÉRIAS',
+                                directors=None, year=None, subgenre=None, creators=None),
+             unittest.mock.call(self.session, 8373, False, 'SCOTTS VACATION HOUSE RULES', 'SCOTT E AS CASAS DE FÉRIAS',
+                                directors=None, year=None, subgenre=None, creators=None),
+             unittest.mock.call(self.session, 8373, False, 'SCOTTS VACATION HOUSE RULES', 'SCOTT E AS CASAS DE FÉRIAS',
+                                directors=None, year=None, subgenre=None, creators=None),
+             unittest.mock.call(self.session, 8373, False, 'SCOTTS VACATION HOUSE RULES', 'SCOTT E AS CASAS DE FÉRIAS',
+                                directors=None, year=None, subgenre=None, creators=None)])
+
+        db_calls_mock.insert_if_missing_show_data.assert_has_calls(
+            [unittest.mock.call(self.session, 'ELLEN', original_title='ELLEN DEGENER\'S SHOW', is_movie=False,
+                                season=19, date_time=datetime.datetime(2022, 7, 17, 8), cast=None, duration=None,
+                                synopsis=None, year=None, genre='Series', subgenre=None, audio_languages=None,
+                                countries=None, directors=None, age_classification=None, creators=None),
+             unittest.mock.call(self.session, 'ELLEN', original_title='ELLEN DEGENER\'S SHOW', is_movie=False,
+                                season=19, date_time=datetime.datetime(2022, 7, 16, 8, 15), cast=None, duration=None,
+                                synopsis=None, year=None, genre='Series', subgenre=None, audio_languages=None,
+                                countries=None, directors=None, age_classification=None, creators=None),
+             unittest.mock.call(self.session, 'PASSADEIRA VERMELHA', original_title='PASSADEIRA VERMELHA',
+                                is_movie=False, season=9, date_time=datetime.datetime(2022, 7, 11, 8), cast=None,
+                                duration=None, synopsis=None, year=None, genre='Series', subgenre=None,
+                                audio_languages=None, countries=None, directors=None, age_classification=None,
+                                creators=None),
+             unittest.mock.call(self.session, 'PASSADEIRA VERMELHA', original_title='PASSADEIRA VERMELHA',
+                                is_movie=False, season=9, date_time=datetime.datetime(2022, 7, 12, 8), cast=None,
+                                duration=None, synopsis=None, year=None, genre='Series', subgenre=None,
+                                audio_languages=None, countries=None, directors=None, age_classification=None,
+                                creators=None),
+             unittest.mock.call(self.session, 'PASSADEIRA VERMELHA', original_title='PASSADEIRA VERMELHA',
+                                is_movie=False, season=9, date_time=datetime.datetime(2022, 7, 13, 8), cast=None,
+                                duration=None, synopsis=None, year=None, genre='Series', subgenre=None,
+                                audio_languages=None, countries=None, directors=None, age_classification=None,
+                                creators=None),
+             unittest.mock.call(self.session, 'PASSADEIRA VERMELHA', original_title='PASSADEIRA VERMELHA',
+                                is_movie=False, season=9, date_time=datetime.datetime(2022, 7, 14, 8), cast=None,
+                                duration=None, synopsis=None, year=None, genre='Series', subgenre=None,
+                                audio_languages=None, countries=None, directors=None, age_classification=None,
+                                creators=None),
+             unittest.mock.call(self.session, 'PASSADEIRA VERMELHA', original_title='PASSADEIRA VERMELHA',
+                                is_movie=False, season=9, date_time=datetime.datetime(2022, 7, 15, 8), cast=None,
+                                duration=None, synopsis=None, year=None, genre='Series', subgenre=None,
+                                audio_languages=None, countries=None, directors=None, age_classification=None,
+                                creators=None),
+             unittest.mock.call(self.session, 'POSSO ENTRAR?', original_title='POSSO ENTRAR?', is_movie=False, season=5,
+                                date_time=datetime.datetime(2022, 7, 17, 8, 45), cast=None, duration=None,
+                                synopsis=None, year=None, genre='Series', subgenre=None, audio_languages=None,
+                                countries=None, directors=None, age_classification=None, creators=None),
+             unittest.mock.call(self.session, 'ELLEN', original_title='ELLEN DEGENER\'S SHOW', is_movie=False,
+                                season=19, date_time=datetime.datetime(2022, 7, 16, 9), cast=None, duration=None,
+                                synopsis=None, year=None, genre='Series', subgenre=None, audio_languages=None,
+                                countries=None, directors=None, age_classification=None, creators=None),
+             unittest.mock.call(self.session, 'SCOTT E AS CASAS DE FÉRIAS',
+                                original_title='SCOTTS VACATION HOUSE RULES', is_movie=False, season=3,
+                                date_time=datetime.datetime(2022, 7, 11, 9, 15), cast=None, duration=None,
+                                synopsis=None, year=None, genre='Series', subgenre=None, audio_languages=None,
+                                countries=None, directors=None, age_classification=None, creators=None),
+             unittest.mock.call(self.session, 'SCOTT E AS CASAS DE FÉRIAS',
+                                original_title='SCOTTS VACATION HOUSE RULES', is_movie=False, season=3,
+                                date_time=datetime.datetime(2022, 7, 12, 9, 15), cast=None, duration=None,
+                                synopsis=None, year=None, genre='Series', subgenre=None, audio_languages=None,
+                                countries=None, directors=None, age_classification=None, creators=None),
+             unittest.mock.call(self.session, 'SCOTT E AS CASAS DE FÉRIAS',
+                                original_title='SCOTTS VACATION HOUSE RULES', is_movie=False, season=3,
+                                date_time=datetime.datetime(2022, 7, 13, 9, 15), cast=None, duration=None,
+                                synopsis=None, year=None, genre='Series', subgenre=None, audio_languages=None,
+                                countries=None, directors=None, age_classification=None, creators=None),
+             unittest.mock.call(self.session, 'SCOTT E AS CASAS DE FÉRIAS',
+                                original_title='SCOTTS VACATION HOUSE RULES', is_movie=False, season=3,
+                                date_time=datetime.datetime(2022, 7, 14, 9, 15), cast=None, duration=None,
+                                synopsis=None, year=None, genre='Series', subgenre=None, audio_languages=None,
+                                countries=None, directors=None, age_classification=None, creators=None),
+             unittest.mock.call(self.session, 'SCOTT E AS CASAS DE FÉRIAS',
+                                original_title='SCOTTS VACATION HOUSE RULES', is_movie=False, season=3,
+                                date_time=datetime.datetime(2022, 7, 15, 9, 15), cast=None, duration=None,
+                                synopsis=None, year=None, genre='Series', subgenre=None, audio_languages=None,
+                                countries=None, directors=None, age_classification=None, creators=None)])
+
+        tmdb_calls_mock.search_shows_by_text.assert_has_calls(
+            [unittest.mock.call(self.session, 'ELLEN DEGENER\'S SHOW', is_movie=False, year=None),
+             unittest.mock.call(self.session, 'PASSADEIRA VERMELHA', is_movie=False, year=None),
+             unittest.mock.call(self.session, 'POSSO ENTRAR?', is_movie=False, year=None),
+             unittest.mock.call(self.session, 'SCOTTS VACATION HOUSE RULES', is_movie=False, year=None)])
+
+        db_calls_mock.register_show_session.assert_has_calls(
+            [unittest.mock.call(self.session, 19, 95, datetime.datetime(2022, 7, 17, 8), 8373, 7912,
+                                audio_language=None, extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, 19, 92, datetime.datetime(2022, 7, 16, 8, 15), 8373, 7912,
+                                audio_language=None, extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, 9, 134, datetime.datetime(2022, 7, 11, 8), 8373, 7503,
+                                audio_language=None, extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, 9, 135, datetime.datetime(2022, 7, 12, 8), 8373, 7503,
+                                audio_language=None, extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, 9, 136, datetime.datetime(2022, 7, 13, 8), 8373, 7503,
+                                audio_language=None, extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, 9, 137, datetime.datetime(2022, 7, 14, 8), 8373, 7503,
+                                audio_language=None, extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, 9, 138, datetime.datetime(2022, 7, 15, 8), 8373, 7503,
+                                audio_language=None, extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, 5, 67, datetime.datetime(2022, 7, 17, 8, 45), 8373, 82837,
+                                audio_language=None, extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, 19, 93, datetime.datetime(2022, 7, 16, 9), 8373, 7912,
+                                audio_language=None, extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, 3, 3, datetime.datetime(2022, 7, 11, 9, 15), 8373, 3444,
+                                audio_language=None, extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, 3, 4, datetime.datetime(2022, 7, 12, 9, 15), 8373, 3444,
+                                audio_language=None, extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, 3, 5, datetime.datetime(2022, 7, 13, 9, 15), 8373, 3444,
+                                audio_language=None, extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, 3, 6, datetime.datetime(2022, 7, 14, 9, 15), 8373, 3444,
+                                audio_language=None, extended_cut=False, should_commit=False),
+             unittest.mock.call(self.session, 3, 7, datetime.datetime(2022, 7, 15, 9, 15), 8373, 3444,
+                                audio_language=None, extended_cut=False, should_commit=False)])
+
+        db_calls_mock.search_existing_session.assert_has_calls(
+            [unittest.mock.call(self.session, 19, 92, datetime.datetime(2022, 7, 16, 8, 15), 8373, 7912),
+             unittest.mock.call(self.session, 9, 135, datetime.datetime(2022, 7, 12, 8), 8373, 7503),
+             unittest.mock.call(self.session, 9, 136, datetime.datetime(2022, 7, 13, 8), 8373, 7503),
+             unittest.mock.call(self.session, 9, 137, datetime.datetime(2022, 7, 14, 8), 8373, 7503),
+             unittest.mock.call(self.session, 9, 138, datetime.datetime(2022, 7, 15, 8), 8373, 7503),
+             unittest.mock.call(self.session, 19, 93, datetime.datetime(2022, 7, 16, 9), 8373, 7912),
+             unittest.mock.call(self.session, 3, 4, datetime.datetime(2022, 7, 12, 9, 15), 8373, 3444),
+             unittest.mock.call(self.session, 3, 5, datetime.datetime(2022, 7, 13, 9, 15), 8373, 3444),
+             unittest.mock.call(self.session, 3, 6, datetime.datetime(2022, 7, 14, 9, 15), 8373, 3444),
+             unittest.mock.call(self.session, 3, 7, datetime.datetime(2022, 7, 15, 9, 15), 8373, 3444)])
