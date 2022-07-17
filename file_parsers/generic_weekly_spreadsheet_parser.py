@@ -9,7 +9,7 @@ import xlrd as xlrd
 import auxiliary
 import db_calls
 import get_file_data
-from abstract_channel_file_parser import InsertionResult, GenericField
+from file_parsers.abstract_channel_file_parser import InsertionResult, GenericField
 from abstract_spreadsheet_parser import AbstractSpreadsheetParser, Header
 
 

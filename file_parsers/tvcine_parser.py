@@ -9,7 +9,7 @@ import auxiliary
 import configuration
 import db_calls
 import get_file_data
-from abstract_channel_file_parser import AbstractChannelFileParser, InsertionResult
+from file_parsers.abstract_channel_file_parser import AbstractChannelFileParser, InsertionResult
 
 unordered_words = ['the', 'a', 'an', 'i', 'un', 'le', 'la', 'les', 'um', 'o', 'el', 'as', 'os']
 

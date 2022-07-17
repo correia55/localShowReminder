@@ -3,7 +3,7 @@ from typing import Dict, Tuple, Optional
 
 import xlrd
 
-from abstract_channel_file_parser import AbstractChannelFileParser, GenericField
+from file_parsers.abstract_channel_file_parser import AbstractChannelFileParser, GenericField
 
 
 class Header:
