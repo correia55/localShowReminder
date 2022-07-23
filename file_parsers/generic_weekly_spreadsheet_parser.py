@@ -62,6 +62,10 @@ class FileSession:
         if cell_value is None:
             return
 
+        # Ignore floats - duration
+        if isinstance(cell_value, float):
+            return
+
         # Remove leading and trailing spaces
         cell_value = cell_value.strip()
 
